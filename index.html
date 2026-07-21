@@ -665,6 +665,18 @@
   }
   .flow-bar .flow-step .fs-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.4); }
   .flow-bar .flow-arrow { font-size: 10px; opacity: .5; color: #fff; }
+
+  /* ─── Result satisfaction rating ─── */
+  .satisfaction-section { margin-top: 32px; padding: 20px 24px; background: #fff; border-radius: var(--radius); box-shadow: var(--shadow); text-align: center; }
+  .sat-title { font-size: 16px; font-weight: 600; color: var(--gray-800); margin-bottom: 4px; }
+  .sat-sub { font-size: 13px; color: var(--gray-400); margin-bottom: 14px; }
+  .sat-stars { display: flex; justify-content: center; gap: 12px; margin-bottom: 14px; }
+  .sat-stars .star-btn { font-size: 36px; cursor: pointer; background: none; border: none; color: #d1d5db; transition: transform .15s, color .2s; line-height: 1; padding: 0; }
+  .sat-stars .star-btn:hover { transform: scale(1.2); }
+  .sat-stars .star-btn.active { color: #f59e0b; }
+  .sat-stars .star-btn.rated { animation: starPop .3s ease; }
+  @keyframes starPop { 0% { transform: scale(1); } 50% { transform: scale(1.35); } 100% { transform: scale(1); } }
+  .sat-feedback { font-size: 14px; color: var(--gray-600); min-height: 22px; margin-top: 4px; }
 </style>
 </head>
 <body>
@@ -1006,6 +1018,20 @@
         <div class="big-icon">🔍</div>
         <h3>没有符合筛选条件的岗位</h3>
         <p>试试降低匹配度门槛或选择"全部行业"</p>
+      </div>
+
+      <!-- Result satisfaction rating -->
+      <div class="satisfaction-section print-hide">
+        <div class="sat-title">这个结果符合你的情况吗？</div>
+        <div class="sat-sub">你的反馈能帮我做得更好</div>
+        <div class="sat-stars" id="satStars">
+          <button class="star-btn" data-score="1" onclick="rateResult(1)">☆</button>
+          <button class="star-btn" data-score="2" onclick="rateResult(2)">☆</button>
+          <button class="star-btn" data-score="3" onclick="rateResult(3)">☆</button>
+          <button class="star-btn" data-score="4" onclick="rateResult(4)">☆</button>
+          <button class="star-btn" data-score="5" onclick="rateResult(5)">☆</button>
+        </div>
+        <div class="sat-feedback" id="satFeedback"></div>
       </div>
 
       <div class="btn-row print-hide" style="justify-content:center;flex-wrap:wrap;">
@@ -3388,17 +3414,24 @@ function exportResult() {
 }
 
 function shareResult() {
+  var url = 'https://kakarotzander.github.io/career-nav/';
   if (navigator.share) {
-    var text = '🤖 AI职业规划助手 - 我的推荐结果\n';
-    document.querySelectorAll('.result-card').forEach(function(c, i) {
-      text += '\n' + (i+1) + '. ' + (c.querySelector('.rc-title')?.textContent||'').trim() + ' — ' + (c.querySelector('.rc-match')?.textContent||'').trim();
-    });
-    var ptEl = document.querySelector('#playerTypeArea');
-    if (ptEl) text = text + '\n\n' + ptEl.textContent.trim();
-    navigator.share({ title: '我的职业推荐结果', text: text }).catch(function() {});
+    navigator.share({ title: 'AI职业导航系统 · 找到你的职业方向', url: url }).catch(function() {});
   } else {
-    exportResult();
+    navigator.clipboard.writeText(url).then(function() { alert('✅ 链接已复制到剪贴板：' + url); }).catch(function() {});
   }
+}
+
+var satFeedback = ['😞 很抱歉，我会继续优化', '🙁 不太满意，我会努力改进', '😐 还可以，但还有提升空间', '😊 还不错，希望帮到你', '😍 太棒了！很高兴能帮到你'];
+
+function rateResult(score) {
+  var stars = document.querySelectorAll('.sat-stars .star-btn');
+  stars.forEach(function(s, i) {
+    s.textContent = i < score ? '★' : '☆';
+    s.classList.toggle('active', i < score);
+    s.classList.toggle('rated', i < score);
+  });
+  document.getElementById('satFeedback').textContent = satFeedback[score - 1] + '（' + score + '/5）';
 }
 
 // ─── GAMIFICATION: Player types & Achievements ───
