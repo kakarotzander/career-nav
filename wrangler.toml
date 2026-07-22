@@ -1,0 +1,9 @@
+name = "career-ai-worker"
+main = "src/worker.js"
+compatibility_date = "2025-04-01"
+
+[vars]
+DEEPSEEK_MODEL = "deepseek-chat"
+
+[env.production]
+DEEPSEEK_MODEL = "deepseek-chat"

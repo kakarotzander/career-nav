@@ -677,7 +677,116 @@
   .sat-stars .star-btn.rated { animation: starPop .3s ease; }
   @keyframes starPop { 0% { transform: scale(1); } 50% { transform: scale(1.35); } 100% { transform: scale(1); } }
   .sat-feedback { font-size: 14px; color: var(--gray-600); min-height: 22px; margin-top: 4px; }
-</style>
+
+  /* ─── AI Interview Chat ─── */
+  .chat-container {
+    border: 1.5px solid var(--gray-200);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .chat-messages {
+    height: 400px;
+    overflow-y: auto;
+    padding: 16px;
+    background: var(--gray-50);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .chat-msg {
+    max-width: 85%;
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1.6;
+    animation: fadeUp .3s ease;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+  .chat-msg.bot {
+    align-self: flex-start;
+    background: #fff;
+    border: 1px solid var(--gray-200);
+    border-bottom-left-radius: 4px;
+    color: var(--gray-800);
+  }
+  .chat-msg.user {
+    align-self: flex-end;
+    background: var(--primary);
+    color: #fff;
+    border-bottom-right-radius: 4px;
+  }
+  .chat-msg.bot .typing-dots {
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
+  }
+  .chat-msg.bot .typing-dots span {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--gray-400);
+    animation: dotPulse 1.4s ease infinite;
+  }
+  .chat-msg.bot .typing-dots span:nth-child(2) { animation-delay: .2s; }
+  .chat-msg.bot .typing-dots span:nth-child(3) { animation-delay: .4s; }
+  @keyframes dotPulse { 0%,80%,100% { opacity: .3; transform: scale(.8); } 40% { opacity: 1; transform: scale(1); } }
+  .chat-input-area {
+    display: flex;
+    gap: 8px;
+    padding: 12px;
+    background: #fff;
+    border-top: 1px solid var(--gray-200);
+    align-items: flex-end;
+  }
+  .chat-input {
+    flex: 1;
+    padding: 10px 14px;
+    border: 1.5px solid var(--gray-200);
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    resize: none;
+    transition: var(--transition);
+    min-height: 44px;
+    max-height: 120px;
+  }
+  .chat-input:focus {
+    outline: none;
+    border-color: var(--primary-light);
+    box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+  }
+  .chat-input:disabled {
+    background: var(--gray-100);
+    cursor: not-allowed;
+  }
+  .chat-send-btn {
+    flex-shrink: 0;
+    height: 44px;
+    padding: 0 20px;
+  }
+  .chat-send-btn:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+  }
+  .chat-send-btn.loading {
+    pointer-events: none;
+    opacity: .7;
+  }
+  .chat-messages .chat-placeholder {
+    text-align: center;
+    color: var(--gray-400);
+    font-size: 13px;
+    padding: 60px 20px;
+    align-self: center;
+  }
+  .chat-messages .chat-placeholder .cp-icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+  }
+  @media (max-width: 600px) {
+    .chat-messages { height: 300px; }
+  }
+
 </head>
 <body>
 <header class="header">
@@ -769,34 +878,70 @@
           </select>
         </div>
       </div>
-      <div class="btn-row"><div></div><button class="btn btn-primary" onclick="goStep(2)">开始能力测评 →</button></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="city">所在城市</label>
+          <select id="city">
+            <option value="">请选择</option>
+            <option value="北京">北京</option>
+            <option value="上海">上海</option>
+            <option value="广州">广州</option>
+            <option value="深圳">深圳</option>
+            <option value="杭州">杭州</option>
+            <option value="成都">成都</option>
+            <option value="南京">南京</option>
+            <option value="武汉">武汉</option>
+            <option value="西安">西安</option>
+            <option value="重庆">重庆</option>
+            <option value="其他">其他城市</option>
+          </select>
+        </div>
+        <div class="form-group"></div>
+      </div>
+      <div class="btn-row"><div></div><button class="btn btn-primary" onclick="goStep(2)">开始 AI 访谈 →</button></div>
     </div>
   </div>
 
-  <!-- STEP 2: 能力测评 -->
+  <!-- STEP 2: AI能力访谈 -->
   <div class="step" id="step2">
     <div class="card">
-      <h2>🧠 能力测评</h2>
-      <p class="subtitle">请根据真实情况选择最符合你的选项，以评估你的核心能力</p>
-      <div class="progress-count" id="questionProgress"></div>
+      <h2>🧠 AI 能力访谈</h2>
+      <p class="subtitle" id="interviewStatus">与 AI 面试官进行 3-5 轮简短对话，帮你发现自身能力优势</p>
 
-      <!-- 题目列表 -->
-      <div id="questionContainer"></div>
+      <!-- Chat area -->
+      <div id="chatContainer" class="chat-container">
+        <div id="chatMessages" class="chat-messages">
+          <div class="chat-placeholder"><div class="cp-icon">🤖</div><p>点击下方按钮开始 AI 访谈</p></div>
+        </div>
+        <div class="chat-input-area">
+          <textarea id="chatInput" class="chat-input" placeholder="输入你的回答..." rows="2" disabled></textarea>
+          <button id="chatSendBtn" class="btn btn-primary chat-send-btn" onclick="sendChatMessage()" disabled>发送</button>
+        </div>
+      </div>
 
-      <!-- 能力画像（答完全部题目后显示） -->
-      <div class="skill-profile-wrap" id="skillProfileWrap">
-        <div class="skill-profile" id="skillProfile">
-          <div class="sp-title">📊 你的能力画像（基于你的答题结果）</div>
-          <div id="skillProfileItems"></div>
-          <div style="grid-column:1/-1;text-align:center;color:var(--gray-400);font-size:13px;margin-top:-8px;">
-            👆 这是算法对你的能力评估，将用于后续职业匹配
+      <!-- Loading overlay -->
+      <div id="chatLoading" class="loading-wrap hidden">
+        <div class="spinner"></div>
+        <p>AI 正在思考...</p>
+      </div>
+
+      <!-- Analysis results -->
+      <div id="analysisResult" class="hidden">
+        <div class="skill-profile" id="interviewSkillProfile">
+          <div class="sp-title">📊 AI 分析：你的能力画像</div>
+          <div class="sp-desc" id="analysisSummary" style="grid-column:1/-1;font-size:14px;color:var(--gray-600);margin-bottom:12px;"></div>
+          <div id="interviewSkillItems"></div>
+          <div style="grid-column:1/-1;margin-top:12px;padding:14px;background:var(--primary-bg);border-radius:8px;">
+            <div style="font-size:14px;font-weight:600;margin-bottom:6px;">🎯 AI 建议的职业方向</div>
+            <div id="suggestedCareers" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
           </div>
         </div>
       </div>
 
       <div class="btn-row" id="step2Btns">
         <button class="btn btn-outline" onclick="goStep(1)">← 上一步</button>
-        <button class="btn btn-primary" id="btnGoStep3" onclick="goStep(3)" disabled>查看能力画像 →</button>
+        <button class="btn btn-primary" id="btnGoStep3" onclick="goStep(3)" disabled>确认能力画像 →</button>
+        <button class="btn btn-accent hidden" id="btnRestartChat" onclick="restartInterview()">🔄 重新访谈</button>
       </div>
     </div>
   </div>
@@ -1066,876 +1211,10 @@ function trackEvent(name, data) {
 // ─── 分析统计 ───
 trackEvent('page_view', {referrer:document.referrer||''});
 // ═══════════════════════════════════════════════
-//  题库（分支结构）
+
 // ═══════════════════════════════════════════════
-const GATE_QUESTION = {id:"gate", text:"你对你目前专业的态度是？你希望将来从事相关行业吗？",
-  options:[
-    {text:"非常喜欢，希望继续深耕这个方向", score:"major"},
-    {text:"比较喜欢，可以考虑相关领域", score:"major"},
-    {text:"不太确定，还在探索自己的方向", score:"general"},
-    {text:"不太喜欢，想尝试其他领域", score:"switch"},
-    {text:"完全不喜欢，确定要转行", score:"switch"}
-]};
-
-// Interest picker for switch branch
-const SWITCH_INTERESTS = [
-  {id:"tech", icon:"💻", label:"互联网/IT", desc:"编程开发、AI、数据分析等技术方向"},
-  {id:"media", icon:"🎬", label:"传媒/内容创作", desc:"新媒体、写作、视频创作、自媒体等"},
-  {id:"business", icon:"💼", label:"商业/金融", desc:"市场营销、金融投资、咨询分析等"},
-  {id:"design", icon:"🎨", label:"设计/创意", desc:"UI/UX设计、产品设计、视觉设计等"},
-  {id:"edu", icon:"📚", label:"教育/社科", desc:"教师、心理咨询、公共事业等"},
-  {id:"eng", icon:"🔧", label:"制造/工程", desc:"机械、电子、土木、新能源等"},
-  {id:"medical", icon:"🏥", label:"医疗/健康", desc:"临床医学、护理、康复、兽医等"},
-  {id:"culture", icon:"🎭", label:"文化/体育/旅游", desc:"文化娱乐、体育、旅游休闲等行业"},
-  {id:"law", icon:"⚖️", label:"法律/公共事务", desc:"法律、政府、科研、管理服务等"},
-  {id:"agriculture", icon:"🌾", label:"农林/环保", desc:"农业、林业、生态环保、新能源等"},
-  {id:"service", icon:"🏪", label:"生活/服务行业", desc:"餐饮、酒店、交通、语言服务等"}
-];
-
-// Question banks keyed by majorGroup or field key
-const QUESTION_BANKS = {
-  "理工":[
-    {id:101, text:"在解决一个技术难题时，你更倾向于？", skillMap:[{skill:"编程开发",w:0.6},{skill:"逻辑分析",w:0.4}], tag:"技术偏好",
-      options:[{text:"从底层原理出发，设计最优解决方案",score:5},{text:"查找现成方案并适配改进",score:4},{text:"用简单方法解决，能用就行",score:3},{text:"寻求他人帮助或指导",score:2},{text:"避开技术难题，做其他部分",score:1}]},
-    {id:102, text:"你对数据驱动的决策方式怎么看？", skillMap:[{skill:"数据分析",w:0.7},{skill:"数学统计",w:0.3}], tag:"数据思维",
-      options:[{text:"习惯用数据说话，做量化分析",score:5},{text:"会参考数据但也会结合经验直觉",score:4},{text:"大致浏览数据，找关键趋势",score:3},{text:"不太依赖数据，更相信直觉",score:2},{text:"对数据分析和统计不感兴趣",score:1}]},
-    {id:103, text:"在团队技术项目中，你通常承担什么角色？", skillMap:[{skill:"工程技术",w:0.5},{skill:"项目管理",w:0.5}], tag:"项目角色",
-      options:[{text:"技术负责人/架构设计",score:5},{text:"核心功能开发人员",score:4},{text:"协助完成具体模块",score:3},{text:"文档、测试等辅助工作",score:2},{text:"不太参与技术项目",score:1}]},
-    {id:104, text:"你对人工智能/前沿技术的兴趣如何？", skillMap:[{skill:"算法与AI",w:0.8},{skill:"英语能力",w:0.2}], tag:"前沿技术",
-      options:[{text:"非常感兴趣，经常学习相关技术",score:5},{text:"关注行业动态，了解基本概念",score:4},{text:"知道一些热门技术名称",score:3},{text:"不太关注，做好本职工作就行",score:2},{text:"完全不感兴趣",score:1}]},
-    {id:105, text:"写技术文档或项目报告时，你的状态是？", skillMap:[{skill:"写作内容",w:0.5},{skill:"沟通表达",w:0.5}], tag:"表达能力",
-      options:[{text:"能清晰有条理地撰写高质量文档",score:5},{text:"能写清楚，但不太在意格式美观",score:4},{text:"基本能表达清楚内容",score:3},{text:"不太擅长写文档，能少写就少写",score:2},{text:"尽量让别人写",score:1}]},
-    {id:106, text:"面对一个陌生领域的新知识，你通常？", skillMap:[{skill:"逻辑分析",w:0.5},{skill:"英语能力",w:0.3},{skill:"数据分析",w:0.2}], tag:"学习能力",
-      options:[{text:"系统学习，从原理到应用全面掌握",score:5},{text:"边做边学，需要什么学什么",score:4},{text:"看教程和文档了解基本用法",score:3},{text:"等别人教或者遇到问题再查",score:2},{text:"尽量避免接触新知识",score:1}]},
-    {id:107, text:"你对数学建模和量化分析的态度？", skillMap:[{skill:"数学统计",w:0.7},{skill:"逻辑分析",w:0.3}], tag:"量化分析",
-      options:[{text:"擅长建模，喜欢用数学解决问题",score:5},{text:"能理解模型但不太自己建",score:4},{text:"知道基本统计方法",score:3},{text:"数学不是强项，尽量避开",score:2},{text:"看到数学就头疼",score:1}]},
-    {id:108, text:"在做产品/项目决策时，你更看重？", skillMap:[{skill:"产品策划",w:0.5},{skill:"沟通表达",w:0.3},{skill:"领导力",w:0.2}], tag:"决策风格",
-      options:[{text:"技术先进性和创新性",score:5},{text:"用户体验和产品价值",score:4},{text:"成本和效率",score:3},{text:"团队意见和共识",score:2},{text:"领导安排什么就做什么",score:1}]},
-    {id:109, text:"与人协作时，你更倾向于？", skillMap:[{skill:"沟通表达",w:0.5},{skill:"领导力",w:0.5}], tag:"协作风格",
-      options:[{text:"主动组织协调，推动项目前进",score:5},{text:"做好自己份内事，配合团队",score:4},{text:"独立工作，减少沟通依赖",score:3},{text:"需要明确指令才能行动",score:2},{text:"更喜欢一个人工作",score:1}]},
-    {id:110, text:"你对技术类岗位的薪资期待是？", skillMap:[{skill:"财务金融",w:0.6},{skill:"市场营销",w:0.4}], tag:"职业期望",
-      options:[{text:"高薪是首要考虑，愿意为此努力",score:5},{text:"薪资不错就行，更看重成长空间",score:4},{text:"行业平均水平即可",score:3},{text:"够用就行，不想太累",score:2},{text:"不太在意薪资，做喜欢的就行",score:1}]},
-    {id:111, text:"编写代码时你更注重哪个方面？", skillMap:[{skill:"编程开发",w:0.5},{skill:"逻辑分析",w:0.3},{skill:"项目管理",w:0.2}], tag:"编程风格",
-      options:[{text:"代码可读性和可维护性",score:5},{text:"运行效率和性能优化",score:4},{text:"功能实现就行",score:3},{text:"能跑就行不太在意质量",score:2},{text:"尽量少写代码",score:1}]},
-    {id:112, text:"遇到系统崩溃或线上故障时你的第一反应是？", skillMap:[{skill:"逻辑分析",w:0.5},{skill:"编程开发",w:0.3},{skill:"运营管理",w:0.2}], tag:"故障处理",
-      options:[{text:"冷静分析日志定位根因",score:5},{text:"快速回滚排查原因",score:4},{text:"求助同事或查阅资料",score:3},{text:"有点慌乱需要指导",score:2},{text:"推给负责的人处理",score:1}]},
-        {id:2061, text:"如果明天下雨比赛就取消，这句话的逆否命题是？", skillMap:[{skill:"逻辑分析",w:0.8},{skill:"数学统计",w:0.5}], tag:"逻辑推理",
-      options:[{text:"如果比赛没有取消，那么明天没有下雨",score:5},{text:"如果明天不下雨，比赛就不取消",score:1},{text:"如果比赛取消，那么明天下雨",score:1},{text:"如果明天不下雨，比赛也取消",score:1},{text:"以上都不是",score:1}]},
-    {id:114, text:"参与技术评审或代码审查时你？", skillMap:[{skill:"编程开发",w:0.4},{skill:"沟通表达",w:0.3},{skill:"领导力",w:0.3}], tag:"技术评审",
-      options:[{text:"能发现关键问题给出建设性意见",score:5},{text:"能发现一些明显问题",score:4},{text:"基本能看懂但不太会提意见",score:3},{text:"不太参与评审",score:2},{text:"觉得评审浪费时间",score:1}]},
-        {id:2062, text:"一个水池有进水管和出水管，进水管3小时灌满，出水管5小时排空。同时打开多久能灌满？", skillMap:[{skill:"数学统计",w:0.8},{skill:"逻辑分析",w:0.5}], tag:"数学应用",
-      options:[{text:"7.5小时",score:5},{text:"2小时",score:1},{text:"8小时",score:1},{text:"15小时",score:1},{text:"1.5小时",score:1}]},
-    {id:116, text:"调试一个复杂Bug时你的策略是？", skillMap:[{skill:"逻辑分析",w:0.6},{skill:"编程开发",w:0.4}], tag:"调试能力",
-      options:[{text:"二分法逐层定位问题",score:5},{text:"加日志打印分析执行流程",score:4},{text:"凭经验猜测可能原因",score:3},{text:"反复试错尝试不同方案",score:2},{text:"等别人帮忙调试",score:1}]},
-        {id:2063, text:"二进制数 1101 转换为十进制是多少？", skillMap:[{skill:"编程开发",w:0.7},{skill:"数学统计",w:0.5},{skill:"逻辑分析",w:0.3}], tag:"数制转换",
-      options:[{text:"13",score:5},{text:"8",score:1},{text:"11",score:1},{text:"14",score:1},{text:"15",score:1}]},
-        {id:2064, text:"一个程序循环执行读取A、计算B、写入C，要优化性能首要考虑？", skillMap:[{skill:"逻辑分析",w:0.6},{skill:"编程开发",w:0.5}], tag:"工程优化",
-      options:[{text:"找出最耗时的瓶颈环节进行优化",score:5},{text:"把循环次数减少一半",score:1},{text:"换一台更快的电脑",score:1},{text:"把三个操作同时进行",score:1},{text:"用更短的变量名",score:1}]},
-    {id:119, text:"对于技术文档的阅读习惯是？", skillMap:[{skill:"英语能力",w:0.5},{skill:"编程开发",w:0.3},{skill:"逻辑分析",w:0.2}], tag:"文档习惯",
-      options:[{text:"能流畅阅读英文技术文档",score:5},{text:"借助翻译工具阅读英文文档",score:4},{text:"只读中文文档",score:3},{text:"尽量找视频教程替代",score:2},{text:"尽量不看文档",score:1}]},
-        {id:2065, text:"以下哪种是科学方法的核心特征？", skillMap:[{skill:"逻辑分析",w:0.7},{skill:"写作内容",w:0.3}], tag:"科学思维",
-      options:[{text:"提出可证伪的假说并通过实验验证",score:5},{text:"专家说的都是对的",score:1},{text:"历史悠久的理论更可靠",score:1},{text:"大多数人的意见就是真理",score:1},{text:"越复杂的理论越正确",score:1}]}
-  ],
-  "经管":[
-    {id:201, text:"分析一家公司的财务报表时，你更关注？", skillMap:[{skill:"财务金融",w:0.7},{skill:"数据分析",w:0.3}], tag:"商业分析",
-      options:[{text:"盈利能力、现金流等核心指标",score:5},{text:"营收增长趋势和市场占有率",score:4},{text:"看结论摘要就行",score:3},{text:"不太会看，需要指导",score:2},{text:"对财务数据不感兴趣",score:1}]},
-    {id:202, text:"在团队中做个方案汇报，你通常？", skillMap:[{skill:"沟通表达",w:0.6},{skill:"写作内容",w:0.4}], tag:"表达能力",
-      options:[{text:"精心准备PPT，自信流利展示",score:5},{text:"准备充分，稍微紧张但能讲清楚",score:4},{text:"能说但不太会做精美展示",score:3},{text:"不太愿意公开汇报",score:2},{text:"极力避免上台展示",score:1}]},
-    {id:203, text:"你对营销推广活动的态度？", skillMap:[{skill:"市场营销",w:0.7},{skill:"写作内容",w:0.3}], tag:"营销思维",
-      options:[{text:"善于策划创意营销方案",score:5},{text:"能参与执行，有一定想法",score:4},{text:"理解基本营销逻辑",score:3},{text:"不太了解营销",score:2},{text:"对营销不感兴趣",score:1}]},
-    {id:204, text:"处理复杂商业问题时，你习惯？", skillMap:[{skill:"逻辑分析",w:0.5},{skill:"数据分析",w:0.5}], tag:"问题解决",
-      options:[{text:"用分析框架系统拆解问题",score:5},{text:"收集信息后做理性判断",score:4},{text:"凭经验和直觉快速决策",score:3},{text:"需要和别人讨论才能理清",score:2},{text:"希望有人直接告诉我答案",score:1}]},
-    {id:205, text:"你对数字和数据的敏感度如何？", skillMap:[{skill:"数据分析",w:0.5},{skill:"数学统计",w:0.5}], tag:"数据思维",
-      options:[{text:"对数字非常敏感，善于发现异常",score:5},{text:"能做基本的统计分析",score:4},{text:"能看懂图表和关键数据",score:3},{text:"对数字不太敏感",score:2},{text:"看到大量数据就头疼",score:1}]},
-    {id:206, text:"在项目管理中，你更擅长？", skillMap:[{skill:"项目管理",w:0.6},{skill:"运营管理",w:0.4}], tag:"组织能力",
-      options:[{text:"制定计划、分配资源、把控进度",score:5},{text:"跟进执行、协调沟通",score:4},{text:"完成分配的具体任务",score:3},{text:"需要明确指导才能行动",score:2},{text:"不太擅长组织协调",score:1}]},
-    {id:207, text:"你对创业或独立负责业务的态度？", skillMap:[{skill:"领导力",w:0.6},{skill:"产品策划",w:0.4}], tag:"进取心",
-      options:[{text:"非常向往，有创业想法",score:5},{text:"愿意尝试负责独立业务板块",score:4},{text:"希望能参与创业团队",score:3},{text:"更倾向于稳定就业",score:2},{text:"对创业不感兴趣",score:1}]},
-    {id:208, text:"阅读商业/财经类文章时，你？", skillMap:[{skill:"财务金融",w:0.4},{skill:"市场营销",w:0.3},{skill:"逻辑分析",w:0.3}], tag:"商业素养",
-      options:[{text:"深入分析行业逻辑和商业模式",score:5},{text:"关注关键数据和趋势判断",score:4},{text:"浏览标题和核心观点",score:3},{text:"不太关注商业新闻",score:2},{text:"完全不感兴趣",score:1}]},
-    {id:209, text:"与人谈判或协调时，你的风格是？", skillMap:[{skill:"沟通表达",w:0.5},{skill:"领导力",w:0.3},{skill:"逻辑分析",w:0.2}], tag:"谈判风格",
-      options:[{text:"有理有据，善于争取最优结果",score:5},{text:"友好协商，寻求双赢方案",score:4},{text:"随和，倾向于妥协",score:3},{text:"避免冲突和谈判",score:2},{text:"不太擅长谈判",score:1}]},
-    {id:210, text:"你希望未来的工作节奏是？", skillMap:[{skill:"运营管理",w:0.5},{skill:"产品策划",w:0.5}], tag:"工作偏好",
-      options:[{text:"快节奏、高强度、高回报",score:5},{text:"有一定压力但可控",score:4},{text:"稳定节奏、张弛有度",score:3},{text:"轻松、压力小",score:2},{text:"越轻松越好",score:1}]},
-    {id:211, text:"分析市场趋势时你更依赖哪种信息？", skillMap:[{skill:"数据分析",w:0.5},{skill:"市场营销",w:0.3},{skill:"逻辑分析",w:0.2}], tag:"市场分析",
-      options:[{text:"数据报表和定量分析",score:5},{text:"行业报告和专家观点",score:4},{text:"社交媒体和舆论动态",score:3},{text:"同行交流和经验分享",score:2},{text:"直觉判断",score:1}]},
-    {id:212, text:"制定商业计划时你更擅长哪个环节？", skillMap:[{skill:"产品策划",w:0.5},{skill:"写作内容",w:0.3},{skill:"财务金融",w:0.2}], tag:"商业策划",
-      options:[{text:"战略规划和商业模式设计",score:5},{text:"财务预测和收益分析",score:4},{text:"市场调研和用户分析",score:3},{text:"执行计划和资源调配",score:2},{text:"不太会做商业计划",score:1}]},
-    {id:213, text:"面对客户投诉或商务纠纷时你通常会？", skillMap:[{skill:"沟通表达",w:0.5},{skill:"逻辑分析",w:0.3},{skill:"运营管理",w:0.2}], tag:"客户处理",
-      options:[{text:"理性沟通分析问题根源寻求双赢",score:5},{text:"耐心倾听安抚情绪再解决",score:4},{text:"按公司流程标准处理",score:3},{text:"尽量回避让同事处理",score:2},{text:"不知所措",score:1}]},
-    {id:214, text:"你对供应链和物流管理的了解程度？", skillMap:[{skill:"运营管理",w:0.6},{skill:"逻辑分析",w:0.4}], tag:"供应链",
-      options:[{text:"有系统了解熟悉流程优化",score:5},{text:"了解基本概念和环节",score:4},{text:"知道大概流程",score:3},{text:"不太了解",score:2},{text:"完全没概念",score:1}]},
-    {id:215, text:"学习新的商业软件或工具时你？", skillMap:[{skill:"编程开发",w:0.3},{skill:"数据分析",w:0.3},{skill:"运营管理",w:0.4}], tag:"工具学习",
-      options:[{text:"快速上手并能教别人",score:5},{text:"跟着教程学习能掌握基本操作",score:4},{text:"需要反复练习才能记住",score:3},{text:"比较抗拒学新工具",score:2},{text:"尽量用熟悉的工具替代",score:1}]},
-    {id:216, text:"参加商务社交活动时你的状态是？", skillMap:[{skill:"沟通表达",w:0.6},{skill:"市场营销",w:0.4}], tag:"商务社交",
-      options:[{text:"主动交流善于拓展人脉",score:5},{text:"能自然交流不会尴尬",score:4},{text:"比较被动等人来聊",score:3},{text:"感到不自在想早点离开",score:2},{text:"极力避免这种场合",score:1}]},
-    {id:217, text:"你对金融投资理财的兴趣如何？", skillMap:[{skill:"财务金融",w:0.7},{skill:"数据分析",w:0.3}], tag:"金融兴趣",
-      options:[{text:"非常感兴趣有自己的投资策略",score:5},{text:"比较关注会做基础理财",score:4},{text:"了解基本概念",score:3},{text:"不太关注",score:2},{text:"完全不感兴趣",score:1}]},
-    {id:218, text:"在团队决策出现分歧时你通常会？", skillMap:[{skill:"领导力",w:0.4},{skill:"沟通表达",w:0.3},{skill:"逻辑分析",w:0.3}], tag:"冲突处理",
-      options:[{text:"组织讨论用数据说服各方",score:5},{text:"提出折中方案促成共识",score:4},{text:"服从大多数人意见",score:3},{text:"保留意见按决定执行",score:2},{text:"不参与争论",score:1}]},
-    {id:219, text:"你对电商和新零售模式的了解？", skillMap:[{skill:"市场营销",w:0.5},{skill:"数据分析",w:0.3},{skill:"运营管理",w:0.2}], tag:"电商认知",
-      options:[{text:"熟悉运营模式和商业逻辑",score:5},{text:"了解基本模式和平台规则",score:4},{text:"作为消费者使用过",score:3},{text:"不太了解",score:2},{text:"完全不关注",score:1}]},
-    {id:220, text:"做行业研究时你会从哪开始？", skillMap:[{skill:"数据分析",w:0.4},{skill:"逻辑分析",w:0.3},{skill:"写作内容",w:0.3}], tag:"行业研究",
-      options:[{text:"收集宏观数据和行业报告",score:5},{text:"研究头部企业和竞争格局",score:4},{text:"从用户需求和痛点切入",score:3},{text:"搜索相关文章和新闻",score:2},{text:"问行业内的朋友",score:1}]}
-  ],
-  "文史":[
-    {id:301, text:"写作时你更擅长哪种类型？", skillMap:[{skill:"写作内容",w:0.8},{skill:"创造性",w:0.2}], tag:"写作能力",
-      options:[{text:"创意写作/文学创作，有想象力",score:5},{text:"论述分析/评论文章,逻辑清晰",score:4},{text:"实用写作/报告,信息准确",score:3},{text:"能写但不太有把握",score:2},{text:"不太喜欢写作",score:1}]},
-    {id:302, text:"阅读外文资料时你的状态是？", skillMap:[{skill:"英语能力",w:0.7},{skill:"写作内容",w:0.3}], tag:"语言能力",
-      options:[{text:"能流畅阅读专业外文资料",score:5},{text:"借助词典能读懂大部分",score:4},{text:"能读简单的文章",score:3},{text:"阅读比较困难",score:2},{text:"基本不接触外文",score:1}]},
-    {id:303, text:"做研究或资料搜集时，你？", skillMap:[{skill:"逻辑分析",w:0.4},{skill:"数据分析",w:0.3},{skill:"写作内容",w:0.3}], tag:"研究能力",
-      options:[{text:"系统搜集、交叉验证、深度分析",score:5},{text:"能找到关键资料并提炼要点",score:4},{text:"搜索基本资料整合",score:3},{text:"需要别人指点方向",score:2},{text:"不太擅长做研究分析",score:1}]},
-    {id:304, text:"在文化交流或跨学科合作中，你？", skillMap:[{skill:"沟通表达",w:0.6},{skill:"创造性",w:0.4}], tag:"跨界能力",
-      options:[{text:"善于连接不同领域的思想和方法",score:5},{text:"愿意尝试理解其他领域视角",score:4},{text:"能配合但倾向于本职工作",score:3},{text:"不太适应跨领域合作",score:2},{text:"只想做自己擅长的事",score:1}]},
-    {id:305, text:"你的创意和灵感通常来源于？", skillMap:[{skill:"创造性",w:0.6},{skill:"设计创意",w:0.4}], tag:"创意思维",
-      options:[{text:"大量阅读和生活观察中自然涌现",score:5},{text:"主动寻找创意灵感和参考",score:4},{text:"偶尔有好的想法",score:3},{text:"需要别人给创意方向",score:2},{text:"不太注重创意",score:1}]},
-    {id:306, text:"做内容策划或传播方案时，你？", skillMap:[{skill:"市场营销",w:0.5},{skill:"运营管理",w:0.3},{skill:"写作内容",w:0.2}], tag:"内容运营",
-      options:[{text:"能策划有传播力的内容方案",score:5},{text:"能根据受众策划相关内容",score:4},{text:"能执行已有的内容方案",score:3},{text:"需要明确指导",score:2},{text:"不太擅长内容工作",score:1}]},
-    {id:307, text:"在辩论或课堂讨论中，你通常？", skillMap:[{skill:"沟通表达",w:0.6},{skill:"逻辑分析",w:0.4}], tag:"思辨能力",
-      options:[{text:"观点鲜明，善于用论据说服他人",score:5},{text:"能表达自己的观点和理由",score:4},{text:"只在熟悉话题时发言",score:3},{text:"不太主动参与讨论",score:2},{text:"尽量避免公开讨论",score:1}]},
-    {id:308, text:"你对历史文化类知识的兴趣？", skillMap:[{skill:"写作内容",w:0.5},{skill:"逻辑分析",w:0.5}], tag:"人文素养",
-      options:[{text:"非常热爱，有深入研究",score:5},{text:"感兴趣，有一定知识储备",score:4},{text:"了解基本常识",score:3},{text:"不太关注",score:2},{text:"完全不感兴趣",score:1}]},
-    {id:309, text:"处理人际关系和沟通时，你更倾向？", skillMap:[{skill:"沟通表达",w:0.5},{skill:"领导力",w:0.3},{skill:"运营管理",w:0.2}], tag:"人际风格",
-      options:[{text:"善于倾听共情，也能有效表达",score:5},{text:"待人友善，沟通顺畅",score:4},{text:"正常交流但不太主动社交",score:3},{text:"社交上比较内向",score:2},{text:"尽量避免人际沟通",score:1}]},
-    {id:310, text:"你对未来的职业期待是？", skillMap:[{skill:"产品策划",w:0.4},{skill:"项目管理",w:0.3},{skill:"财务金融",w:0.3}], tag:"职业规划",
-      options:[{text:"用创意和文字影响他人，做有意义的内容",score:5},{text:"稳定且有成长空间的职业",score:4},{text:"收入不错的职业即可",score:3},{text:"不太确定，走一步看一步",score:2},{text:"没想好",score:1}]},
-    {id:311, text:"翻译或转述复杂概念时你能做到？", skillMap:[{skill:"英语能力",w:0.5},{skill:"写作内容",w:0.3},{skill:"沟通表达",w:0.2}], tag:"语言转换",
-      options:[{text:"准确传达原意且通俗易懂",score:5},{text:"基本准确偶尔需要调整",score:4},{text:"能翻译大意但不够精准",score:3},{text:"比较吃力容易歪曲原意",score:2},{text:"尽量避免做翻译工作",score:1}]},
-    {id:312, text:"你对某个社会现象做深度分析时？", skillMap:[{skill:"逻辑分析",w:0.5},{skill:"写作内容",w:0.3},{skill:"沟通表达",w:0.2}], tag:"深度分析",
-      options:[{text:"从历史经济文化多维度剖析",score:5},{text:"找出核心原因和影响",score:4},{text:"描述现象和表面原因",score:3},{text:"引用别人观点",score:2},{text:"不太会分析",score:1}]},
-    {id:313, text:"策划一场文化活动或展览时你？", skillMap:[{skill:"项目管理",w:0.4},{skill:"创造性",w:0.3},{skill:"运营管理",w:0.3}], tag:"活动策划",
-      options:[{text:"有创意能统筹全局",score:5},{text:"能参与策划并执行具体任务",score:4},{text:"能做辅助性工作",score:3},{text:"不太会策划",score:2},{text:"完全不想做策划",score:1}]},
-    {id:314, text:"你对不同文化的包容和理解程度？", skillMap:[{skill:"沟通表达",w:0.4},{skill:"创造性",w:0.3},{skill:"写作内容",w:0.3}], tag:"文化理解",
-      options:[{text:"非常感兴趣愿意深入了解",score:5},{text:"尊重差异愿意学习",score:4},{text:"能包容但不太主动了解",score:3},{text:"比较难理解不同文化",score:2},{text:"倾向于自己熟悉的文化",score:1}]},
-    {id:315, text:"阅读长篇学术著作或专业书籍时你？", skillMap:[{skill:"逻辑分析",w:0.4},{skill:"写作内容",w:0.3},{skill:"英语能力",w:0.3}], tag:"学术阅读",
-      options:[{text:"能系统读完并做笔记整理",score:5},{text:"能读完大部分并理解核心观点",score:4},{text:"能读但容易分心",score:3},{text:"需要外力督促才能读完",score:2},{text:"很少读书",score:1}]},
-    {id:316, text:"做采访或调研访谈时你？", skillMap:[{skill:"沟通表达",w:0.6},{skill:"写作内容",w:0.4}], tag:"采访能力",
-      options:[{text:"善于提问能引导对话获取有效信息",score:5},{text:"能按提纲完成采访",score:4},{text:"基本能完成但不够深入",score:3},{text:"不太会提问",score:2},{text:"完全不想做采访",score:1}]},
-    {id:317, text:"你对影视、戏剧、文学作品的鉴赏能力？", skillMap:[{skill:"创造性",w:0.5},{skill:"写作内容",w:0.5}], tag:"鉴赏能力",
-      options:[{text:"能分析作品的艺术手法和深层含义",score:5},{text:"能欣赏并表达自己的感受",score:4},{text:"能区分好坏作品",score:3},{text:"看个热闹不求甚解",score:2},{text:"不太关注文艺作品",score:1}]},
-    {id:318, text:"编辑或校对文稿时你？", skillMap:[{skill:"写作内容",w:0.7},{skill:"逻辑分析",w:0.3}], tag:"编辑能力",
-      options:[{text:"能发现逻辑漏洞和表达问题并优化",score:5},{text:"能修正语法错误和标点",score:4},{text:"能发现明显错别字",score:3},{text:"不太擅长校对",score:2},{text:"没耐心做校对工作",score:1}]},
-    {id:319, text:"你对新媒体内容传播规律的了解？", skillMap:[{skill:"写作内容",w:0.4},{skill:"市场营销",w:0.3},{skill:"运营管理",w:0.3}], tag:"新媒体认知",
-      options:[{text:"熟悉各平台算法和运营策略",score:5},{text:"了解基本传播规律和玩法",score:4},{text:"作为普通用户使用",score:3},{text:"不太关注",score:2},{text:"完全不了解",score:1}]},
-    {id:320, text:"用文字说服他人时你更擅长哪种方式？", skillMap:[{skill:"写作内容",w:0.5},{skill:"沟通表达",w:0.3},{skill:"逻辑分析",w:0.2}], tag:"说服技巧",
-      options:[{text:"逻辑论证用事实和数据说话",score:5},{text:"情感共鸣用故事打动",score:4},{text:"权威引用引用专家观点",score:3},{text:"利益分析晓以利害",score:2},{text:"不太会说服人",score:1}]}
-  ],
-  "法政":[
-    {id:401, text:"你如何看待规则和制度？", skillMap:[{skill:"逻辑分析",w:0.7},{skill:"写作内容",w:0.3}], tag:"规则意识",
-      options:[{text:"善于解读和运用规则",score:5},{text:"尊重规则，按规则办事",score:4},{text:"理解规则背后的逻辑",score:3},{text:"觉得规则太束缚",score:2},{text:"不太关注规则",score:1}]},
-    {id:402, text:"做重要决定时，你更看重？", skillMap:[{skill:"逻辑分析",w:0.5},{skill:"领导力",w:0.5}], tag:"决策风格",
-      options:[{text:"程序和依据的合法性",score:5},{text:"结果和实际影响",score:4},{text:"团队和大多数人意见",score:3},{text:"直觉和感受",score:2},{text:"听从权威安排",score:1}]},
-    {id:403, text:"写法律文书或正式报告时，你？", skillMap:[{skill:"写作内容",w:0.7},{skill:"逻辑分析",w:0.3}], tag:"文书能力",
-      options:[{text:"结构严谨、用词精准、逻辑严密",score:5},{text:"条理清晰、内容完整",score:4},{text:"能完成基本要求的文书",score:3},{text:"不太擅长正式写作",score:2},{text:"尽量避免写正式文件",score:1}]},
-    {id:404, text:"面对复杂的公共议题时，你习惯？", skillMap:[{skill:"逻辑分析",w:0.4},{skill:"沟通表达",w:0.3},{skill:"写作内容",w:0.3}], tag:"公共思维",
-      options:[{text:"从多角度全面分析各方立场",score:5},{text:"形成自己的明确观点",score:4},{text:"了解基本事实和主流观点",score:3},{text:"不太关注公共议题",score:2},{text:"觉得跟自己无关",score:1}]},
-    {id:405, text:"分析一条法律法规对社会的影响时你？", skillMap:[{skill:"逻辑分析",w:0.6},{skill:"写作内容",w:0.4}], tag:"法规分析",
-      options:[{text:"从立法目的和社会效果多角度分析",score:5},{text:"分析直接的法律效果",score:4},{text:"描述法规的基本内容",score:3},{text:"引用别人解读",score:2},{text:"不太会分析",score:1}]},
-    {id:406, text:"做庭审模拟或辩论赛时你的表现？", skillMap:[{skill:"沟通表达",w:0.6},{skill:"逻辑分析",w:0.4}], tag:"法庭辩论",
-      options:[{text:"思路清晰反应敏捷善于反驳",score:5},{text:"能准备充分按逻辑陈述",score:4},{text:"基本能表达观点",score:3},{text:"比较紧张发挥不佳",score:2},{text:"尽量回避这种场合",score:1}]},
-    {id:407, text:"你对社会公平正义的看法是？", skillMap:[{skill:"逻辑分析",w:0.4},{skill:"沟通表达",w:0.3},{skill:"写作内容",w:0.3}], tag:"价值观",
-      options:[{text:"有强烈追求愿意为此努力",score:5},{text:"关注社会问题理性看待",score:4},{text:"有基本的是非观念",score:3},{text:"关注但觉得无能为力",score:2},{text:"不太关注社会议题",score:1}]},
-    {id:408, text:"处理大量文本法规资料时你？", skillMap:[{skill:"写作内容",w:0.5},{skill:"逻辑分析",w:0.5}], tag:"资料处理",
-      options:[{text:"能快速筛选关键信息归纳要点",score:5},{text:"能耐心阅读整理",score:4},{text:"需要较长时间消化",score:3},{text:"容易感到枯燥",score:2},{text:"完全不想读大量文本",score:1}]},
-    {id:409, text:"在协调多方利益冲突时你？", skillMap:[{skill:"沟通表达",w:0.5},{skill:"领导力",w:0.3},{skill:"逻辑分析",w:0.2}], tag:"协调能力",
-      options:[{text:"能找到各方利益平衡点推动解决",score:5},{text:"能倾听各方诉求寻求共识",score:4},{text:"按规则和程序处理",score:3},{text:"偏向某一方",score:2},{text:"回避冲突",score:1}]},
-    {id:410, text:"你对政府/公共政策的理解程度？", skillMap:[{skill:"逻辑分析",w:0.5},{skill:"写作内容",w:0.3},{skill:"沟通表达",w:0.2}], tag:"政策理解",
-      options:[{text:"能分析政策背景目标和影响",score:5},{text:"了解主要政策和实施效果",score:4},{text:"知道基本政策框架",score:3},{text:"不太关注",score:2},{text:"完全不关心",score:1}]},
-    {id:411, text:"做案例研究时你倾向哪种方法？", skillMap:[{skill:"逻辑分析",w:0.5},{skill:"数据分析",w:0.3},{skill:"写作内容",w:0.2}], tag:"研究方法",
-      options:[{text:"比较分析法对比不同案例异同",score:5},{text:"案例深描法详细分析单个案例",score:4},{text:"实证研究法用数据验证",score:3},{text:"理论推演法从理论出发",score:2},{text:"凭感觉判断",score:1}]},
-    {id:412, text:"你对宪法和基本法律体系的了解？", skillMap:[{skill:"逻辑分析",w:0.5},{skill:"写作内容",w:0.5}], tag:"法律素养",
-      options:[{text:"有系统学习了解基本原则和框架",score:5},{text:"知道主要法律部门",score:4},{text:"了解一些常识性法律知识",score:3},{text:"不太了解",score:2},{text:"完全不了解",score:1}]},
-    {id:413, text:"在证据收集和事实核查方面你？", skillMap:[{skill:"逻辑分析",w:0.6},{skill:"数据分析",w:0.4}], tag:"证据意识",
-      options:[{text:"细致严谨能发现关键证据",score:5},{text:"能按照流程收集整理",score:4},{text:"基本能做到不遗漏",score:3},{text:"比较粗心容易遗漏",score:2},{text:"不太在意证据",score:1}]},
-    {id:414, text:"谈判中对方情绪激动时你通常会？", skillMap:[{skill:"沟通表达",w:0.5},{skill:"领导力",w:0.3},{skill:"逻辑分析",w:0.2}], tag:"情绪管理",
-      options:[{text:"保持冷静引导对方理性沟通",score:5},{text:"先安抚情绪再继续谈判",score:4},{text:"会受影响但尽力维持专业",score:3},{text:"也会变得激动",score:2},{text:"直接回避或中止谈判",score:1}]},
-    {id:415, text:"你对知识产权保护的理解？", skillMap:[{skill:"逻辑分析",w:0.4},{skill:"写作内容",w:0.3},{skill:"创造性",w:0.3}], tag:"知识产权",
-      options:[{text:"了解专利商标著作权等基本制度",score:5},{text:"知道知识产权的重要性",score:4},{text:"有基本概念",score:3},{text:"不太了解",score:2},{text:"完全不关心",score:1}]},
-    {id:416, text:"写法律意见书或正式函件时你？", skillMap:[{skill:"写作内容",w:0.6},{skill:"逻辑分析",w:0.4}], tag:"法律写作",
-      options:[{text:"格式规范论证严密结论明确",score:5},{text:"结构完整语言正式",score:4},{text:"能写但不够严谨",score:3},{text:"不太会写正式法律文书",score:2},{text:"尽量避免",score:1}]},
-    {id:417, text:"你对国际法和国际关系的兴趣？", skillMap:[{skill:"逻辑分析",w:0.4},{skill:"英语能力",w:0.3},{skill:"沟通表达",w:0.3}], tag:"国际视野",
-      options:[{text:"非常感兴趣关注国际动态",score:5},{text:"有一定了解",score:4},{text:"知道一些重大国际事件",score:3},{text:"不太关注",score:2},{text:"完全不感兴趣",score:1}]},
-    {id:418, text:"面对道德困境时你通常如何决策？", skillMap:[{skill:"逻辑分析",w:0.6},{skill:"领导力",w:0.4}], tag:"伦理判断",
-      options:[{text:"依据原则和后果综合分析",score:5},{text:"遵循法律法规和职业道德",score:4},{text:"凭良心和直觉判断",score:3},{text:"参考他人意见",score:2},{text:"回避做出决定",score:1}]},
-    {id:419, text:"你对基层治理和社区服务的了解？", skillMap:[{skill:"运营管理",w:0.5},{skill:"沟通表达",w:0.3},{skill:"逻辑分析",w:0.2}], tag:"基层治理",
-      options:[{text:"了解基层治理体系和运作方式",score:5},{text:"知道基本概念",score:4},{text:"有模糊认知",score:3},{text:"不太了解",score:2},{text:"完全不了解",score:1}]},
-    {id:420, text:"搜集法律或政策文献时你常用的方法是？", skillMap:[{skill:"逻辑分析",w:0.4},{skill:"数据分析",w:0.3},{skill:"写作内容",w:0.3}], tag:"文献检索",
-      options:[{text:"熟练使用专业数据库精准检索",score:5},{text:"能用搜索引擎找到官方文件",score:4},{text:"知道去哪里找但效率不高",score:3},{text:"不太会检索",score:2},{text:"让别人帮忙找",score:1}]}
-  ],
-  "教育":[
-    {id:501, text:"在帮助他人学习或成长时，你？", skillMap:[{skill:"沟通表达",w:0.6},{skill:"领导力",w:0.4}], tag:"教育能力",
-      options:[{text:"耐心细致，擅长用比喻和案例讲解",score:5},{text:"能清晰表达，讲解有条理",score:4},{text:"能完成基本的教学任务",score:3},{text:"不太擅长教别人",score:2},{text:"完全没有耐心教人",score:1}]},
-    {id:502, text:"组织和策划集体活动时，你？", skillMap:[{skill:"项目管理",w:0.5},{skill:"运营管理",w:0.5}], tag:"组织能力",
-      options:[{text:"善于策划组织，全程把控",score:5},{text:"能协助组织和执行",score:4},{text:"能完成分配的任务",score:3},{text:"不太参与组织工作",score:2},{text:"尽量避开组织任务",score:1}]},
-    {id:503, text:"你如何看待教育行业的价值？", skillMap:[{skill:"写作内容",w:0.5},{skill:"沟通表达",w:0.5}], tag:"教育理念",
-      options:[{text:"教育是最有意义的事业之一",score:5},{text:"是重要的社会价值",score:4},{text:"一份稳定的职业选择",score:3},{text:"工作稳定但收入一般",score:2},{text:"对教育行业不感兴趣",score:1}]},
-    {id:504, text:"设计一堂课时你更注重哪个环节？", skillMap:[{skill:"产品策划",w:0.4},{skill:"沟通表达",w:0.3},{skill:"写作内容",w:0.3}], tag:"课程设计",
-      options:[{text:"教学目标的设定和评估方式",score:5},{text:"教学内容的逻辑和深度",score:4},{text:"互动环节和学生参与度",score:3},{text:"板书和课件的视觉效果",score:2},{text:"按教材讲就行",score:1}]},
-    {id:505, text:"面对一个学习困难的学生你通常会？", skillMap:[{skill:"沟通表达",w:0.6},{skill:"领导力",w:0.4}], tag:"因材施教",
-      options:[{text:"耐心分析原因制定个性化辅导方案",score:5},{text:"课后单独辅导帮助跟上进度",score:4},{text:"课堂上多关注和提问",score:3},{text:"建议家长找补习班",score:2},{text:"无能为力",score:1}]},
-    {id:506, text:"你对教育科技和教育信息化的兴趣？", skillMap:[{skill:"编程开发",w:0.3},{skill:"设计创意",w:0.3},{skill:"运营管理",w:0.4}], tag:"教育科技",
-      options:[{text:"非常关注新技术在教育中的应用",score:5},{text:"愿意尝试新的教学工具",score:4},{text:"基本能用多媒体教学",score:3},{text:"不太会用科技工具",score:2},{text:"更喜欢传统教学方式",score:1}]},
-    {id:507, text:"做家长沟通工作时你通常？", skillMap:[{skill:"沟通表达",w:0.6},{skill:"领导力",w:0.4}], tag:"家校沟通",
-      options:[{text:"主动定期沟通建立良好合作关系",score:5},{text:"有问题时及时联系家长",score:4},{text:"按学校要求完成家长会等",score:3},{text:"尽量少联系家长",score:2},{text:"不太会跟家长沟通",score:1}]},
-    {id:508, text:"你对教育心理学和学生心理的了解？", skillMap:[{skill:"写作内容",w:0.4},{skill:"沟通表达",w:0.3},{skill:"逻辑分析",w:0.3}], tag:"教育心理",
-      options:[{text:"系统学过能运用在学生工作中",score:5},{text:"了解基本概念和方法",score:4},{text:"知道一些常识",score:3},{text:"不太了解",score:2},{text:"完全不感兴趣",score:1}]},
-    {id:509, text:"组织班级活动或课外实践时你？", skillMap:[{skill:"项目管理",w:0.5},{skill:"运营管理",w:0.5}], tag:"活动组织",
-      options:[{text:"策划周全执行有序学生参与度高",score:5},{text:"能按要求完成活动组织",score:4},{text:"基本能保证活动顺利进行",score:3},{text:"感到吃力",score:2},{text:"尽量不做组织者",score:1}]},
-    {id:510, text:"你对教学反思和自我提升的态度？", skillMap:[{skill:"逻辑分析",w:0.4},{skill:"写作内容",w:0.3},{skill:"沟通表达",w:0.3}], tag:"专业发展",
-      options:[{text:"经常反思并主动学习提升",score:5},{text:"会做阶段性总结",score:4},{text:"有反思但不系统",score:3},{text:"很少反思",score:2},{text:"觉得没有必要",score:1}]},
-    {id:511, text:"在课堂上处理突发事件时你？", skillMap:[{skill:"领导力",w:0.5},{skill:"沟通表达",w:0.5}], tag:"课堂管理",
-      options:[{text:"冷静果断妥善处理不影响教学",score:5},{text:"能快速控制局面",score:4},{text:"按校规处理",score:3},{text:"会慌张需要支援",score:2},{text:"难以应对",score:1}]},
-    {id:512, text:"你对特殊教育或融合教育的了解？", skillMap:[{skill:"沟通表达",w:0.4},{skill:"写作内容",w:0.3},{skill:"逻辑分析",w:0.3}], tag:"特殊教育",
-      options:[{text:"有关注和了解愿意参与",score:5},{text:"了解基本理念",score:4},{text:"知道概念但不了解",score:3},{text:"不太关注",score:2},{text:"完全没有了解",score:1}]},
-    {id:513, text:"教研活动中你通常扮演什么角色？", skillMap:[{skill:"沟通表达",w:0.4},{skill:"领导力",w:0.3},{skill:"项目管理",w:0.3}], tag:"教研角色",
-      options:[{text:"主动分享经验引领讨论",score:5},{text:"积极参与发表观点",score:4},{text:"认真听讲做好笔记",score:3},{text:"被动参与很少发言",score:2},{text:"不太喜欢教研活动",score:1}]},
-    {id:514, text:"你对跨学科教学或STEAM教育的看法？", skillMap:[{skill:"创造性",w:0.4},{skill:"产品策划",w:0.3},{skill:"逻辑分析",w:0.3}], tag:"跨学科",
-      options:[{text:"非常认同愿意实践探索",score:5},{text:"有兴趣了解和学习",score:4},{text:"认可理念但实践有难度",score:3},{text:"不太了解",score:2},{text:"觉得传统分科更好",score:1}]},
-    {id:515, text:"评估学生的学习效果时你更看重？", skillMap:[{skill:"数据分析",w:0.4},{skill:"逻辑分析",w:0.3},{skill:"产品策划",w:0.3}], tag:"教学评估",
-      options:[{text:"综合运用多种评价方式",score:5},{text:"考试成绩和平时表现结合",score:4},{text:"主要看考试成绩",score:3},{text:"看作业完成情况",score:2},{text:"凭印象评价",score:1}]},
-    {id:516, text:"你的耐心和情绪控制能力如何？", skillMap:[{skill:"沟通表达",w:0.5},{skill:"领导力",w:0.5}], tag:"情绪管理",
-      options:[{text:"非常有耐心情绪稳定",score:5},{text:"大多数时候能保持耐心",score:4},{text:"偶尔会不耐烦",score:3},{text:"容易烦躁",score:2},{text:"耐心很差",score:1}]},
-    {id:517, text:"你对职业教育或生涯规划的了解？", skillMap:[{skill:"产品策划",w:0.4},{skill:"沟通表达",w:0.3},{skill:"逻辑分析",w:0.3}], tag:"生涯教育",
-      options:[{text:"有关注了解能给学生指导",score:5},{text:"知道基本概念",score:4},{text:"有一定了解但不深入",score:3},{text:"不太了解",score:2},{text:"完全不关心",score:1}]},
-    {id:518, text:"设计互动式教学活动时你？", skillMap:[{skill:"产品策划",w:0.4},{skill:"创造性",w:0.3},{skill:"沟通表达",w:0.3}], tag:"教学设计",
-      options:[{text:"善于设计多样化的互动环节",score:5},{text:"能设计基本的课堂活动",score:4},{text:"能执行已有的活动方案",score:3},{text:"不太有创意",score:2},{text:"喜欢传统讲授方式",score:1}]},
-    {id:519, text:"你对多元化评价体系的看法？", skillMap:[{skill:"逻辑分析",w:0.4},{skill:"数据分析",w:0.3},{skill:"写作内容",w:0.3}], tag:"评价理念",
-      options:[{text:"非常认同过程性评价和多元评价",score:5},{text:"理解理念但实践有难度",score:4},{text:"认为考试还是最主要方式",score:3},{text:"不太了解",score:2},{text:"觉得没必要太复杂",score:1}]},
-    {id:520, text:"写教育研究论文或教学总结时你？", skillMap:[{skill:"写作内容",w:0.6},{skill:"逻辑分析",w:0.4}], tag:"教育写作",
-      options:[{text:"思路清晰善于提炼和总结",score:5},{text:"能按要求完成写作",score:4},{text:"基本能表达清楚",score:3},{text:"不太会写",score:2},{text:"尽量让别人写",score:1}]}
-  ],
-  "医学":[
-    {id:601, text:"面对一位病情复杂的患者你更倾向于？", skillMap:[{skill:"逻辑分析",w:0.6},{skill:"数据分析",w:0.4}], tag:"临床思维",
-      options:[{text:"系统收集信息鉴别诊断",score:5},{text:"按照标准流程逐步排查",score:4},{text:"先做常规检查再看结果",score:3},{text:"请教上级医生",score:2},{text:"直接转诊",score:1}]},
-    {id:602, text:"你在团队医疗工作中的角色更接近？", skillMap:[{skill:"沟通表达",w:0.4},{skill:"领导力",w:0.3},{skill:"项目管理",w:0.3}], tag:"团队协作",
-      options:[{text:"主动协调统筹治疗方案",score:5},{text:"专注执行自己的专业部分",score:4},{text:"积极配合团队安排",score:3},{text:"按指令行事",score:2},{text:"独立工作不太配合",score:1}]},
-    {id:603, text:"面对病人家属的质疑或情绪时你？", skillMap:[{skill:"沟通表达",w:0.6},{skill:"领导力",w:0.4}], tag:"医患沟通",
-      options:[{text:"耐心倾听用通俗语言解释病情",score:5},{text:"专业客观说明医疗方案",score:4},{text:"按规定流程告知",score:3},{text:"尽量回避正面沟通",score:2},{text:"直接让上级处理",score:1}]},
-    {id:604, text:"你对医学研究的兴趣如何？", skillMap:[{skill:"数据分析",w:0.5},{skill:"写作内容",w:0.3},{skill:"英语能力",w:0.2}], tag:"科研兴趣",
-      options:[{text:"非常愿意参与临床研究发表论文",score:5},{text:"有兴趣了解前沿进展",score:4},{text:"能配合完成数据收集",score:3},{text:"不太感兴趣",score:2},{text:"完全不想做研究",score:1}]},
-    {id:605, text:"面对紧急抢救情况时你的状态是？", skillMap:[{skill:"逻辑分析",w:0.5},{skill:"领导力",w:0.3},{skill:"运营管理",w:0.2}], tag:"应急能力",
-      options:[{text:"冷静果断快速判断和处理",score:5},{text:"能配合团队完成抢救",score:4},{text:"按训练流程操作",score:3},{text:"会紧张但能坚持",score:2},{text:"容易慌乱",score:1}]},
-    {id:606, text:"你对人体解剖和生理机制的了解程度？", skillMap:[{skill:"逻辑分析",w:0.5},{skill:"写作内容",w:0.3},{skill:"工程技术",w:0.2}], tag:"基础知识",
-      options:[{text:"系统掌握并能灵活运用",score:5},{text:"掌握核心知识",score:4},{text:"基本了解",score:3},{text:"学过但已生疏",score:2},{text:"了解有限",score:1}]},
-    {id:607, text:"长期在高压力医疗环境下工作你觉得自己？", skillMap:[{skill:"运营管理",w:0.4},{skill:"沟通表达",w:0.3},{skill:"逻辑分析",w:0.3}], tag:"抗压能力",
-      options:[{text:"适应能力强能保持专业状态",score:5},{text:"需要一定时间适应",score:4},{text:"能坚持但需要调节",score:3},{text:"压力会明显影响表现",score:2},{text:"不适合高压环境",score:1}]},
-    {id:608, text:"你对公共卫生和预防医学的了解？", skillMap:[{skill:"数据分析",w:0.4},{skill:"逻辑分析",w:0.3},{skill:"运营管理",w:0.3}], tag:"公卫意识",
-      options:[{text:"了解群体健康和预防策略",score:5},{text:"知道基本概念和重要性",score:4},{text:"有模糊认识",score:3},{text:"不太了解",score:2},{text:"完全不关心",score:1}]},
-    {id:609, text:"记录病历或医疗文书时你？", skillMap:[{skill:"写作内容",w:0.6},{skill:"逻辑分析",w:0.4}], tag:"病历书写",
-      options:[{text:"规范详实逻辑清晰",score:5},{text:"内容完整符合要求",score:4},{text:"基本能完成",score:3},{text:"不够规范",score:2},{text:"尽量简洁",score:1}]},
-    {id:610, text:"你对中医药或替代医学的看法？", skillMap:[{skill:"写作内容",w:0.4},{skill:"沟通表达",w:0.3},{skill:"逻辑分析",w:0.3}], tag:"医学视野",
-      options:[{text:"重视并有一定了解",score:5},{text:"持开放态度愿意了解",score:4},{text:"持保留态度",score:3},{text:"不太相信",score:2},{text:"完全不认可",score:1}]},
-    {id:611, text:"学习新的医疗技术或操作时你？", skillMap:[{skill:"编程开发",w:0.2},{skill:"工程技术",w:0.4},{skill:"逻辑分析",w:0.4}], tag:"技术学习",
-      options:[{text:"主动学习能快速掌握",score:5},{text:"按培训流程认真学",score:4},{text:"需要多次练习",score:3},{text:"学得比较慢",score:2},{text:"有畏难情绪",score:1}]},
-    {id:612, text:"你对医疗伦理和患者隐私保护的重视程度？", skillMap:[{skill:"逻辑分析",w:0.5},{skill:"沟通表达",w:0.5}], tag:"医疗伦理",
-      options:[{text:"非常重视有深刻理解",score:5},{text:"知道基本原则",score:4},{text:"有基本概念",score:3},{text:"不太了解",score:2},{text:"不太关注",score:1}]},
-    {id:613, text:"在医疗资源有限的情况下做决策时你？", skillMap:[{skill:"逻辑分析",w:0.5},{skill:"领导力",w:0.3},{skill:"运营管理",w:0.2}], tag:"资源分配",
-      options:[{text:"依据临床指南和伦理原则合理分配",score:5},{text:"优先保障重症患者",score:4},{text:"按先来后到处理",score:3},{text:"听从上级安排",score:2},{text:"感到难以抉择",score:1}]},
-    {id:614, text:"你对社区医疗和基层医疗的看法？", skillMap:[{skill:"沟通表达",w:0.4},{skill:"运营管理",w:0.3},{skill:"逻辑分析",w:0.3}], tag:"基层医疗",
-      options:[{text:"重视且愿意从事基层工作",score:5},{text:"认可其价值但更倾向专科",score:4},{text:"可以考虑但不首选",score:3},{text:"不太想去基层",score:2},{text:"觉得基层发展有限",score:1}]},
-    {id:615, text:"处理医疗数据或统计报表时你？", skillMap:[{skill:"数据分析",w:0.6},{skill:"数学统计",w:0.4}], tag:"数据处理",
-      options:[{text:"熟练运用统计工具分析数据",score:5},{text:"能做基本的数据整理",score:4},{text:"能完成规定的报表",score:3},{text:"不太擅长数据处理",score:2},{text:"尽量让别人做",score:1}]},
-    {id:616, text:"你对跨学科医疗合作（如MDT）的态度？", skillMap:[{skill:"沟通表达",w:0.5},{skill:"领导力",w:0.3},{skill:"产品策划",w:0.2}], tag:"MDT协作",
-      options:[{text:"积极推动多学科协作诊疗",score:5},{text:"愿意参与合作讨论",score:4},{text:"能配合多学科团队",score:3},{text:"觉得流程繁琐",score:2},{text:"更喜欢独立工作",score:1}]},
-    {id:617, text:"在医学考试或竞赛中你的表现通常是？", skillMap:[{skill:"逻辑分析",w:0.4},{skill:"数据分析",w:0.3},{skill:"写作内容",w:0.3}], tag:"应试能力",
-      options:[{text:"成绩优秀善于理论联系实际",score:5},{text:"能取得不错成绩",score:4},{text:"中等水平",score:3},{text:"比较吃力",score:2},{text:"不擅长考试",score:1}]},
-    {id:618, text:"你对数字医疗和远程医疗发展的态度？", skillMap:[{skill:"编程开发",w:0.3},{skill:"运营管理",w:0.3},{skill:"设计创意",w:0.4}], tag:"数字医疗",
-      options:[{text:"非常关注愿意尝试和应用",score:5},{text:"认可发展趋势",score:4},{text:"有一定了解",score:3},{text:"不太关注",score:2},{text:"更相信传统诊疗方式",score:1}]},
-    {id:619, text:"面对不确定的诊断时你通常会？", skillMap:[{skill:"逻辑分析",w:0.6},{skill:"数据分析",w:0.4}], tag:"诊断决策",
-      options:[{text:"扩大检查范围排除危重疾病",score:5},{text:"随访观察定期复查",score:4},{text:"请会诊讨论",score:3},{text:"按经验用药",score:2},{text:"暂时不管",score:1}]},
-    {id:620, text:"你对医疗行业工作强度和职业风险的认知？", skillMap:[{skill:"运营管理",w:0.5},{skill:"沟通表达",w:0.3},{skill:"逻辑分析",w:0.2}], tag:"职业认知",
-      options:[{text:"充分了解且有心理准备",score:5},{text:"了解但有些担忧",score:4},{text:"知道但不完全清楚",score:3},{text:"不太了解",score:2},{text:"没有想过",score:1}]}
-  ],
-  "农学":[
-    {id:701, text:"在实验室做实验时你更倾向于？", skillMap:[{skill:"工程技术",w:0.6},{skill:"逻辑分析",w:0.4}], tag:"实验操作",
-      options:[{text:"操作规范注重细节和数据记录",score:5},{text:"按标准流程完成实验",score:4},{text:"能完成基本操作",score:3},{text:"容易出操作失误",score:2},{text:"不喜欢做实验",score:1}]},
-    {id:702, text:"你对生态环境保护的态度是？", skillMap:[{skill:"逻辑分析",w:0.5},{skill:"沟通表达",w:0.3},{skill:"写作内容",w:0.2}], tag:"环保意识",
-      options:[{text:"非常关注愿意投身环保事业",score:5},{text:"有环保意识并在生活中践行",score:4},{text:"关注但不主动参与",score:3},{text:"觉得与自己关系不大",score:2},{text:"经济发展更重要",score:1}]},
-    {id:703, text:"长期在野外或田间工作你能否接受？", skillMap:[{skill:"运营管理",w:0.5},{skill:"工程技术",w:0.3},{skill:"沟通表达",w:0.2}], tag:"野外适应",
-      options:[{text:"非常喜欢户外工作环境",score:5},{text:"可以接受",score:4},{text:"视天气和条件而定",score:3},{text:"不太能接受",score:2},{text:"完全不能接受",score:1}]},
-    {id:704, text:"你对植物/动物生长发育规律的了解？", skillMap:[{skill:"逻辑分析",w:0.5},{skill:"写作内容",w:0.3},{skill:"数据分析",w:0.2}], tag:"生物知识",
-      options:[{text:"系统学过有深入理解",score:5},{text:"有较好的基础知识",score:4},{text:"了解基本概念",score:3},{text:"不太了解",score:2},{text:"基本不了解",score:1}]},
-    {id:705, text:"解决农业生产中的实际问题时你？", skillMap:[{skill:"逻辑分析",w:0.5},{skill:"项目管理",w:0.3},{skill:"工程技术",w:0.2}], tag:"问题解决",
-      options:[{text:"深入田间调查结合科学方法解决",score:5},{text:"请教专家或查阅资料",score:4},{text:"按经验方法处理",score:3},{text:"上报等待指示",score:2},{text:"回避问题",score:1}]},
-    {id:706, text:"你对食品安全和农产品质量控制的了解？", skillMap:[{skill:"数据分析",w:0.4},{skill:"运营管理",w:0.3},{skill:"逻辑分析",w:0.3}], tag:"食品安全",
-      options:[{text:"了解标准体系和检测方法",score:5},{text:"知道基本要求和流程",score:4},{text:"有基本概念",score:3},{text:"不太了解",score:2},{text:"完全不关心",score:1}]},
-    {id:707, text:"你对农业政策和乡村振兴的了解？", skillMap:[{skill:"写作内容",w:0.4},{skill:"沟通表达",w:0.3},{skill:"逻辑分析",w:0.3}], tag:"农业政策",
-      options:[{text:"关注并了解最新政策",score:5},{text:"知道主要政策方向",score:4},{text:"了解一些基本信息",score:3},{text:"不太关注",score:2},{text:"完全不关心",score:1}]},
-    {id:708, text:"做田间试验或数据采集时你？", skillMap:[{skill:"数据分析",w:0.5},{skill:"项目管理",w:0.3},{skill:"逻辑分析",w:0.2}], tag:"试验设计",
-      options:[{text:"精心设计方案严格采集数据",score:5},{text:"按标准方案执行",score:4},{text:"能完成基本采集",score:3},{text:"比较粗心容易遗漏",score:2},{text:"不想做数据工作",score:1}]},
-    {id:709, text:"你对生物技术（基因工程/分子育种）的了解？", skillMap:[{skill:"编程开发",w:0.2},{skill:"逻辑分析",w:0.4},{skill:"写作内容",w:0.4}], tag:"生物技术",
-      options:[{text:"有系统了解关注前沿进展",score:5},{text:"了解基本概念和方法",score:4},{text:"知道一些名词",score:3},{text:"不太了解",score:2},{text:"完全不感兴趣",score:1}]},
-    {id:710, text:"与农民或基层农技人员沟通时你？", skillMap:[{skill:"沟通表达",w:0.6},{skill:"领导力",w:0.4}], tag:"农技推广",
-      options:[{text:"善于用通俗语言传授技术",score:5},{text:"能耐心解答问题",score:4},{text:"基本沟通没问题",score:3},{text:"不太会跟基层打交道",score:2},{text:"不愿意做推广工作",score:1}]},
-    {id:711, text:"你对农业大数据和智慧农业的看法？", skillMap:[{skill:"数据分析",w:0.5},{skill:"编程开发",w:0.3},{skill:"运营管理",w:0.2}], tag:"智慧农业",
-      options:[{text:"非常关注愿意推动技术应用",score:5},{text:"了解发展趋势",score:4},{text:"知道概念",score:3},{text:"不太了解",score:2},{text:"农业不需要高科技",score:1}]},
-    {id:712, text:"管理一个种植/养殖项目时你更看重？", skillMap:[{skill:"项目管理",w:0.5},{skill:"运营管理",w:0.5}], tag:"项目管理",
-      options:[{text:"全程把控科学管理确保产出",score:5},{text:"保证生产计划和目标",score:4},{text:"按传统方法管理",score:3},{text:"看情况而定",score:2},{text:"比较随意",score:1}]},
-    {id:713, text:"你对农业可持续发展理念的理解？", skillMap:[{skill:"逻辑分析",w:0.4},{skill:"写作内容",w:0.3},{skill:"沟通表达",w:0.3}], tag:"可持续农业",
-      options:[{text:"有深入理解并认同",score:5},{text:"了解基本理念",score:4},{text:"听说过概念",score:3},{text:"不太了解",score:2},{text:"不认同",score:1}]},
-    {id:714, text:"处理农产品的市场营销时你？", skillMap:[{skill:"市场营销",w:0.5},{skill:"数据分析",w:0.3},{skill:"沟通表达",w:0.2}], tag:"农产品营销",
-      options:[{text:"有营销思路了解品牌渠道建设",score:5},{text:"了解基本销售方式",score:4},{text:"知道一些销售渠道",score:3},{text:"不太了解",score:2},{text:"不感兴趣",score:1}]},
-    {id:715, text:"你对农业机械化和自动化设备的了解？", skillMap:[{skill:"工程技术",w:0.7},{skill:"编程开发",w:0.3}], tag:"农业机械",
-      options:[{text:"熟悉常用设备能操作维护",score:5},{text:"了解基本原理和使用",score:4},{text:"会基本操作",score:3},{text:"不太会用",score:2},{text:"不感兴趣",score:1}]},
-    {id:716, text:"做动植物病虫害防治决策时你？", skillMap:[{skill:"逻辑分析",w:0.5},{skill:"数据分析",w:0.3},{skill:"运营管理",w:0.2}], tag:"病虫害防治",
-      options:[{text:"综合运用生物化学物理方法",score:5},{text:"按标准防治方案执行",score:4},{text:"发现后再处理",score:3},{text:"凭经验用药",score:2},{text:"不太懂",score:1}]},
-    {id:717, text:"你对农业创业或产业化的看法？", skillMap:[{skill:"产品策划",w:0.4},{skill:"财务金融",w:0.3},{skill:"市场营销",w:0.3}], tag:"农业创业",
-      options:[{text:"有兴趣愿意尝试",score:5},{text:"看好前景但还没有具体计划",score:4},{text:"可以考虑",score:3},{text:"不太想涉足",score:2},{text:"完全不感兴趣",score:1}]},
-    {id:718, text:"撰写农业项目报告或科研论文时你？", skillMap:[{skill:"写作内容",w:0.6},{skill:"数据分析",w:0.4}], tag:"写作能力",
-      options:[{text:"数据分析深入结论有见地",score:5},{text:"内容完整结构清晰",score:4},{text:"基本能写完",score:3},{text:"不太会写",score:2},{text:"尽量避免",score:1}]},
-    {id:719, text:"你对农药化肥的科学使用和管理了解？", skillMap:[{skill:"逻辑分析",w:0.4},{skill:"运营管理",w:0.3},{skill:"写作内容",w:0.3}], tag:"投入品管理",
-      options:[{text:"了解科学使用方法和环境影响",score:5},{text:"知道安全使用规范",score:4},{text:"了解基本知识",score:3},{text:"不太了解",score:2},{text:"不关心",score:1}]},
-    {id:720, text:"在农业领域你更倾向于哪种工作方向？", skillMap:[{skill:"产品策划",w:0.4},{skill:"项目管理",w:0.3},{skill:"沟通表达",w:0.3}], tag:"职业方向",
-      options:[{text:"技术研发和科研创新",score:5},{text:"技术推广和社会服务",score:4},{text:"生产经营和管理",score:3},{text:"政策研究和规划",score:2},{text:"还不确定",score:1}]}
-  ],
-  "艺术":[
-    {id:801, text:"创作一件作品时你通常从哪里获得灵感？", skillMap:[{skill:"创造性",w:0.6},{skill:"设计创意",w:0.4}], tag:"创意来源",
-      options:[{text:"日常生活和情感体验中自然涌现",score:5},{text:"从其他艺术作品中汲取灵感",score:4},{text:"通过大量素材收集和调研",score:3},{text:"根据要求命题创作",score:2},{text:"需要等待灵感降临",score:1}]},
-    {id:802, text:"你对色彩/构图/排版等视觉元素的敏感度？", skillMap:[{skill:"设计创意",w:0.7},{skill:"创造性",w:0.3}], tag:"审美敏感",
-      options:[{text:"非常敏感有自己独特审美",score:5},{text:"能分辨好坏并说出理由",score:4},{text:"有基本判断力",score:3},{text:"不太敏感",score:2},{text:"完全不敏感",score:1}]},
-    {id:803, text:"学习新的设计工具或创作软件时你？", skillMap:[{skill:"设计创意",w:0.5},{skill:"编程开发",w:0.3},{skill:"工程技术",w:0.2}], tag:"工具掌握",
-      options:[{text:"乐于探索能快速上手",score:5},{text:"愿意学习能基本掌握",score:4},{text:"需要系统学习才能用",score:3},{text:"比较排斥学新工具",score:2},{text:"只用熟练的旧工具",score:1}]},
-    {id:804, text:"接到一个创作任务时你通常会？", skillMap:[{skill:"产品策划",w:0.4},{skill:"项目管理",w:0.3},{skill:"创造性",w:0.3}], tag:"创作流程",
-      options:[{text:"先充分理解需求再做创意发散",score:5},{text:"根据经验快速出方案",score:4},{text:"参考竞品做改编",score:3},{text:"凭感觉自由发挥",score:2},{text:"拖延到最后再做",score:1}]},
-    {id:805, text:"你的作品风格更偏向于？", skillMap:[{skill:"创造性",w:0.6},{skill:"设计创意",w:0.4}], tag:"风格取向",
-      options:[{text:"独特前卫有辨识度",score:5},{text:"美观实用符合大众审美",score:4},{text:"模仿经典风格",score:3},{text:"实用为主不追求风格",score:2},{text:"没有固定风格",score:1}]},
-    {id:806, text:"接受他人的作品反馈和批评时你？", skillMap:[{skill:"沟通表达",w:0.5},{skill:"领导力",w:0.3},{skill:"创造性",w:0.2}], tag:"接受反馈",
-      options:[{text:"虚心接受建设性批评并改进",score:5},{text:"能区分有用反馈和无用批评",score:4},{text:"表面接受内心坚持",score:3},{text:"容易受到打击",score:2},{text:"抵触所有批评",score:1}]},
-    {id:807, text:"你对跨媒介艺术（数字艺术/交互装置）的兴趣？", skillMap:[{skill:"编程开发",w:0.3},{skill:"设计创意",w:0.4},{skill:"创造性",w:0.3}], tag:"跨媒介",
-      options:[{text:"非常感兴趣尝试新技术媒介",score:5},{text:"有兴趣了解和学习",score:4},{text:"知道一些作品",score:3},{text:"不太了解",score:2},{text:"更倾向传统艺术形式",score:1}]},
-    {id:808, text:"在团队创作项目中你通常的角色是？", skillMap:[{skill:"领导力",w:0.4},{skill:"沟通表达",w:0.3},{skill:"项目管理",w:0.3}], tag:"团队角色",
-      options:[{text:"创意引领和艺术指导",score:5},{text:"执行设计和制作",score:4},{text:"协调沟通组织工作",score:3},{text:"完成分配的具体任务",score:2},{text:"独立完成全部工作",score:1}]},
-    {id:809, text:"你对艺术史和设计史的了解程度？", skillMap:[{skill:"写作内容",w:0.5},{skill:"逻辑分析",w:0.3},{skill:"创造性",w:0.2}], tag:"艺术素养",
-      options:[{text:"系统了解能联系当代创作",score:5},{text:"知道主要流派和代表人物",score:4},{text:"知道一些经典作品",score:3},{text:"不太了解",score:2},{text:"基本不关注",score:1}]},
-    {id:810, text:"面对创作瓶颈时你通常会？", skillMap:[{skill:"创造性",w:0.5},{skill:"运营管理",w:0.3},{skill:"沟通表达",w:0.2}], tag:"瓶颈突破",
-      options:[{text:"换种创作方式或跨界寻找灵感",score:5},{text:"大量浏览优秀作品激发灵感",score:4},{text:"暂时放一放再做",score:3},{text:"反复修改同一方案",score:2},{text:"放弃这个项目",score:1}]},
-    {id:811, text:"客户或甲方的需求与你的审美冲突时你？", skillMap:[{skill:"沟通表达",w:0.5},{skill:"产品策划",w:0.3},{skill:"领导力",w:0.2}], tag:"客户沟通",
-      options:[{text:"用专业说服引导客户",score:5},{text:"在客户需求和审美间找平衡",score:4},{text:"完全按客户要求做",score:3},{text:"有情绪但服从",score:2},{text:"拒绝妥协",score:1}]},
-    {id:812, text:"你对品牌视觉识别（VI）设计的理解？", skillMap:[{skill:"设计创意",w:0.6},{skill:"市场营销",w:0.4}], tag:"品牌设计",
-      options:[{text:"有系统的理解能独立完成",score:5},{text:"了解基本原则和流程",score:4},{text:"能做基础的设计执行",score:3},{text:"不太了解",score:2},{text:"完全不感兴趣",score:1}]},
-    {id:813, text:"你对AI在艺术创作中的应用怎么看？", skillMap:[{skill:"编程开发",w:0.3},{skill:"创造性",w:0.4},{skill:"设计创意",w:0.3}], tag:"AI与艺术",
-      options:[{text:"拥抱新技术作为创作工具",score:5},{text:"有选择性使用",score:4},{text:"尝试过但不依赖",score:3},{text:"持保留态度",score:2},{text:"反对AI用于创作",score:1}]},
-    {id:814, text:"你的作品展示和表达自己的风格时？", skillMap:[{skill:"沟通表达",w:0.4},{skill:"写作内容",w:0.3},{skill:"设计创意",w:0.3}], tag:"作品表达",
-      options:[{text:"善于用作品说话也有好的表达",score:5},{text:"作品会自我表达",score:4},{text:"需要用文字补充说明",score:3},{text:"不太会展示自己",score:2},{text:"做完就完了",score:1}]},
-    {id:815, text:"做用户界面或用户体验设计时你更注重？", skillMap:[{skill:"设计创意",w:0.5},{skill:"产品策划",w:0.3},{skill:"编程开发",w:0.2}], tag:"UI/UX",
-      options:[{text:"用户体验和交互细节",score:5},{text:"视觉美观和品牌一致性",score:4},{text:"功能可用性",score:3},{text:"实现难度和成本",score:2},{text:"不太了解",score:1}]},
-    {id:816, text:"你对商业设计和纯艺术的区别理解？", skillMap:[{skill:"产品策划",w:0.4},{skill:"设计创意",w:0.3},{skill:"市场营销",w:0.3}], tag:"商业vs艺术",
-      options:[{text:"清楚区别能根据不同需求切换",score:5},{text:"理解商业设计的约束",score:4},{text:"更倾向纯艺术表达",score:3},{text:"更倾向商业设计",score:2},{text:"没有明确概念",score:1}]},
-    {id:817, text:"管理和整理创作素材与作品集时你？", skillMap:[{skill:"项目管理",w:0.5},{skill:"运营管理",w:0.5}], tag:"素材管理",
-      options:[{text:"分类清晰管理有序",score:5},{text:"有基本的整理习惯",score:4},{text:"比较随意",score:3},{text:"很混乱",score:2},{text:"不想花时间整理",score:1}]},
-    {id:818, text:"你对当前设计/艺术行业趋势的关注？", skillMap:[{skill:"设计创意",w:0.4},{skill:"市场营销",w:0.3},{skill:"创造性",w:0.3}], tag:"行业趋势",
-      options:[{text:"持续关注紧跟前沿动态",score:5},{text:"偶尔浏览行业资讯",score:4},{text:"知道一些热门趋势",score:3},{text:"不太关注",score:2},{text:"做自己的不管趋势",score:1}]},
-    {id:819, text:"在有限预算和时间下完成创作时你？", skillMap:[{skill:"项目管理",w:0.5},{skill:"运营管理",w:0.3},{skill:"产品策划",w:0.2}], tag:"项目管理",
-      options:[{text:"合理规划在约束内高质量完成",score:5},{text:"能按时交付保证基本质量",score:4},{text:"可能会延期但保证质量",score:3},{text:"会影响作品质量",score:2},{text:"无法在这种情况下工作",score:1}]},
-    {id:820, text:"你对教学或分享创作经验的态度是？", skillMap:[{skill:"沟通表达",w:0.5},{skill:"领导力",w:0.3},{skill:"写作内容",w:0.2}], tag:"知识分享",
-      options:[{text:"乐于分享能系统讲授",score:5},{text:"愿意分享经验和技巧",score:4},{text:"可以教基本技能",score:3},{text:"不太愿意教别人",score:2},{text:"不想分享",score:1}]}
-  ],
-  "general":[
-        {id:2024, text:"一个投资项目预期收益率15%，银行贷款利率5%，这个项目？", skillMap:[{skill:"财务金融",w:0.7},{skill:"逻辑分析",w:0.5}], tag:"投资判断",
-      options:[{text:"值得投资，因为收益率超过资金成本",score:5},{text:"不值得，风险太高",score:1},{text:"需要看别人投不投",score:1},{text:"不确定，太复杂了",score:1},{text:"只有10%以上才值得考虑",score:1}]},
-    {id:902, text:"在团队中你通常被形容为？", skillMap:[{skill:"领导力",w:0.4},{skill:"沟通表达",w:0.3},{skill:"项目管理",w:0.3}], tag:"团队角色",
-      options:[{text:"出主意的创意者",score:5},{text:"推进执行的实干家",score:4},{text:"协调关系的润滑剂",score:3},{text:"默默做事的老黄牛",score:2},{text:"旁观者/跟随者",score:1}]},
-    {id:903, text:"如果业余时间学习一门新技能，你会选？", skillMap:[{skill:"编程开发",w:0.3},{skill:"设计创意",w:0.3},{skill:"写作内容",w:0.2},{skill:"财务金融",w:0.2}], tag:"学习偏好",
-      options:[{text:"编程或数据分析",score:5},{text:"设计或视频剪辑",score:4},{text:"写作或外语",score:3},{text:"理财或商业知识",score:2},{text:"没有特别想学的",score:1}]},
-        {id:2025, text:"团队中两名核心成员因为工作方向产生严重分歧，你作为负责人应该？", skillMap:[{skill:"领导力",w:0.7},{skill:"沟通表达",w:0.5},{skill:"项目管理",w:0.3}], tag:"管理能力",
-      options:[{text:"分别沟通，组织讨论用数据和事实达成共识",score:5},{text:"投票决定少数服从多数",score:1},{text:"让上级来裁定",score:1},{text:"各做各的看谁效果好",score:1},{text:"把不同意的人调走",score:1}]},
-    {id:905, text:"对于未来的职业，你最看重什么？", skillMap:[{skill:"财务金融",w:0.4},{skill:"市场营销",w:0.3},{skill:"领导力",w:0.3}], tag:"价值观",
-      options:[{text:"收入高、发展快",score:5},{text:"做自己热爱和擅长的事",score:4},{text:"工作稳定、生活平衡",score:3},{text:"社会地位和认可",score:2},{text:"工作氛围好、同事关系融洽",score:1}]},
-    {id:906, text:"在过往经历中最让你有成就感的是？", skillMap:[{skill:"项目管理",w:0.3},{skill:"沟通表达",w:0.3},{skill:"创造性",w:0.4}], tag:"成就感",
-      options:[{text:"创作出独特的作品或方案",score:5},{text:"成功解决了困难问题",score:4},{text:"获得了他人的认可",score:3},{text:"团队取得了好成绩",score:2},{text:"完成了既定目标",score:1}]},
-        {id:2026, text:"以下哪种商业模式最依赖网络效应？", skillMap:[{skill:"产品策划",w:0.6},{skill:"市场营销",w:0.5},{skill:"逻辑分析",w:0.3}], tag:"商业模式",
-      options:[{text:"社交平台（用户越多价值越大）",score:5},{text:"理发店",score:1},{text:"面包店",score:1},{text:"加油站",score:1},{text:"服装店",score:1}]},
-    {id:908, text:"你认为自己最大的优势是什么？", skillMap:[{skill:"领导力",w:0.3},{skill:"创造性",w:0.3},{skill:"逻辑分析",w:0.4}], tag:"自我认知",
-      options:[{text:"善于分析和解决问题",score:5},{text:"善于创造和提出新想法",score:4},{text:"善于沟通和协调关系",score:3},{text:"善于执行和完成任务",score:2},{text:"善于学习和适应",score:1}]},
-    {id:909, text:"你对未来五年职业生涯的规划是？", skillMap:[{skill:"产品策划",w:0.4},{skill:"项目管理",w:0.3},{skill:"财务金融",w:0.3}], tag:"职业规划",
-      options:[{text:"有清晰的目标和路径规划",score:5},{text:"有大方向但细节未定",score:4},{text:"走一步看一步",score:3},{text:"先工作再看看",score:2},{text:"没有规划",score:1}]},
-        {id:2027, text:"公司现金流紧张，短期内最有效的解决方案是？", skillMap:[{skill:"财务金融",w:0.7},{skill:"运营管理",w:0.5},{skill:"产品策划",w:0.3}], tag:"财务决策",
-      options:[{text:"加速应收账款回收，延后应付账款支付",score:5},{text:"立即裁员50%",score:1},{text:"关闭盈利部门",score:1},{text:"向银行贷款一个亿",score:1},{text:"降价50%促销产品",score:1}]},
-        {id:2031, text:"一个App的注册按钮在页面中不够明显，最合理的改进方式是？", skillMap:[{skill:"设计创意",w:0.7},{skill:"产品策划",w:0.5}], tag:"UI设计",
-      options:[{text:"使用品牌主色作为按钮背景，增加视觉对比度",score:5},{text:"把按钮放大到占满屏幕",score:1},{text:"在按钮周围加闪烁动画",score:1},{text:"把按钮放在页面最顶部",score:1},{text:"给按钮加金色边框",score:1}]},
-    {id:912, text:"哪种工作环境能让你发挥最佳状态？", skillMap:[{skill:"运营管理",w:0.4},{skill:"产品策划",w:0.3},{skill:"创造性",w:0.3}], tag:"工作环境",
-      options:[{text:"充满创意和自由的环境",score:5},{text:"结构清晰目标明确的环境",score:4},{text:"团队协作氛围良好的环境",score:3},{text:"独立安静的环境",score:2},{text:"灵活自由的环境",score:1}]},
-        {id:2032, text:"以下哪种配色方案在专业设计中通常寓意可信赖专业？", skillMap:[{skill:"设计创意",w:0.8},{skill:"创造性",w:0.3}], tag:"色彩理论",
-      options:[{text:"蓝色系",score:5},{text:"红色系",score:1},{text:"黄色系",score:1},{text:"粉色系",score:1},{text:"黑色系",score:1}]},
-    {id:914, text:"你对创业这件事的看法是？", skillMap:[{skill:"产品策划",w:0.4},{skill:"财务金融",w:0.3},{skill:"领导力",w:0.3}], tag:"创业态度",
-      options:[{text:"有强烈意愿和具体想法",score:5},{text:"有想法但还需要积累",score:4},{text:"可以加入创业团队",score:3},{text:"更倾向稳定工作",score:2},{text:"完全不考虑",score:1}]},
-        {id:2033, text:"一个信息层级清晰的页面，应该最先吸引用户注意的是什么？", skillMap:[{skill:"设计创意",w:0.6},{skill:"产品策划",w:0.5},{skill:"沟通表达",w:0.3}], tag:"信息设计",
-      options:[{text:"页面中最核心的标题或行动按钮",score:5},{text:"页面背景色",score:1},{text:"页面底部的版权信息",score:1},{text:"侧边栏广告",score:1},{text:"大量的文字说明",score:1}]},
-    {id:916, text:"面对批评和否定时你通常会？", skillMap:[{skill:"沟通表达",w:0.4},{skill:"领导力",w:0.3},{skill:"逻辑分析",w:0.3}], tag:"抗挫折",
-      options:[{text:"反思自己有则改之",score:5},{text:"理性判断批评的价值",score:4},{text:"表面接受内心不舒服",score:3},{text:"容易自我怀疑",score:2},{text:"直接反驳",score:1}]},
-    {id:917, text:"你认为自己在哪个方面最需要提升？", skillMap:[{skill:"逻辑分析",w:0.3},{skill:"沟通表达",w:0.3},{skill:"项目管理",w:0.4}], tag:"自我提升",
-      options:[{text:"专业技术和知识深度",score:5},{text:"沟通表达和人际能力",score:4},{text:"项目管理和执行能力",score:3},{text:"创造力和创新思维",score:2},{text:"不需要特别提升",score:1}]},
-        {id:2034, text:"移动端设计中，拇指最容易点击到的区域是？", skillMap:[{skill:"设计创意",w:0.7},{skill:"工程建筑",w:0.3}], tag:"交互设计",
-      options:[{text:"屏幕中下部的区域",score:5},{text:"屏幕最顶部的区域",score:1},{text:"屏幕左上角",score:1},{text:"屏幕右上角",score:1},{text:"屏幕底部边缘",score:1}]},
-    {id:919, text:"你更倾向于哪种学习方式？", skillMap:[{skill:"编程开发",w:0.3},{skill:"写作内容",w:0.3},{skill:"沟通表达",w:0.4}], tag:"学习方式",
-      options:[{text:"阅读书籍和文档系统学习",score:5},{text:"听课程和讲座有指导的学习",score:4},{text:"动手实践边做边学",score:3},{text:"与他人讨论交流学习",score:2},{text:"看视频教程",score:1}]},
-    {id:920, text:"评价一下自己的时间管理能力？", skillMap:[{skill:"项目管理",w:0.6},{skill:"运营管理",w:0.4}], tag:"时间管理",
-      options:[{text:"计划性强效率高",score:5},{text:"基本能按时完成任务",score:4},{text:"有时会拖延",score:3},{text:"经常拖延",score:2},{text:"几乎没有时间管理",score:1}]}
-  ]
-};
-
-// Switch branch banks (indexed by interest id)
-const SWITCH_BANKS = {
-  "tech":[
-    {id:801, text:"你对学习编程或技术工具的态度是？", skillMap:[{skill:"编程开发",w:0.6},{skill:"逻辑分析",w:0.4}], tag:"技术态度",
-      options:[{text:"非常有兴趣，愿意系统学习",score:5},{text:"愿意学一些实用的技术",score:4},{text:"可以学但怕学不会",score:3},{text:"不太感兴趣",score:2},{text:"完全不想学技术",score:1}]},
-    {id:802, text:"对于数据分析类工作，你的想法是？", skillMap:[{skill:"数据分析",w:0.6},{skill:"数学统计",w:0.4}], tag:"数据态度",
-      options:[{text:"很感兴趣，本身就是我的优势",score:5},{text:"可以接受，愿意学习",score:4},{text:"不太确定自己是否适合",score:3},{text:"不太喜欢和数据打交道",score:2},{text:"完全不想做数据分析",score:1}]},
-    {id:803, text:"你觉得自己能适应IT行业的快速变化吗？", skillMap:[{skill:"逻辑分析",w:0.4},{skill:"英语能力",w:0.3},{skill:"运营管理",w:0.3}], tag:"适应性",
-      options:[{text:"非常适应，喜欢学习新事物",score:5},{text:"可以接受，愿意持续学习",score:4},{text:"可能有点吃力但愿意尝试",score:3},{text:"不太喜欢频繁变化",score:2},{text:"希望工作环境稳定",score:1}]}
-  ,
-        {id:2001, text:"以下哪段代码可以正确交换变量a和b的值？", skillMap:[{skill:"编程开发",w:0.9},{skill:"逻辑分析",w:0.5}], tag:"编程基础",
-      options:[{text:"int tmp=a; a=b; b=tmp;",score:5},{text:"a=b; b=a;",score:1},{text:"a=b; b=a-b;",score:1},{text:"int tmp=b; b=a; a=tmp;",score:1},{text:"a=a+b; b=a-b; a=a-b;",score:1}]},
-        {id:2002, text:"有一个数组 [3,1,4,1,5,9,2,6]，将其从小到大排序后，第3个数字是什么？", skillMap:[{skill:"编程开发",w:0.7},{skill:"数学统计",w:0.5},{skill:"逻辑分析",w:0.5}], tag:"逻辑推理",
-      options:[{text:"3",score:5},{text:"1",score:1},{text:"2",score:1},{text:"4",score:1},{text:"5",score:1}]},
-    {id:862, text:"参与技术项目时你更倾向于？", skillMap:[{skill:"项目管理",w:0.4},{skill:"编程开发",w:0.3},{skill:"沟通表达",w:0.3}], tag:"项目参与",
-      options:[{text:"主动承担核心模块开发",score:5},{text:"参与需求讨论和方案设计",score:4},{text:"按分配完成任务",score:3},{text:"做辅助性工作",score:2},{text:"尽量少参与",score:1}]},
-        {id:2003, text:"用户打开一个网页发现布局全部错乱，最可能的原因是什么？", skillMap:[{skill:"编程开发",w:0.8},{skill:"逻辑分析",w:0.3}], tag:"前端调试",
-      options:[{text:"CSS文件加载失败或被覆盖",score:5},{text:"电脑关机了",score:1},{text:"用户密码错误",score:1},{text:"网络太慢",score:1},{text:"浏览器版本太低",score:1}]},
-    {id:864, text:"你更喜欢哪种编程学习方式？", skillMap:[{skill:"编程开发",w:0.5},{skill:"逻辑分析",w:0.3},{skill:"英语能力",w:0.2}], tag:"编程学习",
-      options:[{text:"通过实际项目边做边学",score:5},{text:"看教程系统学习",score:4},{text:"看书自学",score:3},{text:"通过在线课程学习",score:2},{text:"报培训班学习",score:1}]},
-        {id:2004, text:"数据库查询中，要从用户表中筛选出年龄大于18岁的用户，正确的SQL是？", skillMap:[{skill:"数据分析",w:0.8},{skill:"编程开发",w:0.5},{skill:"逻辑分析",w:0.3}], tag:"数据库基础",
-      options:[{text:"SELECT * FROM users WHERE age > 18",score:5},{text:"SELECT * FROM users WHERE age = 18",score:1},{text:"SELECT age FROM users > 18",score:1},{text:"FILTER users BY age > 18",score:1},{text:"FIND users WITH age > 18",score:1}]},
-    {id:866, text:"在技术团队中你更愿意担任什么角色？", skillMap:[{skill:"领导力",w:0.4},{skill:"沟通表达",w:0.3},{skill:"项目管理",w:0.3}], tag:"团队角色",
-      options:[{text:"技术负责人做架构决策",score:5},{text:"核心开发者攻坚难点",score:4},{text:"需求分析师澄清需求",score:3},{text:"测试人员保障质量",score:2},{text:"文档和协调工作",score:1}]},
-    {id:867, text:"你对网络安全和数据隐私的看法？", skillMap:[{skill:"编程开发",w:0.4},{skill:"逻辑分析",w:0.3},{skill:"运营管理",w:0.3}], tag:"安全意识",
-      options:[{text:"非常重视有防护意识",score:5},{text:"了解基本安全常识",score:4},{text:"知道密码备份等基础",score:3},{text:"不太关注",score:2},{text:"觉得跟自己无关",score:1}]},
-        {id:2005, text:"当你写完代码运行时报错NullPointerException，这通常意味着？", skillMap:[{skill:"编程开发",w:0.8},{skill:"逻辑分析",w:0.5}], tag:"代码调试",
-      options:[{text:"你尝试使用了一个没有赋值的变量或对象",score:5},{text:"你的代码有语法错误",score:1},{text:"你的程序内存不足",score:1},{text:"你的网络连接断开",score:1},{text:"你的电脑硬盘满了",score:1}]},
-    {id:869, text:"你能否接受996或高强度的工作节奏？", skillMap:[{skill:"运营管理",w:0.5},{skill:"沟通表达",w:0.3},{skill:"项目管理",w:0.2}], tag:"工作强度",
-      options:[{text:"年轻时候可以拼几年",score:5},{text:"能接受阶段性的高强度",score:4},{text:"一般不太接受",score:3},{text:"完全不想接受",score:2},{text:"宁愿薪资低一些也要平衡",score:1}]},
-    {id:870, text:"你对数据库和数据管理的了解？", skillMap:[{skill:"数据分析",w:0.5},{skill:"编程开发",w:0.5}], tag:"数据管理",
-      options:[{text:"了解SQL和常见数据库",score:5},{text:"知道数据存储的基本概念",score:4},{text:"能使用Excel等工具",score:3},{text:"不太了解",score:2},{text:"完全不了解",score:1}]},
-        {id:2006, text:"以下哪个是面向对象编程的三大特性之一？", skillMap:[{skill:"编程开发",w:0.7},{skill:"逻辑分析",w:0.3}], tag:"编程概念",
-      options:[{text:"封装（Encapsulation）",score:5},{text:"循环（Loop）",score:1},{text:"变量（Variable）",score:1},{text:"注释（Comment）",score:1},{text:"缩进（Indentation）",score:1}]},
-    {id:872, text:"你对低代码/无代码平台的看法？", skillMap:[{skill:"编程开发",w:0.4},{skill:"产品策划",w:0.3},{skill:"运营管理",w:0.3}], tag:"低代码",
-      options:[{text:"是提高效率的好工具",score:5},{text:"适合快速原型开发",score:4},{text:"有局限性但有价值",score:3},{text:"不太看好",score:2},{text:"坚持手写代码",score:1}]},
-    {id:873, text:"你对移动端开发的兴趣如何？", skillMap:[{skill:"编程开发",w:0.6},{skill:"设计创意",w:0.4}], tag:"移动开发",
-      options:[{text:"非常感兴趣想深入学习",score:5},{text:"有兴趣了解基本开发",score:4},{text:"能做一些简单页面",score:3},{text:"不太感兴趣",score:2},{text:"完全不想做",score:1}]},
-        {id:2007, text:"一个程序需要从100万个数字中快速查找某个值是否存在，最高效的数据结构是？", skillMap:[{skill:"算法与AI",w:0.9},{skill:"逻辑分析",w:0.5},{skill:"数学统计",w:0.3}], tag:"算法思维",
-      options:[{text:"哈希表（Hash Table）",score:5},{text:"数组（Array）",score:1},{text:"链表（Linked List）",score:1},{text:"队列（Queue）",score:1},{text:"文件（File）",score:1}]},
-    {id:875, text:"你对技术债务和代码质量的态度？", skillMap:[{skill:"编程开发",w:0.6},{skill:"项目管理",w:0.4}], tag:"代码质量",
-      options:[{text:"非常重视追求高质量代码",score:5},{text:"会做好代码审查和重构",score:4},{text:"能在截止日前写就行",score:3},{text:"不太在意",score:2},{text:"完成任务就够",score:1}]},
-    {id:876, text:"你认为自己具备产品思维吗？", skillMap:[{skill:"产品策划",w:0.5},{skill:"数据分析",w:0.3},{skill:"沟通表达",w:0.2}], tag:"产品思维",
-      options:[{text:"能从用户角度思考技术方案",score:5},{text:"有关注产品体验的意识",score:4},{text:"主要关注技术实现",score:3},{text:"不太考虑产品层面",score:2},{text:"只管写代码",score:1}]}],
-  "media":[
-    {id:811, text:"你平时有写作或拍摄的习惯吗？", skillMap:[{skill:"写作内容",w:0.6},{skill:"创造性",w:0.4}], tag:"创作习惯",
-      options:[{text:"经常写/拍，有自己的作品",score:5},{text:"偶尔会写日记或拍短视频",score:4},{text:"有想法但很少行动",score:3},{text:"不太会做内容",score:2},{text:"对内容创作不感兴趣",score:1}]},
-    {id:812, text:"你如何看待社交媒体/短视频平台？", skillMap:[{skill:"市场营销",w:0.5},{skill:"设计创意",w:0.3},{skill:"运营管理",w:0.2}], tag:"媒体理解",
-      options:[{text:"擅长运营，了解算法和传播规律",score:5},{text:"经常使用，理解内容逻辑",score:4},{text:"作为普通用户使用",score:3},{text:"不太了解也不太用",score:2},{text:"对社交媒体没有兴趣",score:1}]},
-    {id:813, text:"你的审美和设计能力如何？", skillMap:[{skill:"设计创意",w:0.7},{skill:"创造性",w:0.3}], tag:"审美能力",
-      options:[{text:"审美很好，经常被夸有品味",score:5},{text:"有基本的审美判断力",score:4},{text:"能分辨好坏但不太会做",score:3},{text:"不太注重审美",score:2},{text:"完全没有设计感",score:1}]}
-  ,
-        {id:2011, text:"一篇公众号文章阅读量很低，最可能的原因是？", skillMap:[{skill:"写作内容",w:0.7},{skill:"市场营销",w:0.5},{skill:"数据分析",w:0.3}], tag:"内容分析",
-      options:[{text:"标题不够吸引人，打开率低",score:5},{text:"文章太长没人看",score:1},{text:"图片不够多",score:1},{text:"发布时间不对",score:1},{text:"没有放二维码",score:1}]},
-    {id:878, text:"策划选题时你更倾向于？", skillMap:[{skill:"产品策划",w:0.4},{skill:"创造性",w:0.3},{skill:"数据分析",w:0.3}], tag:"选题策划",
-      options:[{text:"追热点结合专业角度分析",score:5},{text:"挖掘冷门但有价值的话题",score:4},{text:"根据用户需求策划实用内容",score:3},{text:"从个人兴趣出发创作",score:2},{text:"参考竞品选题",score:1}]},
-        {id:2012, text:"新闻写作中，以下哪种标题更规范？", skillMap:[{skill:"写作内容",w:0.8},{skill:"逻辑分析",w:0.3}], tag:"新闻标题",
-      options:[{text:"国务院发布促进数字经济发展新政策",score:5},{text:"重磅！国家终于出手了！不看后悔！",score:1},{text:"太突然了！刚刚发生！全国都在看！",score:1},{text:"出大事了！快转！关系到每个人！",score:1},{text:"惊呆！国务院这一决定让所有人意外！",score:1}]},
-    {id:880, text:"独立完成一个视频/文章从策划到发布的过程？", skillMap:[{skill:"项目管理",w:0.4},{skill:"创造性",w:0.3},{skill:"写作内容",w:0.3}], tag:"内容生产",
-      options:[{text:"能独立完成全流程",score:5},{text:"能做大部分环节",score:4},{text:"能完成部分环节",score:3},{text:"只能做其中一步",score:2},{text:"没做过也没信心",score:1}]},
-    {id:881, text:"你对新闻真实性和信息核查的态度？", skillMap:[{skill:"逻辑分析",w:0.6},{skill:"写作内容",w:0.4}], tag:"新闻素养",
-      options:[{text:"非常重视会主动核查",score:5},{text:"有基本的辨别能力",score:4},{text:"相信主流媒体",score:3},{text:"不太在意真实性",score:2},{text:"觉得无所谓",score:1}]},
-        {id:2013, text:"一段15秒的短视频，前3秒应该放什么？", skillMap:[{skill:"创造性",w:0.5},{skill:"市场营销",w:0.5},{skill:"设计创意",w:0.3}], tag:"短视频制作",
-      options:[{text:"最吸引眼球的内容，迅速抓住注意力",score:5},{text:"品牌Logo展示",score:1},{text:"片头动画",score:1},{text:"感谢观众观看",score:1},{text:"详细自我介绍",score:1}]},
-    {id:883, text:"你对公关和品牌传播的了解？", skillMap:[{skill:"市场营销",w:0.5},{skill:"沟通表达",w:0.3},{skill:"写作内容",w:0.2}], tag:"公关认知",
-      options:[{text:"了解品牌建设和传播策略",score:5},{text:"知道基本公关手段",score:4},{text:"有模糊概念",score:3},{text:"不太了解",score:2},{text:"完全不感兴趣",score:1}]},
-    {id:884, text:"处理突发公共事件或负面舆情时你？", skillMap:[{skill:"运营管理",w:0.4},{skill:"沟通表达",w:0.3},{skill:"领导力",w:0.3}], tag:"危机处理",
-      options:[{text:"冷静分析快速制定应对方案",score:5},{text:"按流程规范处理",score:4},{text:"及时上报等待指示",score:3},{text:"会紧张但尽力",score:2},{text:"尽量回避",score:1}]},
-        {id:2014, text:"你的文章被投诉内容不实，正确的处理方式是？", skillMap:[{skill:"写作内容",w:0.6},{skill:"逻辑分析",w:0.5},{skill:"运营管理",w:0.3}], tag:"媒体素养",
-      options:[{text:"核实事实，如有错误及时更正并道歉",score:5},{text:"删除文章假装没发过",score:1},{text:"联系投诉人要求撤诉",score:1},{text:"不回应，等热度过去",score:1},{text:"在评论区反驳投诉者",score:1}]},
-    {id:886, text:"制作吸引人的标题和文案时你？", skillMap:[{skill:"写作内容",w:0.6},{skill:"市场营销",w:0.4}], tag:"文案能力",
-      options:[{text:"善于抓取痛点制造悬念",score:5},{text:"能写出吸引人的标题",score:4},{text:"能写基本文案",score:3},{text:"不太会写",score:2},{text:"完全不想做文案",score:1}]},
-    {id:887, text:"你对音频/视频剪辑等后期制作的了解？", skillMap:[{skill:"设计创意",w:0.4},{skill:"工程技术",w:0.3},{skill:"创造性",w:0.3}], tag:"后期制作",
-      options:[{text:"会使用剪辑软件能独立完成",score:5},{text:"了解基本剪辑操作",score:4},{text:"知道流程但不会操作",score:3},{text:"不太了解",score:2},{text:"完全不会",score:1}]},
-        {id:2015, text:"以下哪种内容形式最适合深度报道复杂社会议题？", skillMap:[{skill:"写作内容",w:0.7},{skill:"产品策划",w:0.4},{skill:"创造性",w:0.3}], tag:"内容形式",
-      options:[{text:"长篇图文报道+数据可视化",score:5},{text:"15秒短视频",score:1},{text:"30字短文案",score:1},{text:"表情包合集",score:1},{text:"直播带货",score:1}]},
-    {id:889, text:"你如何看待内容付费和知识变现？", skillMap:[{skill:"产品策划",w:0.4},{skill:"市场营销",w:0.3},{skill:"财务金融",w:0.3}], tag:"内容变现",
-      options:[{text:"认可其价值未来想尝试",score:5},{text:"愿意为优质内容付费",score:4},{text:"有一定了解",score:3},{text:"不太认可",score:2},{text:"觉得信息应该免费",score:1}]},
-    {id:890, text:"做直播或面对镜头时你的状态？", skillMap:[{skill:"沟通表达",w:0.6},{skill:"创造性",w:0.4}], tag:"镜头表现",
-      options:[{text:"自然大方有表现力",score:5},{text:"能正常交流",score:4},{text:"有点紧张但还能说",score:3},{text:"很抗拒镜头",score:2},{text:"完全接受不了",score:1}]},
-        {id:2016, text:"做社群运营时，发现群活跃度持续下降，首先应该？", skillMap:[{skill:"运营管理",w:0.7},{skill:"沟通表达",w:0.4},{skill:"数据分析",w:0.3}], tag:"社群运营",
-      options:[{text:"分析用户数据，了解需求和痛点",score:5},{text:"在群里发红包",score:1},{text:"踢掉不活跃成员",score:1},{text:"每天都在群里发通知",score:1},{text:"直接把群解散重建",score:1}]},
-    {id:892, text:"在内容创作中遇到瓶颈时你？", skillMap:[{skill:"创造性",w:0.5},{skill:"运营管理",w:0.3},{skill:"沟通表达",w:0.2}], tag:"突破瓶颈",
-      options:[{text:"换个领域找灵感",score:5},{text:"大量输入同行作品",score:4},{text:"和同行交流讨论",score:3},{text:"硬着头皮继续写",score:2},{text:"暂时放下不做",score:1}]},
-        {id:2017, text:"采访一位专家时，最好的提问方式是？", skillMap:[{skill:"沟通表达",w:0.7},{skill:"写作内容",w:0.5}], tag:"采访技巧",
-      options:[{text:"您在这个领域深耕20年，最大的体会是什么？",score:5},{text:"您对这个问题怎么看？",score:1},{text:"请您介绍一下自己",score:1},{text:"您同意XXX的观点吗？",score:1},{text:"您有什么想对读者说的吗？",score:1}]}],
-  "business":[
-    {id:821, text:"你对商业和赚钱的兴趣如何？", skillMap:[{skill:"财务金融",w:0.6},{skill:"市场营销",w:0.4}], tag:"商业兴趣",
-      options:[{text:"非常浓厚，经常研究商业模式",score:5},{text:"比较感兴趣，关注经济动态",score:4},{text:"一般关注，了解即可",score:3},{text:"不太感兴趣",score:2},{text:"完全没兴趣",score:1}]},
-    {id:822, text:"做决定时你更偏向理性分析还是感性判断？", skillMap:[{skill:"逻辑分析",w:0.5},{skill:"数据分析",w:0.5}], tag:"决策风格",
-      options:[{text:"完全理性，用数据和逻辑说话",score:5},{text:"偏理性，会做分析后再判断",score:4},{text:"两者结合",score:3},{text:"偏感性，相信直觉",score:2},{text:"完全凭感觉",score:1}]},
-    {id:823, text:"你对销售或谈判类工作的态度？", skillMap:[{skill:"沟通表达",w:0.6},{skill:"市场营销",w:0.4}], tag:"销售态度",
-      options:[{text:"擅长说服他人，享受谈判过程",score:5},{text:"可以接受，有一定能力",score:4},{text:"不太擅长但愿意尝试",score:3},{text:"比较排斥销售类工作",score:2},{text:"完全不想做销售",score:1}]}
-  ,
-        {id:2021, text:"一家公司年营收1000万，成本600万，请问利润率是多少？", skillMap:[{skill:"财务金融",w:0.8},{skill:"数学统计",w:0.5},{skill:"数据分析",w:0.3}], tag:"财务基础",
-      options:[{text:"40%",score:5},{text:"60%",score:1},{text:"66.7%",score:1},{text:"400万",score:1},{text:"1600万",score:1}]},
-    {id:895, text:"分析一家公司是否值得投资时你更看重？", skillMap:[{skill:"财务金融",w:0.4},{skill:"数据分析",w:0.3},{skill:"逻辑分析",w:0.3}], tag:"投资分析",
-      options:[{text:"商业模式和护城河",score:5},{text:"财务数据和增长率",score:4},{text:"行业前景和市场空间",score:3},{text:"团队和管理层",score:2},{text:"品牌知名度",score:1}]},
-        {id:2022, text:"以下哪个指标最能衡量企业的盈利能力？", skillMap:[{skill:"财务金融",w:0.8},{skill:"逻辑分析",w:0.3}], tag:"商业分析",
-      options:[{text:"净利润率（Net Profit Margin）",score:5},{text:"员工数量",score:1},{text:"办公面积",score:1},{text:"客户投诉率",score:1},{text:"网站访问量",score:1}]},
-    {id:897, text:"你对创业风险的理解和承受能力？", skillMap:[{skill:"产品策划",w:0.4},{skill:"财务金融",w:0.3},{skill:"领导力",w:0.3}], tag:"风险承受",
-      options:[{text:"愿意承担风险追求高回报",score:5},{text:"能接受中等风险",score:4},{text:"只能接受低风险",score:3},{text:"几乎不能承受风险",score:2},{text:"完全不想承担风险",score:1}]},
-        {id:2023, text:"你负责一款产品的定价，成本和竞争对手都已调研完毕，下一步应该？", skillMap:[{skill:"市场营销",w:0.6},{skill:"产品策划",w:0.5},{skill:"数据分析",w:0.3}], tag:"商业策略",
-      options:[{text:"做用户调研了解目标客群的支付意愿",score:5},{text:"定一个最低价抢占市场",score:1},{text:"定一个最高价追求利润",score:1},{text:"参考主要竞争对手定价",score:1},{text:"根据成本加固定比例定价",score:1}]},
-    {id:899, text:"你对会计和财务报表的理解程度？", skillMap:[{skill:"财务金融",w:0.6},{skill:"数据分析",w:0.4}], tag:"财务知识",
-      options:[{text:"能看懂三张报表并分析",score:5},{text:"了解基本会计概念",score:4},{text:"知道收入利润等术语",score:3},{text:"不太了解",score:2},{text:"完全不懂",score:1}]},
-    {id:900, text:"谈判中你更倾向于哪种策略？", skillMap:[{skill:"沟通表达",w:0.5},{skill:"逻辑分析",w:0.3},{skill:"领导力",w:0.2}], tag:"谈判策略",
-      options:[{text:"合作共赢求长期利益",score:5},{text:"据理力争争取最大利益",score:4},{text:"适当让步达成协议",score:3},{text:"不善于谈判",score:2},{text:"回避谈判",score:1}]},
-    {id:901, text:"你如何看待经济周期对行业的影响？", skillMap:[{skill:"逻辑分析",w:0.5},{skill:"财务金融",w:0.3},{skill:"数据分析",w:0.2}], tag:"经济认知",
-      options:[{text:"了解并能分析周期影响",score:5},{text:"知道经济周期的概念",score:4},{text:"有模糊认识",score:3},{text:"不太了解",score:2},{text:"觉得跟自己关系不大",score:1}]},
-    {id:902, text:"管理团队时你更偏向哪种风格？", skillMap:[{skill:"领导力",w:0.5},{skill:"沟通表达",w:0.3},{skill:"项目管理",w:0.2}], tag:"管理风格",
-      options:[{text:"授权型信任团队自主",score:5},{text:"民主型共同决策",score:4},{text:"指导型给予明确方向",score:3},{text:"指令型严格要求",score:2},{text:"不太清楚",score:1}]},
-    {id:903, text:"你对市场营销中品牌定位的理解？", skillMap:[{skill:"市场营销",w:0.6},{skill:"产品策划",w:0.4}], tag:"品牌理解",
-      options:[{text:"理解定位理论能分析案例",score:5},{text:"了解基本定位概念",score:4},{text:"知道一些品牌案例",score:3},{text:"不太了解",score:2},{text:"完全不感兴趣",score:1}]},
-    {id:904, text:"参与商业竞标或比稿时你？", skillMap:[{skill:"市场营销",w:0.4},{skill:"产品策划",w:0.3},{skill:"沟通表达",w:0.3}], tag:"竞标能力",
-      options:[{text:"擅长制定策略和报价",score:5},{text:"能参与方案撰写",score:4},{text:"能做支持工作",score:3},{text:"不太懂流程",score:2},{text:"没有参与过",score:1}]},
-    {id:905, text:"你对供应链上下游管理的理解？", skillMap:[{skill:"运营管理",w:0.6},{skill:"逻辑分析",w:0.4}], tag:"供应链认知",
-      options:[{text:"了解采购生产物流仓储等环节",score:5},{text:"知道供应链基本流程",score:4},{text:"有模糊概念",score:3},{text:"不太了解",score:2},{text:"完全不感兴趣",score:1}]},
-    {id:906, text:"创业想法出现后你通常会？", skillMap:[{skill:"产品策划",w:0.5},{skill:"财务金融",w:0.3},{skill:"项目管理",w:0.2}], tag:"创业行动",
-      options:[{text:"立即做调研和商业计划书",score:5},{text:"找有经验的人交流",score:4},{text:"先放一放再考虑",score:3},{text:"觉得想法不成熟算了",score:2},{text:"只是想想而已",score:1}]},
-    {id:907, text:"你对商业保险和风险管理的了解？", skillMap:[{skill:"财务金融",w:0.5},{skill:"运营管理",w:0.3},{skill:"逻辑分析",w:0.2}], tag:"风险管理",
-      options:[{text:"了解主要险种和风险管理方法",score:5},{text:"知道基本保险概念",score:4},{text:"有社保医保等基本认知",score:3},{text:"不太了解",score:2},{text:"完全不关心",score:1}]},
-    {id:908, text:"阅读年度财报或行业报告时你？", skillMap:[{skill:"数据分析",w:0.5},{skill:"财务金融",w:0.3},{skill:"逻辑分析",w:0.2}], tag:"报告阅读",
-      options:[{text:"能提取关键信息做分析",score:5},{text:"能看懂主要数据",score:4},{text:"能读完但的理解有限",score:3},{text:"太枯燥读不下去",score:2},{text:"根本不看",score:1}]},
-    {id:909, text:"你对互联网金融和金融科技的看法？", skillMap:[{skill:"编程开发",w:0.2},{skill:"财务金融",w:0.5},{skill:"数据分析",w:0.3}], tag:"金融科技",
-      options:[{text:"非常关注是行业趋势",score:5},{text:"使用过相关产品",score:4},{text:"了解基本概念",score:3},{text:"不太了解",score:2},{text:"持保留态度",score:1}]},
-    {id:910, text:"做商业决策时你更依赖什么？", skillMap:[{skill:"逻辑分析",w:0.5},{skill:"数据分析",w:0.3},{skill:"领导力",w:0.2}], tag:"决策依据",
-      options:[{text:"数据分析和市场调研",score:5},{text:"经验和直觉",score:4},{text:"团队讨论和集体决策",score:3},{text:"咨询专家或顾问",score:2},{text:"模仿成功案例",score:1}]}],
-  "design":[
-    {id:831, text:"你对视觉设计的兴趣如何？", skillMap:[{skill:"设计创意",w:0.7},{skill:"创造性",w:0.3}], tag:"设计兴趣",
-      options:[{text:"热爱设计，有自己的审美追求",score:5},{text:"比较感兴趣，会关注设计趋势",score:4},{text:"能欣赏好的设计",score:3},{text:"不太关注设计领域",score:2},{text:"对设计完全无感",score:1}]},
-    {id:832, text:"学习新的设计工具（Figma/PS等）时，你？", skillMap:[{skill:"设计创意",w:0.5},{skill:"工程技术",w:0.3},{skill:"创造性",w:0.2}], tag:"工具使用",
-      options:[{text:"乐于探索，能快速上手新工具",score:5},{text:"需要一些学习时间但能掌握",score:4},{text:"基本操作可以但不太熟练",score:3},{text:"不太会用设计工具",score:2},{text:"对学工具排斥",score:1}]},
-    {id:833, text:"你更擅长抽象概念还是具象表达？", skillMap:[{skill:"创造性",w:0.5},{skill:"沟通表达",w:0.3},{skill:"写作内容",w:0.2}], tag:"思维方式",
-      options:[{text:"擅长将抽象概念转化为视觉表达",score:5},{text:"两者都有一定能力",score:4},{text:"偏向具象和实际操作",score:3},{text:"偏向抽象思考",score:2},{text:"都不太擅长",score:1}]}
-  ,
-    {id:911, text:"你对不同设计风格（如极简/赛博/孟菲斯）的了解？", skillMap:[{skill:"设计创意",w:0.6},{skill:"创造性",w:0.4}], tag:"设计风格",
-      options:[{text:"熟悉多种风格并能灵活运用",score:5},{text:"了解几种主流风格",score:4},{text:"能分辨不同风格",score:3},{text:"不太了解",score:2},{text:"完全不关注",score:1}]},
-    {id:912, text:"接到设计需求时你最先考虑什么？", skillMap:[{skill:"产品策划",w:0.4},{skill:"设计创意",w:0.3},{skill:"沟通表达",w:0.3}], tag:"设计思维",
-      options:[{text:"用户需求和体验目标",score:5},{text:"品牌调性和视觉统一",score:4},{text:"创意和视觉冲击力",score:3},{text:"实现成本和可行性",score:2},{text:"时间和工作量",score:1}]},
-    {id:913, text:"你对人体工学和可用性测试的了解？", skillMap:[{skill:"设计创意",w:0.5},{skill:"产品策划",w:0.3},{skill:"逻辑分析",w:0.2}], tag:"可用性",
-      options:[{text:"了解原理并会在设计中应用",score:5},{text:"知道基本概念",score:4},{text:"听说过但不太了解",score:3},{text:"不太关注",score:2},{text:"觉得不重要",score:1}]},
-    {id:914, text:"给作品配色时你通常？", skillMap:[{skill:"设计创意",w:0.7},{skill:"创造性",w:0.3}], tag:"配色能力",
-      options:[{text:"有成熟的配色逻辑和系统",score:5},{text:"能搭出和谐的色彩方案",score:4},{text:"知道基本配色规则",score:3},{text:"凭感觉随意配",score:2},{text:"不太会配色",score:1}]},
-    {id:915, text:"你对字体排印和文字设计的理解？", skillMap:[{skill:"设计创意",w:0.6},{skill:"写作内容",w:0.4}], tag:"字体设计",
-      options:[{text:"了解字体选择搭配和排版原则",score:5},{text:"能选择合适字体",score:4},{text:"知道基本概念",score:3},{text:"不太注重字体",score:2},{text:"完全不懂",score:1}]},
-    {id:916, text:"设计过程中你更偏向手绘还是数字化？", skillMap:[{skill:"设计创意",w:0.5},{skill:"创造性",w:0.5}], tag:"创作方式",
-      options:[{text:"两者都很擅长结合使用",score:5},{text:"更擅长数字工具创作",score:4},{text:"更擅长手绘表达",score:3},{text:"都不会但愿意学",score:2},{text:"都不太擅长",score:1}]},
-    {id:917, text:"你对用户研究方法的了解程度？", skillMap:[{skill:"产品策划",w:0.5},{skill:"数据分析",w:0.3},{skill:"沟通表达",w:0.2}], tag:"用户研究",
-      options:[{text:"了解访谈问卷可用性测试等方法",score:5},{text:"知道一些基本研究方法",score:4},{text:"有模糊概念",score:3},{text:"不太了解",score:2},{text:"设计不需要研究",score:1}]},
-    {id:918, text:"制作设计系统或规范文档时你？", skillMap:[{skill:"设计创意",w:0.4},{skill:"项目管理",w:0.3},{skill:"写作内容",w:0.3}], tag:"设计规范",
-      options:[{text:"善于建立系统化的设计规范",score:5},{text:"能按照规范执行",score:4},{text:"能做基本的整理",score:3},{text:"不太会做系统化工作",score:2},{text:"觉得没必要",score:1}]},
-    {id:919, text:"你对动画和动态设计的兴趣？", skillMap:[{skill:"设计创意",w:0.5},{skill:"创造性",w:0.3},{skill:"编程开发",w:0.2}], tag:"动态设计",
-      options:[{text:"非常感兴趣想深入学",score:5},{text:"有兴趣了解基本知识",score:4},{text:"能欣赏好的动效",score:3},{text:"不太关注",score:2},{text:"完全不感兴趣",score:1}]},
-    {id:920, text:"你对环境设计或空间设计的理解？", skillMap:[{skill:"设计创意",w:0.4},{skill:"工程技术",w:0.3},{skill:"创造性",w:0.3}], tag:"空间设计",
-      options:[{text:"了解室内/建筑/展览等空间设计",score:5},{text:"知道基本概念",score:4},{text:"有模糊认知",score:3},{text:"不太了解",score:2},{text:"完全不感兴趣",score:1}]},
-        {id:2035, text:"一款面向老年人的App，字体设计应该注意什么？", skillMap:[{skill:"设计创意",w:0.6},{skill:"产品策划",w:0.4},{skill:"沟通表达",w:0.3}], tag:"适老化设计",
-      options:[{text:"字体偏大，行距宽松，对比度高",score:5},{text:"使用花哨的艺术字体",score:1},{text:"字体越小越好显得精致",score:1},{text:"使用灰色字体显得高级",score:1},{text:"全部使用大写字母",score:1}]},
-    {id:922, text:"你对平面设计中的印刷工艺了解多少？", skillMap:[{skill:"设计创意",w:0.5},{skill:"工程技术",w:0.5}], tag:"印刷认知",
-      options:[{text:"了解印刷工艺和材料",score:5},{text:"知道基本印刷流程",score:4},{text:"有概念但不清楚",score:3},{text:"不太了解",score:2},{text:"完全不关心",score:1}]},
-    {id:923, text:"看到好的设计作品时你会？", skillMap:[{skill:"设计创意",w:0.5},{skill:"创造性",w:0.3},{skill:"写作内容",w:0.2}], tag:"设计欣赏",
-      options:[{text:"分析构图色彩和设计思路",score:5},{text:"收藏保存下来",score:4},{text:"点个赞而已",score:3},{text:"看过就忘了",score:2},{text:"没什么感觉",score:1}]},
-        {id:2036, text:"品牌Logo设计中，少即是多的原则是指？", skillMap:[{skill:"设计创意",w:0.7},{skill:"创造性",w:0.5}], tag:"设计原则",
-      options:[{text:"简洁的图形比复杂的图案更容易识别和记忆",score:5},{text:"Logo越小越好",score:1},{text:"只用黑白两色",score:1},{text:"不要使用任何文字",score:1},{text:"设计师越少参与越好",score:1}]},
-    {id:925, text:"你对包装设计或产品外观设计的兴趣？", skillMap:[{skill:"设计创意",w:0.5},{skill:"市场营销",w:0.3},{skill:"创造性",w:0.2}], tag:"产品设计",
-      options:[{text:"很感兴趣影响购买决策",score:5},{text:"有关注好的包装设计",score:4},{text:"知道一些经典案例",score:3},{text:"不太关注",score:2},{text:"只看功能",score:1}]},
-    {id:926, text:"与开发团队协作交付设计稿时你？", skillMap:[{skill:"沟通表达",w:0.4},{skill:"设计创意",w:0.3},{skill:"项目管理",w:0.3}], tag:"设计交付",
-      options:[{text:"规范切图标注和沟通确保还原",score:5},{text:"能提供清晰的设计规范",score:4},{text:"基本能表达清楚需求",score:3},{text:"经常需要反复沟通",score:2},{text:"随意标注即可",score:1}]},
-        {id:2037, text:"用户测试时发现5个人中有4个人都点错了按钮位置，这说明？", skillMap:[{skill:"设计创意",w:0.5},{skill:"数据分析",w:0.5},{skill:"产品策划",w:0.3}], tag:"用户研究",
-      options:[{text:"设计存在问题，需要重新考虑交互布局",score:5},{text:"用户太笨了",score:1},{text:"测试设备有问题",score:1},{text:"样本太少不说明问题",score:1},{text:"这是正常的无需修改",score:1}]}],
-  "edu":[
-    {id:841, text:"你是否有耐心帮助他人学习成长？", skillMap:[{skill:"沟通表达",w:0.6},{skill:"领导力",w:0.4}], tag:"教育意愿",
-      options:[{text:"非常有耐心，擅长教导他人",score:5},{text:"愿意帮助他人",score:4},{text:"可以但耐心一般",score:3},{text:"不太喜欢教别人",score:2},{text:"完全没有耐心",score:1}]},
-    {id:842, text:"你对社会公益或公共服务的看法？", skillMap:[{skill:"运营管理",w:0.4},{skill:"沟通表达",w:0.3},{skill:"写作内容",w:0.3}], tag:"社会责任感",
-      options:[{text:"愿意投身公共服务事业",score:5},{text:"有兴趣在适当时候参与",score:4},{text:"尊重但不感兴趣",score:3},{text:"不太关注",score:2},{text:"觉得跟自己没关系",score:1}]},
-    {id:843, text:"你如何看待体制内工作的稳定性？", skillMap:[{skill:"项目管理",w:0.4},{skill:"逻辑分析",w:0.3},{skill:"沟通表达",w:0.3}], tag:"职业偏好",
-      options:[{text:"非常向往，稳定就是最大的优势",score:5},{text:"可以接受，有吸引力",score:4},{text:"有利有弊，还在权衡",score:3},{text:"不太想被体制束缚",score:2},{text:"排斥体制内工作",score:1}]}
-  ,
-        {id:2041, text:"一个学生上课总是走神，最好的处理方式是？", skillMap:[{skill:"沟通表达",w:0.7},{skill:"逻辑分析",w:0.4},{skill:"领导力",w:0.3}], tag:"课堂管理",
-      options:[{text:"课后了解原因，调整教学方法增加互动",score:5},{text:"当众批评让他注意",score:1},{text:"罚站让他集中注意力",score:1},{text:"通知家长让家长处理",score:1},{text:"不管他不影响其他人就行",score:1}]},
-    {id:929, text:"设计课程大纲时你更注重什么？", skillMap:[{skill:"产品策划",w:0.5},{skill:"逻辑分析",w:0.3},{skill:"写作内容",w:0.2}], tag:"课程设计",
-      options:[{text:"知识体系的完整性和逻辑性",score:5},{text:"学生的学习兴趣和参与度",score:4},{text:"实用性和技能培养",score:3},{text:"教学进度和考试要求",score:2},{text:"别人怎么设计我就怎么设计",score:1}]},
-        {id:2042, text:"教学设计中布鲁姆认知分类的最高层次是？", skillMap:[{skill:"写作内容",w:0.5},{skill:"逻辑分析",w:0.5},{skill:"产品策划",w:0.3}], tag:"教育理论",
-      options:[{text:"创造（Create）",score:5},{text:"记忆（Remember）",score:1},{text:"理解（Understand）",score:1},{text:"应用（Apply）",score:1},{text:"分析（Analyze）",score:1}]},
-    {id:931, text:"辅导学生学习时你更有耐心的是？", skillMap:[{skill:"沟通表达",w:0.5},{skill:"逻辑分析",w:0.3},{skill:"领导力",w:0.2}], tag:"辅导风格",
-      options:[{text:"循序善诱启发式引导",score:5},{text:"反复讲解直到对方理解",score:4},{text:"给出答案让对方记住",score:3},{text:"讲完不管",score:2},{text:"容易着急",score:1}]},
-        {id:2043, text:"学生小明努力学习但成绩一直不理想，作为老师你应该？", skillMap:[{skill:"沟通表达",w:0.6},{skill:"逻辑分析",w:0.5},{skill:"领导力",w:0.3}], tag:"因材施教",
-      options:[{text:"分析他的学习方法，帮助找到适合的学习策略",score:5},{text:"让他更努力多做题",score:1},{text:"降低对他的期望要求",score:1},{text:"建议他转去文科班",score:1},{text:"告诉他不是学习的料",score:1}]},
-    {id:933, text:"你认为好老师和好教育者的核心素质是？", skillMap:[{skill:"沟通表达",w:0.5},{skill:"领导力",w:0.3},{skill:"逻辑分析",w:0.2}], tag:"教育理念",
-      options:[{text:"爱心和耐心",score:5},{text:"专业知识和教学能力",score:4},{text:"沟通和引导能力",score:3},{text:"责任心和敬业精神",score:2},{text:"创新意识",score:1}]},
-    {id:934, text:"组织学生小组讨论或合作学习时你？", skillMap:[{skill:"项目管理",w:0.4},{skill:"沟通表达",w:0.3},{skill:"领导力",w:0.3}], tag:"合作学习",
-      options:[{text:"善于分组引导和总结提升",score:5},{text:"能按流程组织讨论",score:4},{text:"基本能维持秩序",score:3},{text:"不太会组织",score:2},{text:"觉得不如自己讲",score:1}]},
-        {id:2044, text:"两个学生在课堂上吵架，你第一时间应该？", skillMap:[{skill:"领导力",w:0.6},{skill:"沟通表达",w:0.5},{skill:"运营管理",w:0.3}], tag:"纪律管理",
-      options:[{text:"制止争吵，分开两人，课后单独谈话",score:5},{text:"让全班投票谁对谁错",score:1},{text:"通知双方家长到校",score:1},{text:"让他们继续吵完再上课",score:1},{text:"当场严厉批评两个人",score:1}]},
-    {id:936, text:"你更倾向于在哪个教育阶段工作？", skillMap:[{skill:"沟通表达",w:0.4},{skill:"产品策划",w:0.3},{skill:"项目管理",w:0.3}], tag:"教育阶段",
-      options:[{text:"学前和小学教育",score:5},{text:"中学和高中教育",score:4},{text:"大学和高等教育",score:3},{text:"职业教育和成人教育",score:2},{text:"都可以接受",score:1}]},
-    {id:937, text:"你对心理健康教育在学生中的重要性怎么看？", skillMap:[{skill:"沟通表达",w:0.5},{skill:"逻辑分析",w:0.3},{skill:"写作内容",w:0.2}], tag:"心理健康",
-      options:[{text:"非常重要应该纳入课程体系",score:5},{text:"很重要但资源不够",score:4},{text:"知道重要但不了解",score:3},{text:"不太了解",score:2},{text:"没那么重要",score:1}]},
-        {id:2045, text:"教授一个新概念时，最有效的教学方式是？", skillMap:[{skill:"产品策划",w:0.5},{skill:"沟通表达",w:0.4},{skill:"创造性",w:0.3}], tag:"教学方法",
-      options:[{text:"从学生已知的旧知识引入，联系生活实际举例",score:5},{text:"直接给出概念定义让学生背诵",score:1},{text:"布置大量习题让学生自己领悟",score:1},{text:"播放一段相关视频就结束",score:1},{text:"让学生自己回家看书学习",score:1}]},
-    {id:939, text:"你如何看待家庭教育与学校教育的配合？", skillMap:[{skill:"沟通表达",w:0.5},{skill:"运营管理",w:0.3},{skill:"领导力",w:0.2}], tag:"家校共育",
-      options:[{text:"非常重要需要密切配合",score:5},{text:"知道重要性但不清楚如何做",score:4},{text:"各有各的责任",score:3},{text:"学校负责教育就够了",score:2},{text:"不太关注",score:1}]},
-    {id:940, text:"做家访或与学生单独谈话时你？", skillMap:[{skill:"沟通表达",w:0.6},{skill:"领导力",w:0.4}], tag:"学生沟通",
-      options:[{text:"能建立信任了解真实想法",score:5},{text:"能按流程完成谈话",score:4},{text:"基本能正常交流",score:3},{text:"比较尴尬不自然",score:2},{text:"不知道该说什么",score:1}]},
-        {id:2046, text:"以下哪种评价方式最能促进学生学习？", skillMap:[{skill:"写作内容",w:0.5},{skill:"逻辑分析",w:0.4},{skill:"数据分析",w:0.3}], tag:"教育评价",
-      options:[{text:"过程性评价：关注学习过程的进步和反馈",score:5},{text:"只以期末考试成绩为准",score:1},{text:"排名次公布成绩",score:1},{text:"每天小测验",score:1},{text:"只看作业完成数量",score:1}]},
-    {id:942, text:"你认为学生在学校最应该学会什么？", skillMap:[{skill:"逻辑分析",w:0.4},{skill:"沟通表达",w:0.3},{skill:"领导力",w:0.3}], tag:"教育目标",
-      options:[{text:"批判性思维和学习能力",score:5},{text:"团队合作和沟通能力",score:4},{text:"知识和应试能力",score:3},{text:"品德和责任感",score:2},{text:"创新和解决问题的能力",score:1}]},
-    {id:943, text:"你对特殊需求学生（自闭症/多动症等）的了解？", skillMap:[{skill:"沟通表达",w:0.4},{skill:"写作内容",w:0.3},{skill:"逻辑分析",w:0.3}], tag:"特殊教育",
-      options:[{text:"有系统了解知道教育方法",score:5},{text:"知道基本概念和类型",score:4},{text:"听说过但不太了解",score:3},{text:"不太了解",score:2},{text:"完全没有接触",score:1}]},
-        {id:2047, text:"家长向你抱怨孩子回家不做作业，你建议？", skillMap:[{skill:"沟通表达",w:0.7},{skill:"领导力",w:0.4},{skill:"运营管理",w:0.3}], tag:"家校沟通",
-      options:[{text:"了解孩子不做作业的原因，和家长一起制定激励方案",score:5},{text:"让家长严厉惩罚孩子",score:1},{text:"在学校做完作业再回家",score:1},{text:"减少作业量到零",score:1},{text:"让同学监督他做作业",score:1}]}],
-  "eng":[
-    {id:851, text:"你对动手操作和实践的态度？", skillMap:[{skill:"工程技术",w:0.7},{skill:"编程开发",w:0.3}], tag:"实践能力",
-      options:[{text:"非常喜欢动手，动手能力很强",score:5},{text:"愿意动手实践",score:4},{text:"可以按要求操作",score:3},{text:"不太喜欢动手",score:2},{text:"完全不想做操作类工作",score:1}]},
-    {id:852, text:"在设计或制造产品时，你更关注？", skillMap:[{skill:"设计创意",w:0.4},{skill:"逻辑分析",w:0.3},{skill:"项目管理",w:0.3}], tag:"工程思维",
-      options:[{text:"功能实现和技术指标",score:5},{text:"成本和效率",score:4},{text:"外观和使用体验",score:3},{text:"安全性和可靠性",score:2},{text:"别人定什么就做什么",score:1}]},
-    {id:853, text:"对于长期在实验室或项目现场工作，你？", skillMap:[{skill:"工程技术",w:0.5},{skill:"运营管理",w:0.3},{skill:"逻辑分析",w:0.2}], tag:"工作环境",
-      options:[{text:"能接受，甚至很喜欢",score:5},{text:"可以接受",score:4},{text:"看情况，不太确定",score:3},{text:"不太能接受",score:2},{text:"完全不能接受",score:1}]}
-  ,
-        {id:2051, text:"一个重物用滑轮组提升，使用动滑轮的主要作用是？", skillMap:[{skill:"工程技术",w:0.8},{skill:"逻辑分析",w:0.4}], tag:"机械原理",
-      options:[{text:"省力，可以只用一半的力",score:5},{text:"加快提升速度",score:1},{text:"让提升更平稳",score:1},{text:"改变用力方向",score:1},{text:"增加提升高度",score:1}]},
-    {id:946, text:"你更擅长拆解问题还是组装构建？", skillMap:[{skill:"逻辑分析",w:0.5},{skill:"工程技术",w:0.5}], tag:"工程思维",
-      options:[{text:"都很擅长",score:5},{text:"更擅长拆解分析问题",score:4},{text:"更擅长组装构建",score:3},{text:"都不太擅长",score:2},{text:"没想过这个问题",score:1}]},
-        {id:2052, text:"建筑结构中，以下哪种形状的承重能力最强？", skillMap:[{skill:"工程技术",w:0.7},{skill:"逻辑分析",w:0.5}], tag:"结构力学",
-      options:[{text:"三角形",score:5},{text:"正方形",score:1},{text:"圆形",score:1},{text:"长方形",score:1},{text:"六边形",score:1}]},
-    {id:948, text:"动手修理东西或DIY时你的表现？", skillMap:[{skill:"工程技术",w:0.6},{skill:"逻辑分析",w:0.4}], tag:"动手能力",
-      options:[{text:"经常动手且成功率很高",score:5},{text:"能修理一些简单故障",score:4},{text:"愿意尝试但经常搞砸",score:3},{text:"不太喜欢动手",score:2},{text:"完全不做",score:1}]},
-        {id:2053, text:"电路中有三个灯泡串联，其中一个烧坏了，其他两个会怎样？", skillMap:[{skill:"工程技术",w:0.8},{skill:"逻辑分析",w:0.4}], tag:"电路基础",
-      options:[{text:"两个都不会亮，因为电路断开了",score:5},{text:"一个亮一个不亮",score:1},{text:"两个都正常亮",score:1},{text:"两个灯变得更亮",score:1},{text:"两个灯变得更暗",score:1}]},
-    {id:950, text:"你对材料科学和新型材料的了解？", skillMap:[{skill:"工程技术",w:0.6},{skill:"逻辑分析",w:0.4}], tag:"材料认知",
-      options:[{text:"了解常见材料性能和应用",score:5},{text:"知道基本材料分类",score:4},{text:"有模糊概念",score:3},{text:"不太了解",score:2},{text:"完全不感兴趣",score:1}]},
-    {id:951, text:"在工程项目中遇到技术难题时你？", skillMap:[{skill:"逻辑分析",w:0.5},{skill:"工程技术",w:0.5}], tag:"工程攻关",
-      options:[{text:"查阅文献理论分析逐一排除",score:5},{text:"请教有经验的工程师",score:4},{text:"尝试不同方案试错",score:3},{text:"上报等待技术支持",score:2},{text:"绕开问题",score:1}]},
-        {id:2054, text:"制造一个零件的成本太高，你应该首先考虑？", skillMap:[{skill:"工程技术",w:0.6},{skill:"产品策划",w:0.4},{skill:"项目管理",w:0.3}], tag:"工程优化",
-      options:[{text:"分析成本构成，看是否可以通过工艺优化替换材料降低成本",score:5},{text:"直接换一个更便宜的供应商",score:1},{text:"降低零件质量标准",score:1},{text:"要求工人加班提高产量",score:1},{text:"放弃这个零件改用其他方案",score:1}]},
-    {id:953, text:"绘制工程图纸或技术文件时你？", skillMap:[{skill:"工程技术",w:0.6},{skill:"设计创意",w:0.4}], tag:"制图能力",
-      options:[{text:"规范细致能表达清晰",score:5},{text:"能按标准完成制图",score:4},{text:"基本能表达设计意图",score:3},{text:"不太会画图",score:2},{text:"完全不想做",score:1}]},
-    {id:954, text:"你对自动化生产线和工业机器人了解？", skillMap:[{skill:"工程技术",w:0.5},{skill:"编程开发",w:0.3},{skill:"逻辑分析",w:0.2}], tag:"自动化认知",
-      options:[{text:"了解原理和应用场景",score:5},{text:"知道基本工作方式",score:4},{text:"见过但不太了解",score:3},{text:"不太了解",score:2},{text:"完全不感兴趣",score:1}]},
-        {id:2055, text:"测量一根轴的直径，多次测量结果差异很大，这说明？", skillMap:[{skill:"工程技术",w:0.6},{skill:"数据分析",w:0.5},{skill:"逻辑分析",w:0.3}], tag:"质量控制",
-      options:[{text:"测量方法或工具可能有问题，需要校准",score:5},{text:"轴的直径本来就不固定",score:1},{text:"测量的人技术不行",score:1},{text:"取平均值即可不需要管",score:1},{text:"换一个更贵的测量仪器",score:1}]},
-    {id:956, text:"做实验或测试时你更注重什么？", skillMap:[{skill:"工程技术",w:0.4},{skill:"数据分析",w:0.3},{skill:"逻辑分析",w:0.3}], tag:"实验能力",
-      options:[{text:"实验设计的科学性和数据准确性",score:5},{text:"操作规范和安全",score:4},{text:"效率和成本",score:3},{text:"记录和报告",score:2},{text:"按流程走就行",score:1}]},
-    {id:957, text:"你对新能源和可持续发展技术的兴趣？", skillMap:[{skill:"工程技术",w:0.5},{skill:"逻辑分析",w:0.3},{skill:"写作内容",w:0.2}], tag:"新能源认知",
-      options:[{text:"非常关注并了解主流技术",score:5},{text:"了解太阳能风电等基本概念",score:4},{text:"知道一些大方向",score:3},{text:"不太关注",score:2},{text:"完全不感兴趣",score:1}]},
-        {id:2056, text:"施工图纸上标注的尺寸单位通常是？", skillMap:[{skill:"工程技术",w:0.7},{skill:"设计创意",w:0.3}], tag:"工程制图",
-      options:[{text:"毫米（mm）",score:5},{text:"厘米（cm）",score:1},{text:"米（m）",score:1},{text:"英寸（inch）",score:1},{text:"分米（dm）",score:1}]},
-    {id:959, text:"你对建筑信息模型（BIM）或数字孪生的了解？", skillMap:[{skill:"工程技术",w:0.4},{skill:"编程开发",w:0.3},{skill:"设计创意",w:0.3}], tag:"数字工程",
-      options:[{text:"了解概念和应用价值",score:5},{text:"知道基本原理",score:4},{text:"听说过名词",score:3},{text:"不太了解",score:2},{text:"完全不感兴趣",score:1}]},
-    {id:960, text:"工程项目管理中你更看重进度还是质量？", skillMap:[{skill:"项目管理",w:0.6},{skill:"运营管理",w:0.4}], tag:"工程管理",
-      options:[{text:"质量第一进度可调",score:5},{text:"质量和进度平衡",score:4},{text:"保质前提下赶进度",score:3},{text:"进度优先质量可调",score:2},{text:"只要按时交付就行",score:1}]},
-        {id:2057, text:"一根金属棒在夏天变长冬天变短，这是因为？", skillMap:[{skill:"工程技术",w:0.7},{skill:"逻辑分析",w:0.5}], tag:"材料特性",
-      options:[{text:"热胀冷缩，温度变化导致材料体积变化",score:5},{text:"金属疲劳",score:1},{text:"材料老化",score:1},{text:"重力作用",score:1},{text:"空气湿度变化",score:1}],
-  "medical":[
-    {id:3001, text:"你对医疗健康行业的兴趣如何？", skillMap:[{skill:"沟通表达",w:0.3},{skill:"逻辑分析",w:0.3},{skill:"工程技术",w:0.2},{skill:"运营管理",w:0.2}], tag:"医学兴趣",
-      options:[{text:"非常感兴趣，有救死扶伤的使命感",score:5},{text:"较感兴趣，关注健康领域",score:4},{text:"一般，不排斥",score:3},{text:"不太感兴趣",score:2},{text:"完全没有兴趣",score:1}]},
-    {id:3002, text:"你对解剖、血液等医学场景的接受程度？", skillMap:[{skill:"工程技术",w:0.5},{skill:"逻辑分析",w:0.3},{skill:"运营管理",w:0.2}], tag:"心理承受",
-      options:[{text:"完全能接受，不觉得不适",score:5},{text:"基本能接受，需要适应期",score:4},{text:"有点不适但可以克服",score:3},{text:"比较难以接受",score:2},{text:"完全不能接受",score:1}]},
-    {id:3003, text:"在照顾病人或帮助他人时你？", skillMap:[{skill:"沟通表达",w:0.5},{skill:"领导力",w:0.3},{skill:"运营管理",w:0.2}], tag:"服务意识",
-      options:[{text:"非常有耐心，能细致周到地照顾",score:5},{text:"愿意帮助，力所能及",score:4},{text:"可以但需要别人引导",score:3},{text:"不太愿意照顾他人",score:2},{text:"觉得麻烦不想做",score:1}]},
-    {id:3004, text:"一位急诊患者情绪激动不配合检查，你首先应该？", skillMap:[{skill:"沟通表达",w:0.7},{skill:"领导力",w:0.4},{skill:"逻辑分析",w:0.3}], tag:"医患沟通",
-      options:[{text:"安抚患者情绪，耐心解释检查的必要性",score:5},{text:"让保安把他按住强制检查",score:1},{text:"不管他直接做下一位",score:1},{text:"让他去找别的医院",score:1},{text:"大声斥责让他安静",score:1}]},
-    {id:3005, text:"手术前发现器械消毒记录不完整，你应该？", skillMap:[{skill:"运营管理",w:0.6},{skill:"逻辑分析",w:0.5},{skill:"领导力",w:0.4}], tag:"医疗安全",
-      options:[{text:"立即停止手术，重新消毒并核查记录",score:5},{text:"时间紧迫先做完再说",score:1},{text:"简单酒精擦拭继续",score:1},{text:"填个假记录就行",score:1},{text:"让助手去查自己在旁边等",score:1}]},
-    {id:3006, text:"你对药理和药物作用机制的了解？", skillMap:[{skill:"逻辑分析",w:0.5},{skill:"数据分析",w:0.3},{skill:"数学统计",w:0.2}], tag:"药理认知",
-      options:[{text:"系统学习过，了解基本分类和机制",score:5},{text:"知道常见药物的作用",score:4},{text:"了解抗生素止痛药等基本概念",score:3},{text:"不太了解",score:2},{text:"完全不感兴趣",score:1}]},
-    {id:3007, text:"你如何看待临终关怀和安宁疗护？", skillMap:[{skill:"沟通表达",w:0.5},{skill:"领导力",w:0.3},{skill:"写作内容",w:0.2}], tag:"生命态度",
-      options:[{text:"尊重生命最后阶段，愿意从事相关工作",score:5},{text:"理解其重要性",score:4},{text:"知道但不太了解",score:3},{text:"觉得太沉重了",score:2},{text:"不愿面对死亡话题",score:1}]},
-    {id:3008, text:"急救现场有人心脏骤停，你应该首先？", skillMap:[{skill:"工程技术",w:0.5},{skill:"领导力",w:0.4},{skill:"逻辑分析",w:0.3}], tag:"急救知识",
-      options:[{text:"立即呼叫120并开始心肺复苏",score:5},{text:"先拍照发朋友圈",score:1},{text:"等专业医生来再说",score:1},{text:"喂他喝水",score:1},{text:"把他扶起来坐着",score:1}]},
-    {id:3009, text:"长期夜班和随时待命的工作节奏你？", skillMap:[{skill:"运营管理",w:0.5},{skill:"项目管理",w:0.3},{skill:"逻辑分析",w:0.2}], tag:"工作节奏",
-      options:[{text:"完全能接受，医疗行业本就如此",score:5},{text:"可以接受有心理准备",score:4},{text:"短时间可以长期不行",score:3},{text:"比较难接受夜班",score:2},{text:"完全不能接受夜班",score:1}]},
-    {id:3010, text:"遇到罕见病症时你倾向于？", skillMap:[{skill:"逻辑分析",w:0.5},{skill:"数据分析",w:0.3},{skill:"写作内容",w:0.2}], tag:"医学研究",
-      options:[{text:"查阅文献，深入分析病因和诊疗方法",score:5},{text:"请教资深同事",score:4},{text:"按常规方案治疗",score:3},{text:"转诊给上级医院",score:2},{text:"不太关注",score:1}]},
-    {id:3011, text:"一位糖尿病患者血糖控制很差，作为医生你应该？", skillMap:[{skill:"沟通表达",w:0.6},{skill:"逻辑分析",w:0.5},{skill:"领导力",w:0.3}], tag:"慢病管理",
-      options:[{text:"全面评估用药饮食运动，制定个性化方案并进行健康教育",score:5},{text:"直接加大药量",score:1},{text:"批评患者不听话",score:1},{text:"让他住院再说",score:1},{text:"换个更强的药就行",score:1}]},
-    {id:3012, text:"你对公共卫生和疾病预防的了解？", skillMap:[{skill:"数据分析",w:0.4},{skill:"运营管理",w:0.3},{skill:"逻辑分析",w:0.3}], tag:"公卫认知",
-      options:[{text:"了解流行病学和预防医学的基本概念",score:5},{text:"知道疫苗接种等基本知识",score:4},{text:"了解一些常识",score:3},{text:"不太了解",score:2},{text:"完全不关注",score:1}]},
-    {id:3013, text:"病人家属对你的治疗方案提出质疑，你？", skillMap:[{skill:"沟通表达",w:0.6},{skill:"领导力",w:0.4},{skill:"逻辑分析",w:0.3}], tag:"医患信任",
-      options:[{text:"耐心解释方案依据，倾听家属顾虑共同决策",score:5},{text:"让家属自己决定",score:1},{text:"说'我是医生说了算'",score:1},{text:"直接无视继续治疗",score:1},{text:"让家属签字免责",score:1}]},
-    {id:3014, text:"你对康复医学和运动康复的了解？", skillMap:[{skill:"工程技术",w:0.5},{skill:"逻辑分析",w:0.3},{skill:"设计创意",w:0.2}], tag:"康复认知",
-      options:[{text:"了解康复评估和治疗的基本方法",score:5},{text:"知道物理治疗作业治疗等概念",score:4},{text:"知道康复训练的重要",score:3},{text:"不太了解",score:2},{text:"完全不感兴趣",score:1}]},
-    {id:3015, text:"医疗记录和病历书写时你？", skillMap:[{skill:"写作内容",w:0.5},{skill:"逻辑分析",w:0.3},{skill:"数据分析",w:0.2}], tag:"医疗文书",
-      options:[{text:"规范详细，逻辑清晰，记录完整",score:5},{text:"能按要求完成记录",score:4},{text:"基本能完成",score:3},{text:"经常拖延记录",score:2},{text:"书写不规范",score:1}]},
-    {id:3016, text:"医院感染暴发时你首先应该？", skillMap:[{skill:"运营管理",w:0.6},{skill:"领导力",w:0.5},{skill:"逻辑分析",w:0.5}], tag:"院感防控",
-      options:[{text:"立即启动院感应急预案，隔离传染源并追踪接触者",score:5},{text:"加大抗生素使用量",score:1},{text:"封锁消息避免恐慌",score:1},{text:"正常接诊不必在意",score:1},{text:"让保洁多消毒就行",score:1}]},
-    {id:3017, text:"你对中医药和传统医学的态度？", skillMap:[{skill:"逻辑分析",w:0.4},{skill:"写作内容",w:0.3},{skill:"沟通表达",w:0.3}], tag:"中医认知",
-      options:[{text:"认可其价值，了解基本理论",score:5},{text:"相信但不太了解",score:4},{text:"持开放态度",score:3},{text:"不太相信中医",score:2},{text:"完全不信",score:1}]},
-    {id:3018, text:"多科室会诊时各科意见不一致，你？", skillMap:[{skill:"领导力",w:0.5},{skill:"沟通表达",w:0.4},{skill:"逻辑分析",w:0.4}], tag:"多科协作",
-      options:[{text:"组织讨论分析利弊，以患者利益最大化达成共识",score:5},{text:"听资历最深的医生的",score:1},{text:"各自为政互不干涉",score:1},{text:"直接上报院长决定",score:1},{text:"按自己想法直接执行",score:1}]},
-    {id:3019, text:"你对医疗器械和设备操作的学习能力？", skillMap:[{skill:"工程技术",w:0.5},{skill:"编程开发",w:0.2},{skill:"逻辑分析",w:0.3}], tag:"设备操作",
-      options:[{text:"善于学习新设备，能快速掌握操作规程",score:5},{text:"能按要求学习使用",score:4},{text:"基本能用但需要指导",score:3},{text:"不太擅长操作设备",score:2},{text:"对用设备有恐惧感",score:1}]},
-    {id:3020, text:"社区发生传染病疫情时你主动请缨去一线吗？", skillMap:[{skill:"领导力",w:0.5},{skill:"沟通表达",w:0.3},{skill:"运营管理",w:0.2}], tag:"职业担当",
-      options:[{text:"义不容辞，这是医护人员的责任",score:5},{text:"会去但有些担心",score:4},{text:"服从组织安排",score:3},{text:"不太想去",score:2},{text:"坚决不去",score:1}]}],
-  "culture":[
-    {id:4001, text:"你对文化、艺术或体育活动的参与度？", skillMap:[{skill:"创造性",w:0.4},{skill:"设计创意",w:0.3},{skill:"市场营销",w:0.3}], tag:"文体兴趣",
-      options:[{text:"非常热爱，经常参与或关注",score:5},{text:"有兴趣，偶尔参与",score:4},{text:"一般喜欢看但不太参与",score:3},{text:"不太感兴趣",score:2},{text:"完全不感兴趣",score:1}]},
-    {id:4002, text:"策划一场活动或演出时你更擅长？", skillMap:[{skill:"项目管理",w:0.5},{skill:"创造性",w:0.3},{skill:"沟通表达",w:0.2}], tag:"活动策划",
-      options:[{text:"整体策划到执行落地全流程",score:5},{text:"创意策划和方案设计",score:4},{text:"执行和现场管理",score:3},{text:"后勤和协调工作",score:2},{text:"不太会策划活动",score:1}]},
-    {id:4003, text:"你对体育赛事的了解和兴趣？", skillMap:[{skill:"运营管理",w:0.4},{skill:"市场营销",w:0.3},{skill:"项目管理",w:0.3}], tag:"体育认知",
-      options:[{text:"非常了解，关注赛事运营和行业发展",score:5},{text:"喜欢看比赛了解规则",score:4},{text:"知道热门赛事",score:3},{text:"不太关注体育",score:2},{text:"对体育完全没兴趣",score:1}]},
-    {id:4004, text:"旅游线路设计时你会优先考虑？", skillMap:[{skill:"产品策划",w:0.4},{skill:"市场营销",w:0.3},{skill:"创造性",w:0.3}], tag:"旅游策划",
-      options:[{text:"独特的文化体验和深度游览",score:5},{text:"性价比和行程舒适度",score:4},{text:"网红打卡点和拍照",score:3},{text:"购物和美食",score:2},{text:"随便别人安排",score:1}]},
-    {id:4005, text:"展览讲解或导游工作中你？", skillMap:[{skill:"沟通表达",w:0.6},{skill:"写作内容",w:0.3},{skill:"领导力",w:0.1}], tag:"讲解能力",
-      options:[{text:"善于深入浅出地讲解，能与听众互动",score:5},{text:"能按照讲解词流畅讲解",score:4},{text:"勉强能说但比较生硬",score:3},{text:"不太擅长当众讲解",score:2},{text:"很排斥在众人面前说话",score:1}]},
-    {id:4006, text:"文化场馆（博物馆/剧院）里观众突发疾病，你？", skillMap:[{skill:"运营管理",w:0.5},{skill:"领导力",w:0.4},{skill:"沟通表达",w:0.3}], tag:"应急处理",
-      options:[{text:"启动应急预案，疏散通道并呼叫急救",score:5},{text:"继续演出不管",score:1},{text:"让观众自己处理",score:1},{text:"拍照发社交媒体",score:1},{text:"广播寻医后继续",score:1}]},
-    {id:4007, text:"你对非物质文化遗产保护的理解？", skillMap:[{skill:"写作内容",w:0.4},{skill:"项目管理",w:0.3},{skill:"逻辑分析",w:0.3}], tag:"非遗认知",
-      options:[{text:"了解保护方法和传承意义",score:5},{text:"知道一些非遗项目",score:4},{text:"听说过概念",score:3},{text:"不太了解",score:2},{text:"觉得没必要保护",score:1}]},
-    {id:4008, text:"你对体育教练或健身指导的兴趣？", skillMap:[{skill:"沟通表达",w:0.4},{skill:"领导力",w:0.3},{skill:"工程技术",w:0.3}], tag:"运动指导",
-      options:[{text:"很有兴趣，愿意指导他人运动训练",score:5},{text:"有兴趣可以尝试",score:4},{text:"一般，不排斥",score:3},{text:"不太感兴趣",score:2},{text:"完全没兴趣",score:1}]},
-    {id:4009, text:"文旅项目策划书最重要的是？", skillMap:[{skill:"产品策划",w:0.5},{skill:"市场营销",w:0.3},{skill:"写作内容",w:0.2}], tag:"文旅策划",
-      options:[{text:"核心IP定位和可持续的商业模式",score:5},{text:"华丽的排版和图片",score:1},{text:"抄袭热门项目方案",score:1},{text:"预算越低越好",score:1},{text:"越长越详细越好",score:1}]},
-    {id:4010, text:"艺人或运动员的经纪工作你了解？", skillMap:[{skill:"市场营销",w:0.5},{skill:"沟通表达",w:0.3},{skill:"项目管理",w:0.2}], tag:"经纪认知",
-      options:[{text:"了解经纪合约、品牌代言和媒体关系",score:5},{text:"知道基本经纪业务",score:4},{text:"有个模糊概念",score:3},{text:"不太了解",score:2},{text:"完全不感兴趣",score:1}]},
-    {id:4011, text:"游乐园设备突发故障游客被困空中，你作为运营人员？", skillMap:[{skill:"运营管理",w:0.6},{skill:"领导力",w:0.5},{skill:"沟通表达",w:0.3}], tag:"应急运营",
-      options:[{text:"立即启动救援预案，安抚游客并联系技术维修",score:5},{text:"让游客自己跳下来",score:1},{text:"关掉电源重启试试",score:1},{text:"装作没看见",score:1},{text:"先修设备再通知游客",score:1}]},
-    {id:4012, text:"你对电竞产业和游戏运营的了解？", skillMap:[{skill:"市场营销",w:0.4},{skill:"运营管理",w:0.3},{skill:"数据分析",w:0.3}], tag:"电竞认知",
-      options:[{text:"了解赛事运营、战队管理和直播生态",score:5},{text:"喜欢看比赛和打游戏",score:4},{text:"知道一些热门游戏",score:3},{text:"不太了解",score:2},{text:"完全不感兴趣",score:1}]},
-    {id:4013, text:"电影院排片时暑期档和国庆档大片冲突，你？", skillMap:[{skill:"数据分析",w:0.5},{skill:"市场营销",w:0.4},{skill:"产品策划",w:0.3}], tag:"排片策略",
-      options:[{text:"分析历史数据和受众画像，制定差异化排片策略",score:5},{text:"哪部热门排哪部",score:1},{text:"平均分配场次",score:1},{text:"优先排国产片",score:1},{text:"全排同一部大片",score:1}]},
-    {id:4014, text:"你对舞蹈/音乐/戏剧表演的参与程度？", skillMap:[{skill:"创造性",w:0.5},{skill:"沟通表达",w:0.2},{skill:"设计创意",w:0.3}], tag:"表演兴趣",
-      options:[{text:"有表演经验或系统学习过",score:5},{text:"有业余爱好和兴趣",score:4},{text:"喜欢欣赏",score:3},{text:"不太关注",score:2},{text:"完全不感兴趣",score:1}]},
-    {id:4015, text:"酒店前台遇到客人投诉房间不干净，首先应该？", skillMap:[{skill:"沟通表达",w:0.6},{skill:"运营管理",w:0.4},{skill:"领导力",w:0.3}], tag:"客诉处理",
-      options:[{text:"诚恳道歉立即安排清洁或换房并给予补偿",score:5},{text:"说房间是干净的客人搞错了",score:1},{text:"让客人自己去投诉",score:1},{text:"说清洁工下班了没办法",score:1},{text:"假装没听到",score:1}]},
-    {id:4016, text:"你对品牌赞助和商务合作的理解？", skillMap:[{skill:"市场营销",w:0.5},{skill:"沟通表达",w:0.3},{skill:"财务金融",w:0.2}], tag:"商务合作",
-      options:[{text:"了解赞助权益设计和合作谈判",score:5},{text:"知道基本的商务合作模式",score:4},{text:"听说过",score:3},{text:"不太了解",score:2},{text:"完全不感兴趣",score:1}]},
-    {id:4017, text:"大型音乐节现场出现踩踏风险预警时你？", skillMap:[{skill:"运营管理",w:0.6},{skill:"领导力",w:0.5},{skill:"沟通表达",w:0.4}], tag:"大型活动安全",
-      options:[{text:"立即启动限流措施，引导人流分散并广播预警",score:5},{text:"取消演出疏散所有人",score:1},{text:"继续演出不用管",score:1},{text:"让安保去驱赶人群",score:1},{text:"等出事再说",score:1}]},
-    {id:4018, text:"你对度假酒店或民宿运营管理了解？", skillMap:[{skill:"运营管理",w:0.5},{skill:"市场营销",w:0.3},{skill:"产品策划",w:0.2}], tag:"酒店运营",
-      options:[{text:"了解房态管理、OTA平台运营和客户体验",score:5},{text:"知道基本运营流程",score:4},{text:"住过但不太了解",score:3},{text:"不太了解",score:2},{text:"完全不感兴趣",score:1}]},
-    {id:4019, text:"你觉得文化创意产品的核心是？", skillMap:[{skill:"产品策划",w:0.4},{skill:"创造性",w:0.4},{skill:"市场营销",w:0.2}], tag:"文创理解",
-      options:[{text:"文化内涵与创意表达的有机结合",score:5},{text:"包装设计好看",score:1},{text:"价格越便宜越好",score:1},{text:"有名人代言就行",score:1},{text:"仿制大牌设计",score:1}]},
-    {id:4020, text:"体育赛事公关危机（如运动员丑闻）你？", skillMap:[{skill:"沟通表达",w:0.5},{skill:"领导力",w:0.4},{skill:"市场营销",w:0.3}], tag:"危机公关",
-      options:[{text:"迅速发布声明表明立场，依法依规处理",score:5},{text:"冷处理不回应",score:1},{text:"删掉所有相关报道",score:1},{text:"甩锅给其他人",score:1},{text:"发律师函警告媒体",score:1}]}],
-  "law":[
-    {id:5001, text:"你对法律和规章制度的兴趣？", skillMap:[{skill:"逻辑分析",w:0.5},{skill:"写作内容",w:0.3},{skill:"沟通表达",w:0.2}], tag:"法律兴趣",
-      options:[{text:"非常感兴趣，关注法治和社会公正",score:5},{text:"比较感兴趣，喜欢看法律相关内容",score:4},{text:"一般，知道法律重要",score:3},{text:"不太感兴趣",score:2},{text:"觉得法律太枯燥",score:1}]},
-    {id:5002, text:"阅读大量法律条文和卷宗时你？", skillMap:[{skill:"逻辑分析",w:0.5},{skill:"写作内容",w:0.3},{skill:"数据分析",w:0.2}], tag:"文书能力",
-      options:[{text:"能耐心细致地阅读和分析",score:5},{text:"可以坚持但比较枯燥",score:4},{text:"短时间能看长时间不行",score:3},{text:"很难看进去",score:2},{text:"完全看不下去",score:1}]},
-    {id:5003, text:"你如何看待政府机关和公共管理工作？", skillMap:[{skill:"运营管理",w:0.4},{skill:"沟通表达",w:0.3},{skill:"领导力",w:0.3}], tag:"公共管理",
-      options:[{text:"愿意投身公共服务，有服务社会的志向",score:5},{text:"有兴趣但在犹豫",score:4},{text:"尊重但不考虑",score:3},{text:"不太想进体制",score:2},{text:"排斥体制内工作",score:1}]},
-    {id:5004, text:"你的权益受到侵害时你首先会？", skillMap:[{skill:"逻辑分析",w:0.5},{skill:"沟通表达",w:0.3},{skill:"领导力",w:0.2}], tag:"维权意识",
-      options:[{text:"收集证据，寻求法律途径解决",score:5},{text:"找对方理论",score:1},{text:"发社交媒体曝光",score:1},{text:"算了自认倒霉",score:1},{text:"找关系解决",score:1}]},
-    {id:5005, text:"庭审中对方律师提出对你方不利的证据，你？", skillMap:[{skill:"逻辑分析",w:0.6},{skill:"沟通表达",w:0.5},{skill:"写作内容",w:0.3}], tag:"庭审应变",
-      options:[{text:"冷静分析证据的合法性和关联性，质证反驳",score:5},{text:"当庭反对说证据无效",score:1},{text:"当场发怒指责对方",score:1},{text:"申请休庭逃避",score:1},{text:"承认对方说的对",score:1}]},
-    {id:5006, text:"审查一份合同时你更关注？", skillMap:[{skill:"逻辑分析",w:0.5},{skill:"写作内容",w:0.3},{skill:"数据分析",w:0.2}], tag:"合同审查",
-      options:[{text:"核心条款、权利义务、违约责任的平衡性",score:5},{text:"只看金额大小",score:1},{text:"看合同模板都一样",score:1},{text:"看签章是否齐全",score:1},{text:"对方出了就行不看",score:1}]},
-    {id:5007, text:"你对科研工作者的职业发展了解？", skillMap:[{skill:"逻辑分析",w:0.4},{skill:"写作内容",w:0.3},{skill:"项目管理",w:0.3}], tag:"科研认知",
-      options:[{text:"了解科研晋升体系和项目申请流程",score:5},{text:"知道科研人员的工作性质",score:4},{text:"有基本了解",score:3},{text:"不太了解",score:2},{text:"完全不感兴趣",score:1}]},
-    {id:5008, text:"你如何看待政策研究和智库工作？", skillMap:[{skill:"逻辑分析",w:0.5},{skill:"写作内容",w:0.4},{skill:"数据分析",w:0.3}], tag:"政策研究",
-      options:[{text:"很有意义，愿意从事调研和咨询工作",score:5},{text:"有兴趣了解",score:4},{text:"一般不太了解",score:3},{text:"不太感兴趣",score:2},{text:"觉得很枯燥",score:1}]},
-    {id:5009, text:"调解邻里纠纷时你更倾向于？", skillMap:[{skill:"沟通表达",w:0.6},{skill:"领导力",w:0.4},{skill:"逻辑分析",w:0.3}], tag:"调解能力",
-      options:[{text:"倾听双方诉求找到共同利益促成和解",score:5},{text:"直接判谁对谁错",score:1},{text:"各打五十大板",score:1},{text:"让双方上法院",score:1},{text:"不管了让他们自己解决",score:1}]},
-    {id:5010, text:"你对知识产权（专利/商标/版权）的了解？", skillMap:[{skill:"逻辑分析",w:0.4},{skill:"写作内容",w:0.3},{skill:"市场营销",w:0.3}], tag:"知识产权",
-      options:[{text:"了解基本法律制度和申请流程",score:5},{text:"知道基本概念",score:4},{text:"听说过但不太了解",score:3},{text:"不太了解",score:2},{text:"完全不感兴趣",score:1}]},
-    {id:5011, text:"政府工作遇到政策执行效果不理想时你？", skillMap:[{skill:"数据分析",w:0.5},{skill:"逻辑分析",w:0.4},{skill:"运营管理",w:0.3}], tag:"政策执行",
-      options:[{text:"深入基层调研，分析原因提出优化方案",score:5},{text:"按上级指示严格执行",score:1},{text:"书面报告向上反映",score:1},{text:"算了就这样",score:1},{text:"换个新政策执行",score:1}]},
-    {id:5012, text:"你对行政管理和办公室工作的耐心？", skillMap:[{skill:"运营管理",w:0.5},{skill:"项目管理",w:0.3},{skill:"沟通表达",w:0.2}], tag:"行政素养",
-      options:[{text:"细致耐心，善于处理流程性事务",score:5},{text:"能按要求完成",score:4},{text:"基本可以但容易出错",score:3},{text:"不太喜欢琐碎工作",score:2},{text:"完全不想做行政",score:1}]},
-    {id:5013, text:"跨部门协调推进一项政策时遇到阻力，你？", skillMap:[{skill:"沟通表达",w:0.5},{skill:"领导力",w:0.4},{skill:"项目管理",w:0.3}], tag:"协调能力",
-      options:[{text:"分析各方利益诉求，寻求最大公约数协同推进",score:5},{text:"直接向上级打报告要求配合",score:1},{text:"放一放再说",score:1},{text:"自己单干不管别人",score:1},{text:"用行政命令强压",score:1}]},
-    {id:5014, text:"你对公务员考试和工作内容的了解？", skillMap:[{skill:"逻辑分析",w:0.4},{skill:"写作内容",w:0.3},{skill:"运营管理",w:0.3}], tag:"公考认知",
-      options:[{text:"熟悉考试科目和机关工作特点",score:5},{text:"知道基本流程和要求",score:4},{text:"听说过一些",score:3},{text:"不太了解",score:2},{text:"完全不感兴趣",score:1}]},
-    {id:5015, text:"当事人向你咨询法律问题时你？", skillMap:[{skill:"沟通表达",w:0.5},{skill:"逻辑分析",w:0.4},{skill:"写作内容",w:0.3}], tag:"法律咨询",
-      options:[{text:"认真听取案情，分析法律关系并提供专业意见",score:5},{text:"直接告诉他找别的律师",score:1},{text:"网上搜个答案给他",score:1},{text:"说这个案子没希望",score:1},{text:"拍胸脯保证能赢",score:1}]},
-    {id:5016, text:"你对公共危机管理（如自然灾害/事故）的了解？", skillMap:[{skill:"运营管理",w:0.5},{skill:"领导力",w:0.4},{skill:"逻辑分析",w:0.3}], tag:"危机管理",
-      options:[{text:"了解应急管理和危机应对体系",score:5},{text:"知道基本应急常识",score:4},{text:"有模糊概念",score:3},{text:"不太了解",score:2},{text:"觉得跟自己无关",score:1}]},
-    {id:5017, text:"社会调研中你收集到大量矛盾数据时？", skillMap:[{skill:"数据分析",w:0.5},{skill:"逻辑分析",w:0.4},{skill:"写作内容",w:0.3}], tag:"调研分析",
-      options:[{text:"交叉验证数据源，分析偏差原因",score:5},{text:"取个平均值交差",score:1},{text:"去掉异常数据",score:1},{text:"哪个数据好看用哪个",score:1},{text:"让调研重新做一遍",score:1}]},
-    {id:5018, text:"你对城市管理和社区治理的兴趣？", skillMap:[{skill:"运营管理",w:0.5},{skill:"沟通表达",w:0.3},{skill:"项目管理",w:0.2}], tag:"城市管理",
-      options:[{text:"有兴趣了解城市规划、社区服务和公共治理",score:5},{text:"有一定兴趣",score:4},{text:"一般",score:3},{text:"不太感兴趣",score:2},{text:"完全不感兴趣",score:1}]},
-    {id:5019, text:"作为仲裁员审理经济纠纷案件时你？", skillMap:[{skill:"逻辑分析",w:0.6},{skill:"沟通表达",w:0.4},{skill:"领导力",w:0.3}], tag:"仲裁思维",
-      options:[{text:"严格依据事实和法律规定公正裁决",score:5},{text:"谁给的钱多偏向谁",score:1},{text:"和稀泥各打五十大板",score:1},{text:"拖时间不做决定",score:1},{text:"凭直觉判断",score:1}]},
-    {id:5020, text:"你觉得社会组织（NGO/NPO）的工作价值？", skillMap:[{skill:"领导力",w:0.4},{skill:"沟通表达",w:0.3},{skill:"运营管理",w:0.3}], tag:"公益认知",
-      options:[{text:"很有价值，愿意为公益事业贡献力量",score:5},{text:"认可其社会意义",score:4},{text:"值得尊敬但不考虑",score:3},{text:"不太了解",score:2},{text:"觉得没什么用",score:1}]}],
-  "agriculture":[
-    {id:6001, text:"你对农业、林业或生态环保的兴趣？", skillMap:[{skill:"工程技术",w:0.4},{skill:"逻辑分析",w:0.3},{skill:"数据分析",w:0.3}], tag:"农林兴趣",
-      options:[{text:"非常感兴趣，关心粮食安全和生态保护",score:5},{text:"较感兴趣，关注环保",score:4},{text:"一般",score:3},{text:"不太感兴趣",score:2},{text:"完全不感兴趣",score:1}]},
-    {id:6002, text:"在农田、森林或野外环境工作的接受度？", skillMap:[{skill:"工程技术",w:0.4},{skill:"运营管理",w:0.3},{skill:"逻辑分析",w:0.3}], tag:"野外适应",
-      options:[{text:"很喜欢户外和自然环境",score:5},{text:"能接受户外工作",score:4},{text:"可以短时间工作",score:3},{text:"不太喜欢户外",score:2},{text:"完全不能接受",score:1}]},
-    {id:6003, text:"你对待动植物的态度？", skillMap:[{skill:"沟通表达",w:0.3},{skill:"逻辑分析",w:0.3},{skill:"工程技术",w:0.4}], tag:"生命态度",
-      options:[{text:"热爱自然，尊重生命，喜欢与动植物打交道",score:5},{text:"比较喜欢",score:4},{text:"一般，不讨厌",score:3},{text:"不太喜欢",score:2},{text:"害怕或排斥",score:1}]},
-    {id:6004, text:"农作物出现大面积病害时你首先应该？", skillMap:[{skill:"逻辑分析",w:0.5},{skill:"数据分析",w:0.4},{skill:"运营管理",w:0.3}], tag:"农业植保",
-      options:[{text:"采样送检，确定病原体后科学用药",score:5},{text:"大量喷洒农药",score:1},{text:"拔掉所有病株",score:1},{text:"等它自然恢复",score:1},{text:"烧掉整片农田",score:1}]},
-    {id:6005, text:"你对生态农业和有机种植的了解？", skillMap:[{skill:"工程技术",w:0.4},{skill:"逻辑分析",w:0.3},{skill:"市场营销",w:0.3}], tag:"生态农业",
-      options:[{text:"了解轮作、绿肥、生物防治等生态方法",score:5},{text:"知道有机农业基本概念",score:4},{text:"听说过",score:3},{text:"不太了解",score:2},{text:"完全不感兴趣",score:1}]},
-    {id:6006, text:"养殖场出现动物疫情时正确处理方式是？", skillMap:[{skill:"运营管理",w:0.6},{skill:"领导力",w:0.4},{skill:"逻辑分析",w:0.3}], tag:"动物防疫",
-      options:[{text:"立即上报并启动隔离扑杀消毒等防控措施",score:5},{text:"赶紧把动物卖掉减少损失",score:1},{text:"偷偷处理不报告",score:1},{text:"等疫情扩散再说",score:1},{text:"给动物加大用药量",score:1}]},
-    {id:6007, text:"你对新能源（太阳能/风能/储能）技术的了解？", skillMap:[{skill:"工程技术",w:0.6},{skill:"逻辑分析",w:0.3},{skill:"数据分析",w:0.3}], tag:"新能源认知",
-      options:[{text:"了解主流技术和行业发展趋势",score:5},{text:"知道基本原理",score:4},{text:"有基本概念",score:3},{text:"不太了解",score:2},{text:"完全不感兴趣",score:1}]},
-    {id:6008, text:"开展环境评估时发现数据超标，你？", skillMap:[{skill:"数据分析",w:0.5},{skill:"逻辑分析",w:0.4},{skill:"写作内容",w:0.3}], tag:"环评能力",
-      options:[{text:"如实报告并提出整改建议",score:5},{text:"修改数据让达标",score:1},{text:"重做一次直到合格",score:1},{text:"选别的点位采样",score:1},{text:"忽略超标项",score:1}]},
-    {id:6009, text:"你对园林景观设计和植物配置的兴趣？", skillMap:[{skill:"设计创意",w:0.5},{skill:"工程技术",w:0.3},{skill:"创造性",w:0.2}], tag:"园林设计",
-      options:[{text:"很感兴趣，了解植物搭配和空间设计",score:5},{text:"有兴趣了解",score:4},{text:"一般",score:3},{text:"不太感兴趣",score:2},{text:"完全不感兴趣",score:1}]},
-    {id:6010, text:"森林防火巡查中发现违规用火者你？", skillMap:[{skill:"领导力",w:0.5},{skill:"沟通表达",w:0.4},{skill:"运营管理",w:0.3}], tag:"林业执法",
-      options:[{text:"制止违规行为并依法处理，进行安全教育",score:5},{text:"睁一只眼闭一只眼",score:1},{text:"纵火烧得更旺",score:1},{text:"拍照发朋友圈谴责",score:1},{text:"大声驱赶就行",score:1}]},
-    {id:6011, text:"农场经营成本上升时你最有效的应对是？", skillMap:[{skill:"财务金融",w:0.4},{skill:"运营管理",w:0.4},{skill:"市场营销",w:0.3}], tag:"农业经营",
-      options:[{text:"优化种植结构，发展农产品深加工和品牌化",score:5},{text:"加大化肥农药用量提高产量",score:1},{text:"减少种植面积",score:1},{text:"裁减工人省成本",score:1},{text:"等着政府补贴",score:1}]},
-    {id:6012, text:"你对节水灌溉和农业面源污染防治的了解？", skillMap:[{skill:"工程技术",w:0.5},{skill:"数据分析",w:0.3},{skill:"逻辑分析",w:0.2}], tag:"农业环保",
-      options:[{text:"了解滴灌喷灌技术和污染控制方法",score:5},{text:"知道基本概念",score:4},{text:"听说过",score:3},{text:"不太了解",score:2},{text:"完全不感兴趣",score:1}]},
-    {id:6013, text:"你对碳达峰碳中和等双碳目标的理解？", skillMap:[{skill:"逻辑分析",w:0.4},{skill:"数据分析",w:0.3},{skill:"工程技术",w:0.3}], tag:"双碳认知",
-      options:[{text:"了解政策背景、碳交易和技术路径",score:5},{text:"知道基本概念",score:4},{text:"听说过",score:3},{text:"不太了解",score:2},{text:"完全不关心",score:1}]},
-    {id:6014, text:"食品质量安全事件爆发时你作为监管人员？", skillMap:[{skill:"运营管理",w:0.6},{skill:"领导力",w:0.4},{skill:"逻辑分析",w:0.3}], tag:"食品安全",
-      options:[{text:"启动溯源调查，查封问题产品并向社会公布",score:5},{text:"先压住消息再说",score:1},{text:"销毁证据",score:1},{text:"让企业自己处理",score:1},{text:"罚款了事",score:1}]},
-    {id:6015, text:"你对土壤修复和污染治理技术的了解？", skillMap:[{skill:"工程技术",w:0.5},{skill:"逻辑分析",w:0.3},{skill:"数据分析",w:0.2}], tag:"土壤修复",
-      options:[{text:"了解物理化学生物修复等方法",score:5},{text:"知道基本概念",score:4},{text:"听说过",score:3},{text:"不太了解",score:2},{text:"完全不感兴趣",score:1}]},
-    {id:6016, text:"极端天气导致农作物大面积受灾时你？", skillMap:[{skill:"运营管理",w:0.5},{skill:"领导力",w:0.4},{skill:"逻辑分析",w:0.3}], tag:"农业防灾",
-      options:[{text:"启动农业保险理赔，安排补种和灾后恢复",score:5},{text:"坐着等政府救济",score:1},{text:"改种其他作物碰运气",score:1},{text:"放弃这片地",score:1},{text:"祈祷天气变好",score:1}]},
-    {id:6017, text:"你对生物多样性保护的理解？", skillMap:[{skill:"逻辑分析",w:0.4},{skill:"写作内容",w:0.3},{skill:"工程技术",w:0.3}], tag:"生态保护",
-      options:[{text:"了解保护区和濒危物种保护的基本方法",score:5},{text:"知道生物多样性的重要",score:4},{text:"有基本概念",score:3},{text:"不太了解",score:2},{text:"觉得不重要",score:1}]},
-    {id:6018, text:"推广农业新技术时农民不配合，你？", skillMap:[{skill:"沟通表达",w:0.5},{skill:"领导力",w:0.4},{skill:"市场营销",w:0.3}], tag:"技术推广",
-      options:[{text:"建立示范户用实际效果说话，耐心培训指导",score:5},{text:"强制执行行政命令",score:1},{text:"不配合就不给补贴",score:1},{text:"换了个村推广",score:1},{text:"算了不推了",score:1}]},
-    {id:6019, text:"你对动物科学（畜牧/水产）的了解？", skillMap:[{skill:"工程技术",w:0.4},{skill:"逻辑分析",w:0.3},{skill:"数据分析",w:0.3}], tag:"动物科学",
-      options:[{text:"了解养殖技术、遗传育种和营养管理",score:5},{text:"知道基本概念",score:4},{text:"有模糊认知",score:3},{text:"不太了解",score:2},{text:"完全不感兴趣",score:1}]},
-    {id:6020, text:"可持续发展项目中经济效益和环保冲突时你？", skillMap:[{skill:"领导力",w:0.5},{skill:"逻辑分析",w:0.4},{skill:"沟通表达",w:0.3}], tag:"可持续理念",
-      options:[{text:"寻找经济与环保的平衡点，推动绿色转型",score:5},{text:"优先保证经济效益",score:1},{text:"环保优先不管成本",score:1},{text:"看哪个压力大选哪个",score:1},{text:"不关我的事",score:1}]}],
-  "service":[
-    {id:7001, text:"你对餐饮/酒店/生活服务行业的兴趣？", skillMap:[{skill:"运营管理",w:0.5},{skill:"市场营销",w:0.3},{skill:"沟通表达",w:0.2}], tag:"服务兴趣",
-      options:[{text:"很有兴趣，喜欢服务行业的工作氛围",score:5},{text:"比较感兴趣",score:4},{text:"一般",score:3},{text:"不太感兴趣",score:2},{text:"完全不想做服务业",score:1}]},
-    {id:7002, text:"长时间站立或走动工作的接受度？", skillMap:[{skill:"运营管理",w:0.5},{skill:"工程技术",w:0.3},{skill:"领导力",w:0.2}], tag:"体力适应",
-      options:[{text:"完全可以接受，身体条件好",score:5},{text:"能接受",score:4},{text:"短时间可以",score:3},{text:"不太能接受",score:2},{text:"完全不能",score:1}]},
-    {id:7003, text:"面对形形色色的客人时你的态度？", skillMap:[{skill:"沟通表达",w:0.6},{skill:"领导力",w:0.2},{skill:"运营管理",w:0.2}], tag:"服务态度",
-      options:[{text:"热情耐心，善于应对各种类型的客人",score:5},{text:"能礼貌服务",score:4},{text:"正常交流可以",score:3},{text:"不太喜欢和陌生人打交道",score:2},{text:"觉得客人很烦",score:1}]},
-    {id:7004, text:"餐厅客人投诉菜品中有异物，你作为经理？", skillMap:[{skill:"沟通表达",w:0.6},{skill:"运营管理",w:0.4},{skill:"领导力",w:0.3}], tag:"服务投诉",
-      options:[{text:"真诚道歉立即换菜并免单，调查原因改进流程",score:5},{text:"说这是调料不是异物",score:1},{text:"重新上一份一样的",score:1},{text:"让厨师出来对质",score:1},{text:"说客人自己放进去的",score:1}]},
-    {id:7005, text:"你对物流和供应链管理的基础了解？", skillMap:[{skill:"运营管理",w:0.5},{skill:"逻辑分析",w:0.3},{skill:"数据分析",w:0.2}], tag:"物流认知",
-      options:[{text:"了解仓储运输配送等基本环节",score:5},{text:"知道快递物流的基本流程",score:4},{text:"有基本概念",score:3},{text:"不太了解",score:2},{text:"完全不感兴趣",score:1}]},
-    {id:7006, text:"外卖订单高峰期间出现大量配送延误，你？", skillMap:[{skill:"运营管理",w:0.6},{skill:"数据分析",w:0.4},{skill:"领导力",w:0.3}], tag:"配送管理",
-      options:[{text:"动态调整运力，优先处理超时订单并安抚客户",score:5},{text:"关掉接单系统",score:1},{text:"让客户自己取消",score:1},{text:"让骑手加速超速配送",score:1},{text:"不管了系统自己会好",score:1}]},
-    {id:7007, text:"你对美容/美发/健身等生活服务行业的了解？", skillMap:[{skill:"市场营销",w:0.4},{skill:"运营管理",w:0.3},{skill:"沟通表达",w:0.3}], tag:"生活服务",
-      options:[{text:"了解行业特点和服务模式",score:5},{text:"知道基本业态",score:4},{text:"作为消费者了解",score:3},{text:"不太了解",score:2},{text:"完全不感兴趣",score:1}]},
-    {id:7008, text:"出租车/网约车司机与乘客发生纠纷时你作为平台？", skillMap:[{skill:"沟通表达",w:0.5},{skill:"逻辑分析",w:0.4},{skill:"运营管理",w:0.3}], tag:"纠纷处理",
-      options:[{text:"调取行程记录和录音公正处理",score:5},{text:"偏向司机",score:1},{text:"偏向乘客",score:1},{text:"双方各打五十大板",score:1},{text:"不参与让他们自己解决",score:1}]},
-    {id:7009, text:"你对家政服务行业（月嫂/保洁/养老护理）的看法？", skillMap:[{skill:"运营管理",w:0.4},{skill:"沟通表达",w:0.3},{skill:"领导力",w:0.3}], tag:"家政认知",
-      options:[{text:"值得尊重的职业，了解行业标准",score:5},{text:"理解其社会价值",score:4},{text:"不太了解",score:3},{text:"觉得不太体面",score:2},{text:"看不起这类工作",score:1}]},
-    {id:7010, text:"酒店客房存量管理时旺季超订导致客人到店无房，你？", skillMap:[{skill:"运营管理",w:0.5},{skill:"数据分析",w:0.4},{skill:"沟通表达",w:0.3}], tag:"收益管理",
-      options:[{text:"提前联系客人协调到同级别其他酒店并承担费用",score:5},{text:"到了再说让客人自己想办法",score:1},{text:"给个更差的房型凑合",score:1},{text:"取消最便宜的订单",score:1},{text:"把双床房当大床房卖",score:1}]},
-    {id:7011, text:"你对房地产中介或物业管理的了解？", skillMap:[{skill:"市场营销",w:0.4},{skill:"沟通表达",w:0.3},{skill:"运营管理",w:0.3}], tag:"房地产认知",
-      options:[{text:"了解房产交易流程和物业管理服务",score:5},{text:"知道基本概念",score:4},{text:"有租房买房经验",score:3},{text:"不太了解",score:2},{text:"完全不感兴趣",score:1}]},
-    {id:7012, text:"翻译工作中遇到文化差异的表达你？", skillMap:[{skill:"沟通表达",w:0.5},{skill:"写作内容",w:0.4},{skill:"逻辑分析",w:0.3}], tag:"翻译能力",
-      options:[{text:"理解原意找到目标语言中最贴切的表达",score:5},{text:"直译字面意思",score:1},{text:"直接跳过不翻译",score:1},{text:"用拼音代替",score:1},{text:"编一个意思",score:1}]},
-    {id:7013, text:"你对会展策划和执行流程的熟悉程度？", skillMap:[{skill:"项目管理",w:0.5},{skill:"市场营销",w:0.3},{skill:"创造性",w:0.2}], tag:"会展认知",
-      options:[{text:"了解展位设计、招商、现场管理等环节",score:5},{text:"知道基本流程",score:4},{text:"参加过展会",score:3},{text:"不太了解",score:2},{text:"完全不感兴趣",score:1}]},
-    {id:7014, text:"客户要求司机/配送员帮忙搬重物上楼你作为调度？", skillMap:[{skill:"运营管理",w:0.5},{skill:"沟通表达",w:0.4},{skill:"领导力",w:0.3}], tag:"服务边界",
-      options:[{text:"确认是否为增值服务范围，合理协调安排",score:5},{text:"直接拒绝客户",score:1},{text:"让司机自行决定",score:1},{text:"加价才给搬",score:1},{text:"让客户自己搬",score:1}]},
-    {id:7015, text:"你对时尚零售行业的了解？", skillMap:[{skill:"市场营销",w:0.4},{skill:"设计创意",w:0.3},{skill:"运营管理",w:0.3}], tag:"零售认知",
-      options:[{text:"了解买手、陈列、零售运营等环节",score:5},{text:"知道基本零售模式",score:4},{text:"喜欢逛街购物",score:3},{text:"不太了解",score:2},{text:"完全不感兴趣",score:1}]},
-    {id:7016, text:"餐厅后厨和前厅配合出现严重失误时你作为管理者？", skillMap:[{skill:"领导力",w:0.5},{skill:"运营管理",w:0.4},{skill:"沟通表达",w:0.3}], tag:"餐饮管理",
-      options:[{text:"复盘问题环节优化流程，加强前后场沟通",score:5},{text:"当众批评出错的员工",score:1},{text:"扣全体工资",score:1},{text:"换一套全新的团队",score:1},{text:"装不知道",score:1}]},
-    {id:7017, text:"你对民航/高铁等客运服务标准的了解？", skillMap:[{skill:"运营管理",w:0.5},{skill:"沟通表达",w:0.3},{skill:"领导力",w:0.2}], tag:"客运服务",
-      options:[{text:"了解服务流程、安全规范和旅客权益",score:5},{text:"知道基本服务标准",score:4},{text:"作为乘客体验过",score:3},{text:"不太了解",score:2},{text:"完全不感兴趣",score:1}]},
-    {id:7018, text:"物业公司接到业主投诉邻居长期噪音扰民，你？", skillMap:[{skill:"沟通表达",w:0.5},{skill:"运营管理",w:0.4},{skill:"逻辑分析",w:0.3}], tag:"物业管理",
-      options:[{text:"上门核实情况，组织双方沟通调解，必要时报警",score:5},{text:"让业主自己报警",score:1},{text:"发布群公告禁止噪音",score:1},{text:"说这事不归物业管",score:1},{text:"把投诉业主拉黑",score:1}]},
-    {id:7019, text:"你对奢侈品或高端品牌服务的理解？", skillMap:[{skill:"市场营销",w:0.4},{skill:"沟通表达",w:0.3},{skill:"设计创意",w:0.3}], tag:"高端服务",
-      options:[{text:"了解品牌文化、客诉服务和客户关系管理",score:5},{text:"知道基本服务礼仪",score:4},{text:"消费过所以了解一些",score:3},{text:"不太了解",score:2},{text:"不感兴趣",score:1}]},
-    {id:7020, text:"社区团购出现大量蔬果腐烂客户要求退款时你？", skillMap:[{skill:"运营管理",w:0.5},{skill:"数据分析",w:0.4},{skill:"沟通表达",w:0.3}], tag:"生鲜运营",
-      options:[{text:"全额退款或补发，检查供应链和仓储冷链问题",score:5},{text:"退一半钱",score:1},{text:"说客户储存不当",score:1},{text:"扣除运费后退款",score:1},{text:"不退款给优惠券",score:1}]}]
-}]
-};
-
+//  题库已移除，改用AI访谈模式
+// ═══════════════════════════════════════════════
 const EXPECTATIONS = [
   {key:"companyCulture", name:"公司氛围", opts:[
     {text:"向往稳定传统、层级分明的企业环境",value:1},
@@ -2689,8 +1968,8 @@ function init() {
   const sList = document.getElementById('schoolList');
   SCHOOLS.forEach(s => { const o = document.createElement('option'); o.value = s; sList.appendChild(o); });
 
-  // Render gate question first
-  renderGateQuestion();
+  // Init chat (don't start until step 2)
+  initChat();
 
   // Expectations - A/B/C/D radio buttons
   const eg = document.getElementById('expectGrid');
@@ -2727,194 +2006,13 @@ function init() {
     });
   }
 
-  updateQuestionProgress();
+  // Init chat
+  initChat();
 }
 
-function renderGateQuestion() {
-  const qc = document.getElementById('questionContainer');
-  qc.innerHTML = '';
-  const SKILL_ICONS = {编程开发:"💻",数据分析:"📊",算法与AI:"🧠",设计创意:"🎨",写作内容:"✍️",英语能力:"🌐",沟通表达:"💬",项目管理:"📋",市场营销:"📈",财务金融:"💰",运营管理:"⚙️",工程技术:"🔧",数学统计:"📐",产品策划:"📱",领导力:"👥",逻辑分析:"🧩"};
-  const div = document.createElement('div'); div.className = 'question-item gate-item'; div.dataset.qid = 'gate';
-  div.innerHTML = `
-    <div class="q-title" style="font-size:18px;">🎯 ${GATE_QUESTION.text}</div>
-    <div class="q-options" style="flex-direction:column;gap:8px;">
-      ${GATE_QUESTION.options.map((o, oi) => `
-        <label data-option="${oi}" style="border-radius:10px;padding:14px 18px;background:var(--gray-50);border:2px solid transparent;cursor:pointer;transition:var(--transition);display:flex;align-items:center;gap:12px;">
-          <input type="radio" name="qgate" value="${oi}" style="width:18px;height:18px;">
-          <span style="font-size:15px;">${o.text}</span>
-          <span style="margin-left:auto;font-size:12px;color:var(--gray-400);background:var(--gray-100);padding:2px 10px;border-radius:100px;">${o.score === 'major' ? '本专业' : o.score === 'switch' ? '转行' : '探索'}</span>
-        </label>`).join('')}
-    </div>`;
-  qc.appendChild(div);
-  div.querySelectorAll('input[type="radio"]').forEach(r => {
-    r.addEventListener('change', () => {
-      div.querySelectorAll('label').forEach(l => l.classList.remove('selected'));
-      div.querySelector(`label[data-option="${r.value}"]`).classList.add('selected');
-      div.classList.add('answered');
-      onGateAnswered(parseInt(r.value));
-    });
-  });
-  // Also clear any skill profile
-  document.getElementById('skillProfileWrap').classList.remove('show');
-}
-
-function onGateAnswered(optionIdx) {
-  const choice = GATE_QUESTION.options[optionIdx].score;
-  const majorGroup = document.getElementById('majorGroup').value;
-  let bankKey = null;
-
-  if (choice === 'major') {
-    // Use the user's major group from step 1
-    if (QUESTION_BANKS[majorGroup]) {
-      bankKey = majorGroup;
-    } else {
-      // Fallback for custom/other majors
-      bankKey = 'general';
-    }
-  } else if (choice === 'general') {
-    bankKey = 'general';
-  } else if (choice === 'switch') {
-    // Show interest picker
-    renderInterestPicker();
-    return;
-  }
-
-  if (bankKey) {
-    renderBankQuestions(bankKey);
-  }
-}
-
-function renderInterestPicker() {
-  const qc = document.getElementById('questionContainer');
-  // Remove gate
-  qc.innerHTML = '<div class="q-title" style="font-size:18px;margin-bottom:16px;">🔍 你对哪个方向感兴趣？</div><div class="interest-grid"></div>';
-  const grid = qc.querySelector('.interest-grid');
-  grid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;';
-  // Also add a "back" button
-  const backBtn = document.createElement('button');
-  backBtn.textContent = '← 重新选择';
-  backBtn.className = 'btn btn-outline';
-  backBtn.style.cssText = 'margin-top:16px;font-size:13px;';
-  backBtn.onclick = () => { renderGateQuestion(); };
-  SWITCH_INTERESTS.forEach((si) => {
-    const card = document.createElement('div');
-    card.className = 'interest-card';
-    card.style.cssText = 'border:2px solid var(--gray-200);border-radius:12px;padding:16px;cursor:pointer;transition:var(--transition);text-align:center;';
-    card.innerHTML = `<div style="font-size:28px;margin-bottom:8px;">${si.icon}</div>
-      <div style="font-weight:600;font-size:15px;">${si.label}</div>
-      <div style="font-size:12px;color:var(--gray-500);margin-top:4px;">${si.desc}</div>`;
-    card.onclick = () => {
-      grid.querySelectorAll('.interest-card').forEach(c => c.style.borderColor = 'var(--gray-200)');
-      card.style.borderColor = 'var(--primary)';
-      card.style.background = 'var(--primary-bg)';
-      setTimeout(() => renderBankQuestions('switch_' + si.id), 400);
-    };
-    grid.appendChild(card);
-  });
-  qc.appendChild(backBtn);
-}
-
-function renderBankQuestions(bankKey) {
-  // Determine which question bank to use
-  let bank;
-  if (bankKey.startsWith('switch_')) {
-    const interestId = bankKey.replace('switch_', '');
-    bank = SWITCH_BANKS[interestId];
-  } else {
-    bank = QUESTION_BANKS[bankKey];
-  }
-  if (!bank || !bank.length) {
-    bank = QUESTION_BANKS['general'];
-  }
-
-  const qc = document.getElementById('questionContainer');
-  qc.innerHTML = '';
-  const SKILL_ICONS = {编程开发:"💻",数据分析:"📊",算法与AI:"🧠",设计创意:"🎨",写作内容:"✍️",英语能力:"🌐",沟通表达:"💬",项目管理:"📋",市场营销:"📈",财务金融:"💰",运营管理:"⚙️",工程技术:"🔧",数学统计:"📐",产品策划:"📱",领导力:"👥",逻辑分析:"🧩"};
-
-  // Add header with back button
-  const header = document.createElement('div');
-  header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;';
-  const bankNames = {理工:'理工科',经管:'经管',文史:'文史哲',法政:'法政',教育:'教育',医学:'医学',农学:'农学',艺术:'艺术',general:'综合探索',switch_tech:'互联网/IT',switch_media:'传媒/内容',switch_business:'商业/金融',switch_design:'设计/创意',switch_edu:'教育/社科',switch_eng:'制造/工程',switch_medical:'医疗/健康',switch_culture:'文化/体育/旅游',switch_law:'法律/公共事务',switch_agriculture:'农林/环保',switch_service:'生活/服务行业'};
-  header.innerHTML = `<div style="font-size:14px;color:var(--gray-500);">📝 能力测评 · ${bankNames[bankKey] || '综合'}</div>`;
-  const backLink = document.createElement('a');
-  backLink.href = 'javascript:void(0)';
-  backLink.textContent = '← 重新选择';
-  backLink.style.cssText = 'font-size:13px;color:var(--primary);';
-  backLink.onclick = () => renderGateQuestion();
-  header.appendChild(backLink);
-  qc.appendChild(header);
-
-  bank.forEach((q, idx) => {
-    const tagNames = q.skillMap.map(s => SKILL_ICONS[s.skill] + ' ' + nameOfSkill(s.skill)).join(' · ');
-    const div = document.createElement('div'); div.className = 'question-item'; div.dataset.qid = q.id;
-    div.innerHTML = `
-      <div class="q-title"><span class="q-num">${idx+1}</span> ${q.text}</div>
-      <div class="q-tags"><span>${q.tag}</span><span>${tagNames}</span></div>
-      <div class="q-options">
-        ${q.options.map((o, oi) => `
-          <label data-option="${oi}">
-            <input type="radio" name="q${q.id}" value="${oi}">
-            <span>${o.text}</span>
-            <span class="opt-score">+${o.score}分</span>
-          </label>`).join('')}
-      </div>`;
-    qc.appendChild(div);
-    div.querySelectorAll('input[type="radio"]').forEach(r => {
-      r.addEventListener('change', () => {
-        div.querySelectorAll('label').forEach(l => l.classList.remove('selected'));
-        div.querySelector(`label[data-option="${r.value}"]`).classList.add('selected');
-        div.classList.add('answered');
-        updateQuestionProgress();
-      });
-    });
-  });
-
-  // Update step2 btns
-  document.getElementById('btnGoStep3').disabled = true;
-  document.getElementById('btnGoStep3').textContent = '查看能力画像 →';
-  updateQuestionProgress();
-}
-
-// Also need the active question IDs reference
-let activeQuestionIds = [];
-
-// Override getActiveQuestions to work with DOM state
-function getActiveQuestionCount() {
-  return document.querySelectorAll('#questionContainer .question-item[data-qid]:not(.gate-item)').length;
-}
-function getAnsweredQuestionCount() {
-  return document.querySelectorAll('#questionContainer .question-item.answered').length;
-}
-function collectAnswers() {
-  const answers = {};
-  document.querySelectorAll('#questionContainer .question-item').forEach(el => {
-    const qid = parseInt(el.dataset.qid);
-    if (!qid || isNaN(qid)) return;
-    const checked = el.querySelector('input[type="radio"]:checked');
-    if (checked) answers[qid] = parseInt(checked.value);
-  });
-  return answers;
-}
 function nameOfSkill(key) {
   const m = {编程开发:"编程",数据分析:"数据分析",算法与AI:"AI/算法",设计创意:"设计创意",写作内容:"写作",英语能力:"英语",沟通表达:"沟通",项目管理:"项目管理",市场营销:"营销",财务金融:"财务",运营管理:"运营",工程技术:"工程",数学统计:"数学统计",产品策划:"产品",领导力:"领导力",逻辑分析:"逻辑"};
   return m[key]||key;
-}
-
-function updateQuestionProgress() {
-  const total = getActiveQuestionCount();
-  const done = getAnsweredQuestionCount();
-  // Count only non-gate bank questions
-  const bankDone = document.querySelectorAll('#questionContainer .question-item[data-qid]:not(.gate-item).answered').length;
-  const bankTotal = document.querySelectorAll('#questionContainer .question-item[data-qid]:not(.gate-item)').length;
-  document.getElementById('questionProgress').textContent = bankTotal > 0 ? `已答 ${bankDone}/${bankTotal} 题` : '请先选择专业态度';
-  const btn = document.getElementById('btnGoStep3');
-  if (bankTotal > 0 && bankDone === bankTotal) {
-    btn.disabled = false;
-    btn.textContent = '确认，去设定期望 →';
-  } else {
-    btn.disabled = true;
-    btn.textContent = '查看能力画像 →';
-  }
 }
 
 function toggleMajorCustom() {
@@ -2928,15 +2026,14 @@ function toggleMajorCustom() {
 
 // ─── NAVIGATION ───
 function goStep(n) {
-  if (n === 2 && !validateStep1()) return;
+  if (n === 2) {
+    if (!validateStep1()) return;
+    if (!document.getElementById('chatMessages').querySelector('.chat-msg.bot')) {
+      setTimeout(function(){ startInterview(); }, 300);
+    }
+  }
   if (n === 3 && !validateStep2()) return;
   trackEvent('step_reached', {step:n});
-  // Special: step 2 → skill profile auto-show
-  if (n === 3) {
-    const allDone = document.querySelectorAll('#questionContainer .question-item[data-qid]:not(.gate-item).answered').length > 0;
-    if (allDone) { buildSkillProfile(); }
-  }
-
   currentStep = n;
   document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
   document.getElementById('step' + n).classList.add('active');
@@ -2949,7 +2046,7 @@ function goStep(n) {
   style.id = 'progStyle';
   const old = document.getElementById('progStyle'); if (old) old.remove();
   const pct = ((n - 1) / 4) * 100;
-  style.textContent = `.progress-steps::after { width: ${pct}% !important; }`;
+  style.textContent = '.progress-steps::after { width: ' + pct + '% !important; }';
   document.head.appendChild(style);
 }
 
@@ -2959,76 +2056,34 @@ function validateStep1() {
     ? document.getElementById('majorCustom').value.trim() : document.getElementById('major').value;
   const degree = document.getElementById('degree').value;
   const year = document.getElementById('year').value;
+  const city = document.getElementById('city').value;
   if (!school) { alert('请输入学校名称'); return false; }
   if (!major) { alert('请选择或输入专业'); return false; }
   if (!degree) { alert('请选择学历层次'); return false; }
   if (!year) { alert('请选择年级'); return false; }
-  userData.school = school; userData.major = major; userData.degree = degree; userData.year = year;
+  if (!city) { alert('请选择所在城市'); return false; }
+  userData.school = school; userData.major = major; userData.degree = degree; userData.year = year; userData.city = city;
   return true;
 }
 
 function validateStep2() {
-  const bankTotal = document.querySelectorAll('#questionContainer .question-item[data-qid]:not(.gate-item)').length;
-  const answered = document.querySelectorAll('#questionContainer .question-item[data-qid]:not(.gate-item).answered').length;
-  if (bankTotal === 0) {
-    alert('请先完成专业态度选择');
+  if (!analysisComplete || !userData.skillScores) {
+    alert('请先完成AI能力访谈');
     return false;
   }
-  if (answered < bankTotal) {
-    alert(`还有 ${bankTotal - answered} 道题未作答`);
-    return false;
-  }
-  // Scroll to skill profile
-  document.getElementById('skillProfileWrap').classList.add('show');
-  document.getElementById('step2Btns').querySelector('.btn-primary').textContent = '确认，去设定期望 →';
-  document.getElementById('btnGoStep3').disabled = false;
-
-  const answers = collectAnswers();
-  userData.questionAnswers = answers;
-
-  // Build profile
-  buildSkillProfile();
   return true;
 }
 
 // ─── SKILL PROFILE ───
 function computeSkillScores(answers) {
-  const sums = {}, counts = {};
-  // Collect all questions from all banks
-  const allQ = [];
-  Object.values(QUESTION_BANKS).forEach(bank => { bank.forEach(q => allQ.push(q)); });
-  Object.values(SWITCH_BANKS).forEach(bank => { bank.forEach(q => allQ.push(q)); });
-  allQ.forEach(q => {
-    const ai = answers[q.id]; if (ai === undefined) return;
-    const sc = q.options[ai].score;
-    q.skillMap.forEach(({skill,w}) => { sums[skill] = (sums[skill]||0) + sc*w; counts[skill] = (counts[skill]||0) + w; });
-  });
-  const r = {};
-  Object.keys(sums).forEach(sk => r[sk] = Math.round((sums[sk]/counts[sk])*10)/10);
-  return r;
+  if (!answers || Object.keys(answers).length === 0) {
+    if (userData.skillScores && Object.keys(userData.skillScores).length > 0) {
+      return userData.skillScores;
+    }
+    return {};
+  }
+  return {};
 }
-
-function buildSkillProfile() {
-  if (!userData.questionAnswers) return;
-  const scores = computeSkillScores(userData.questionAnswers);
-  const container = document.getElementById('skillProfileItems');
-  const SKILL_ICONS = {编程开发:"💻",数据分析:"📊",算法与AI:"🧠",设计创意:"🎨",写作内容:"✍️",英语能力:"🌐",沟通表达:"💬",项目管理:"📋",市场营销:"📈",财务金融:"💰",运营管理:"⚙️",工程技术:"🔧",数学统计:"📐",产品策划:"📱",领导力:"👥",逻辑分析:"🧩"};
-  const entries = Object.entries(scores).sort((a,b) => b[1] - a[1]);
-  container.innerHTML = entries.map(([sk, sc]) => {
-    const pct = (sc / 5) * 100;
-    const cls = sc >= 4 ? 'max' : sc >= 3 ? 'mid' : 'low';
-    return `<div class="sp-item">
-      <span class="sp-icon">${SKILL_ICONS[sk]||'📌'}</span>
-      <div class="sp-info">
-        <div class="sp-name">${nameOfSkill(sk)}</div>
-        <div class="sp-track"><div class="sp-fill" style="width:${pct}%"></div></div>
-      </div>
-      <span class="sp-score ${cls}">${sc}</span>
-    </div>`;
-  }).join('');
-  document.getElementById('skillProfileWrap').classList.add('show');
-}
-
 // ─── MATCHING ───
 const MARKET_TREND = {爆发增长:100,高速增长:90,稳定增长:75,增长趋稳:65,平稳:50,饱和竞争:35,下行压力:20,"向自动化转型":40,"周期波动（头部集中）":45,"分化加剧（人口减少挑战）":35,"调整期（集采政策影响）":40,"转型期（智能制造升级）":45,"竞争持续加剧":35,"增长中（云原生驱动）":70,"增长中（芯片国产化驱动）":75,"增长中（全球化重构）":65,"增长中（双碳政策驱动）":80,"高速增长（政策驱动）":90,"稳定增长（监管趋严）":70,"稳定增长（精英赛道）":75,"稳定增长（内容价值提升）":70,"大厂需求增长":75,"快速增长（远程经济驱动）":80,"增长中（农业现代化驱动）":75,"稳定增长（科研投入加大）":65,"赛道成熟化竞争加剧":35,"公务员需求稳定竞争激烈":55,"转型期（新媒体冲击）":35,"稳定（体制内保障）":55,"媒体融合推动需求":70,"老龄化驱动需求增长":75,"健康意识提升带动":80,"消费升级驱动":70,"旅游业复苏带动":70,"物流行业稳定增长":70,"公共服务需求稳定":55,"内容产业持续增长":75,"环保政策驱动":70,"安全人才需求稳定":55,"智库需求增长":65};
 const MARKET_DEMAND = {顶尖人才极度稀缺:100,高学历人才稀缺:90,复合型人才紧缺:85,持续旺盛:80,优质PM稀缺:75,人才缺口巨大:80,芯片设计人才极度稀缺:100,供需基本平衡:55,入门竞争激烈:40,竞争加剧:45,基础岗位竞争激烈:35,量大但淘汰率高:40,向测试开发方向发展:50,"入门门槛低竞争激烈":40,"红利消退，存量竞争":35,"优质内容人才稀缺":75,"中高级设计师紧缺":75,"综合型设计师紧缺":75,"智能制造人才紧缺":80,"热门岗位几百比一":50,"硕博学历门槛":60,"红圈所竞争激烈":45,"优秀教师依旧稀缺":65,"合规人才需求上升":60,"自由职业市场扩大":70,"农业现代化人才紧缺":75,"科研岗位竞争激烈但需求稳定":55,"GIS与遥感人才需求上升":75,"头部效应明显竞争白热化":35,"稳定但竞争激烈":45,"公共服务需求稳定":55};
@@ -3477,7 +2532,7 @@ function getPlayerType(scores) {
 
 const ACHIEVEMENTS = [
   {id:"step1", name:"第一步", icon:"📝", desc:"填写基本信息", check:()=>!!userData.school},
-  {id:"quiz_master", name:"答题达人", icon:"🧠", desc:"完成全部测评题", check:()=>userData.questionAnswers && Object.keys(userData.questionAnswers).length >= 15},
+  {id:"quiz_master", name:"访谈达人", icon:"🧠", desc:"完成AI能力访谈", check:()=>userData.skillScores && Object.keys(userData.skillScores).length > 0},
   {id:"goal_setter", name:"目标明确", icon:"🎯", desc:"完成期望设定", check:()=>userData.env && Object.keys(userData.env).length >= 6},
   {id:"realist", name:"实事求是", icon:"🔍", desc:"完成现实条件筛选", check:()=>userData.rejectedReality !== undefined},
   {id:"graduate", name:"职业达人", icon:"🎓", desc:"获得推荐结果", check:()=>!!document.querySelector('.result-card')},
@@ -3883,6 +2938,174 @@ function togglePlanItem(phase, index) {
   }
   renderPlanTimeline();
 }
+
+
+
+// ═══════════════════════════════════════════════
+//  AI Interview Chat Module
+// ═══════════════════════════════════════════════
+var WORKER_URL = 'https://career-ai-worker.zander2630.workers.dev';
+var MAX_ROUNDS = 5;
+var interviewMessages = [];
+var interviewRound = 0;
+var analysisComplete = false;
+
+function initChat() {
+  var chatBox = document.getElementById('chatMessages');
+  if (!chatBox) return;
+  chatBox.innerHTML = '<div class="chat-placeholder"><div class="cp-icon">🤖</div><p>开始 AI 访谈以发现你的能力优势</p></div>';
+  interviewMessages = [];
+  interviewRound = 0;
+  analysisComplete = false;
+  var inp = document.getElementById('chatInput');
+  var sbtn = document.getElementById('chatSendBtn');
+  if (inp) inp.disabled = true;
+  if (sbtn) sbtn.disabled = true;
+  var ar = document.getElementById('analysisResult'); if (ar) ar.classList.add('hidden');
+  var st = document.getElementById('interviewStatus');
+  if (st) st.textContent = '与 AI 面试官进行 3-5 轮简短对话，帮你发现自身能力优势';
+  var b3 = document.getElementById('btnGoStep3'); if (b3) b3.disabled = true;
+  var rb = document.getElementById('btnRestartChat'); if (rb) rb.classList.add('hidden');
+}
+
+function startInterview() {
+  var chatBox = document.getElementById('chatMessages');
+  if (!chatBox) return;
+  chatBox.innerHTML = '';
+  interviewMessages = []; interviewRound = 0; analysisComplete = false;
+  document.getElementById('chatLoading').classList.remove('hidden');
+  callWorkerChat([], 'interview').then(function(reply) {
+    addBotMessage(reply);
+    interviewMessages.push({role:'assistant', content:reply});
+    enableChatInput();
+  }).catch(function(err) {
+    addBotMessage('抱歉，AI服务暂时不可用（'+err.message+'）。请稍后重试');
+  }).finally(function() {
+    document.getElementById('chatLoading').classList.add('hidden');
+  });
+}
+
+function sendChatMessage() {
+  var input = document.getElementById('chatInput');
+  if (!input) return;
+  var text = input.value.trim();
+  if (!text || document.getElementById('chatSendBtn').disabled) return;
+  interviewRound++;
+  input.value = '';
+  disableChatInput();
+  addUserMessage(text);
+  interviewMessages.push({role:'user', content:text});
+  if (interviewRound >= MAX_ROUNDS) {
+    addBotMessage('好的，我们已经进行了充分的交流！让我为你生成能力分析报告...');
+    document.getElementById('chatLoading').classList.remove('hidden');
+    performAnalysis();
+    return;
+  }
+  document.getElementById('chatLoading').classList.remove('hidden');
+  callWorkerChat(interviewMessages, 'interview').then(function(reply) {
+    addBotMessage(reply);
+    interviewMessages.push({role:'assistant', content:reply});
+    enableChatInput();
+  }).catch(function() {
+    addBotMessage('好的，我们来进行能力分析总结吧。');
+    performAnalysis();
+  }).finally(function() {
+    document.getElementById('chatLoading').classList.add('hidden');
+  });
+}
+
+function performAnalysis() {
+  disableChatInput();
+  document.getElementById('chatLoading').classList.remove('hidden');
+  var st = document.getElementById('interviewStatus');
+  if (st) st.textContent = 'AI 正在分析你的能力画像...';
+  callWorkerChat(interviewMessages, 'analysis').then(function(result) {
+    displayAnalysisResult(result);
+    analysisComplete = true;
+    document.getElementById('btnGoStep3').disabled = false;
+    document.getElementById('btnRestartChat').classList.remove('hidden');
+    var s = document.getElementById('interviewStatus');
+    if (s) s.textContent = '✅ 能力分析完成，请查看结果并确认';
+  }).catch(function(err) {
+    addBotMessage('分析失败：'+err.message+'。请点击「重新访谈」重试。');
+  }).finally(function() {
+    document.getElementById('chatLoading').classList.add('hidden');
+  });
+}
+
+function callWorkerChat(messages, stage) {
+  var url = WORKER_URL + '/' + (stage === 'analysis' ? 'analyze' : 'chat');
+  return fetch(url, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({messages: messages, stage: stage})
+  }).then(function(res) {
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return res.json();
+  }).then(function(data) {
+    return stage === 'analysis' ? data : data.reply;
+  });
+}
+
+function addBotMessage(text) {
+  var chatBox = document.getElementById('chatMessages');
+  if (!chatBox) return;
+  var ph = chatBox.querySelector('.chat-placeholder'); if (ph) ph.remove();
+  var div = document.createElement('div'); div.className = 'chat-msg bot'; div.textContent = text;
+  chatBox.appendChild(div); chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+function addUserMessage(text) {
+  var chatBox = document.getElementById('chatMessages');
+  if (!chatBox) return;
+  var div = document.createElement('div'); div.className = 'chat-msg user'; div.textContent = text;
+  chatBox.appendChild(div); chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+function enableChatInput() {
+  var inp = document.getElementById('chatInput');
+  var btn = document.getElementById('chatSendBtn');
+  if (inp) { inp.disabled = false; inp.focus(); }
+  if (btn) btn.disabled = false;
+}
+
+function disableChatInput() {
+  var inp = document.getElementById('chatInput');
+  var btn = document.getElementById('chatSendBtn');
+  if (inp) inp.disabled = true; if (btn) btn.disabled = true;
+}
+
+function displayAnalysisResult(result) {
+  var container = document.getElementById('analysisResult');
+  if (!container) return;
+  container.classList.remove('hidden');
+  document.getElementById('analysisSummary').textContent = result.summary || 'AI 基于访谈内容分析得出以下能力评估';
+  var SKILL_ICONS = {编程开发:'💻',数据分析:'📊',算法与AI:'🧠',设计创意:'🎨',写作内容:'✍️',英语能力:'🌐',沟通表达:'💬',项目管理:'📋',市场营销:'📈',财务金融:'💰',运营管理:'⚙️',工程技术:'🔧',数学统计:'📐',产品策划:'📱',领导力:'👥',逻辑分析:'🧩'};
+  var scores = result.skillScores || {};
+  var entries = Object.entries(scores).sort(function(a,b){return b[1]-a[1];});
+  document.getElementById('interviewSkillItems').innerHTML = entries.map(function(e){
+    var sk=e[0], sc=e[1], pct=(sc/5)*100, cls=sc>=4?'max':sc>=3?'mid':'low';
+    return '<div class="sp-item"><span class="sp-icon">'+(SKILL_ICONS[sk]||'📌')+'</span><div class="sp-info"><div class="sp-name">'+nameOfSkill(sk)+'</div><div class="sp-track"><div class="sp-fill" style="width:'+pct+'%"></div></div></div><span class="sp-score '+cls+'">'+sc+'</span></div>';
+  }).join('');
+  var careers = result.suggestedCareers || [];
+  document.getElementById('suggestedCareers').innerHTML = careers.map(function(c){
+    return '<span style="padding:6px 14px;background:var(--primary-bg);color:var(--primary);border-radius:100px;font-size:13px;font-weight:500;">'+c+'</span>';
+  }).join('');
+  userData.skillScores = scores;
+  userData.aiInterviewSummary = result.summary || '';
+  userData.suggestedCareers = careers;
+  userData.interviewMessages = interviewMessages;
+}
+
+function restartInterview() {
+  document.getElementById('analysisResult').classList.add('hidden');
+  document.getElementById('btnGoStep3').disabled = true;
+  document.getElementById('btnRestartChat').classList.add('hidden');
+  var s = document.getElementById('interviewStatus');
+  if (s) s.textContent = '与 AI 面试官进行 3-5 轮简短对话，帮你发现自身能力优势';
+  startInterview();
+}
+
 
 function aichat() {
   var modal = document.getElementById("aiModal");
