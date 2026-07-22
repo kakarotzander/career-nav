@@ -3330,7 +3330,10 @@ function startDirectionInterview() {
   if (s) s.textContent = '与 AI 面试官深度交流中...';
   startInterview();
 }
-var WORKER_URL = 'https://career-ai-worker.zander2630.workers.dev';
+var DEEPSEEK_API_KEY = 'sk-2843d8b826104c1e905a065e0907a544';
+var DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
+var INTERVIEW_SYSTEM = '你是一位大学生职业规划访谈助手。你的任务是：\n\n1. 先问候学生，说明这是一个简短的能力访谈（3-5轮对话）\n2. 请学生分享一个他/她最有成就感或最有收获的经历（可以是项目、比赛、实习、课程设计、社团活动等）\n3. 根据学生的回答，追问具体细节：你在其中扮演什么角色？用了哪些能力？最喜欢哪个环节？遇到困难怎么解决的？\n4. 像你收到的用户提问一样探索用户的决策模式，而不是给选项。例如：\n   "如果给你两个工作机会：一个工资稳定但成长慢；一个风险更高但成长空间大。你会怎么选择？为什么？"\n5. 根据对话的深入程度，适时转向下一个话题\n\n始终保持对话式、鼓励性的语气。每次回复1-2个问题，不要一次问太多。\n注意：你的回答应该简洁、自然、像真人面试官一样交流。';
+var ANALYSIS_SYSTEM = '你是一位职业能力分析专家。请基于以下完整的面试对话，分析该学生的能力画像和潜在职业方向。\n\n请严格按以下JSON格式输出（不要包含markdown代码块标记，仅输出纯JSON）：\n{\n  "skillScores": {\n    "编程开发": <1-5>,\n    "数据分析": <1-5>,\n    "算法与AI": <1-5>,\n    "设计创意": <1-5>,\n    "写作内容": <1-5>,\n    "英语能力": <1-5>,\n    "沟通表达": <1-5>,\n    "项目管理": <1-5>,\n    "市场营销": <1-5>,\n    "财务金融": <1-5>,\n    "运营管理": <1-5>,\n    "工程技术": <1-5>,\n    "数学统计": <1-5>,\n    "产品策划": <1-5>,\n    "领导力": <1-5>,\n    "逻辑分析": <1-5>\n  },\n  "suggestedCareers": ["职业名称1", "职业名称2", "职业名称3"],\n  "reasoning": "简要说明为什么给出这些评分",\n  "summary": "一段简洁的学生能力描述（50字以内）"\n}\n\n评分标准：\n1 = 完全未体现 / 明确回避\n2 = 有所涉及但基础薄弱\n3 = 具备基本能力\n4 = 较为突出，能独立运用\n5 = 非常出色，有领导或创新表现\n\n请注意：评估必须基于对话证据，不要凭空猜测。如果某个技能在对话中完全没有涉及，给予默认值2。';
 var MAX_ROUNDS = 5;
 var interviewMessages = [];
 var interviewRound = 0;
@@ -3373,7 +3376,7 @@ function startInterview() {
     });
   }
   document.getElementById('chatLoading').classList.remove('hidden');
-  callWorkerChat([{role:'user', content:'你好，我是大学生，想请你帮我做职业能力访谈。' + context}], 'interview').then(function(reply) {
+  callDeepSeek([{role:'user', content:'你好，我是大学生，想请你帮我做职业能力访谈。' + context}], 'interview').then(function(reply) {
     addBotMessage(reply);
     interviewMessages.push({role:'assistant', content:reply});
     enableChatInput();
@@ -3401,7 +3404,7 @@ function sendChatMessage() {
     return;
   }
   document.getElementById('chatLoading').classList.remove('hidden');
-  callWorkerChat(interviewMessages, 'interview').then(function(reply) {
+  callDeepSeek(interviewMessages, 'interview').then(function(reply) {
     addBotMessage(reply);
     interviewMessages.push({role:'assistant', content:reply});
     enableChatInput();
@@ -3418,7 +3421,7 @@ function performAnalysis() {
   document.getElementById('chatLoading').classList.remove('hidden');
   var st = document.getElementById('interviewStatus');
   if (st) st.textContent = 'AI 正在分析你的能力画像...';
-  callWorkerChat(interviewMessages, 'analysis').then(function(result) {
+  callDeepSeek(interviewMessages, 'analysis').then(function(result) {
     displayAnalysisResult(result);
     analysisComplete = true;
     document.getElementById('btnGoStep3').disabled = false;
@@ -3432,17 +3435,29 @@ function performAnalysis() {
   });
 }
 
-function callWorkerChat(messages, stage) {
-  var url = WORKER_URL + '/' + (stage === 'analysis' ? 'analyze' : 'chat');
-  return fetch(url, {
+function callDeepSeek(messages, stage) {
+  var systemPrompt = stage === 'analysis' ? ANALYSIS_SYSTEM : INTERVIEW_SYSTEM;
+  var temperature = stage === 'analysis' ? 0.3 : 0.8;
+  return fetch(DEEPSEEK_API_URL, {
     method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({messages: messages, stage: stage})
+    headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + DEEPSEEK_API_KEY},
+    body: JSON.stringify({
+      model: 'deepseek-chat',
+      messages: [{role: 'system', content: systemPrompt}].concat(messages),
+      temperature: temperature,
+      max_tokens: stage === 'analysis' ? 2048 : 1024
+    })
   }).then(function(res) {
-    if (!res.ok) throw new Error('HTTP ' + res.status);
+    if (!res.ok) return res.text().then(function(t){ throw new Error('API '+res.status+': '+t.substring(0,100)); });
     return res.json();
   }).then(function(data) {
-    return stage === 'analysis' ? data : data.reply;
+    var content = data.choices[0].message.content;
+    if (stage === 'analysis') {
+      var jsonStr = content.trim();
+      if (jsonStr.startsWith('```')) jsonStr = jsonStr.replace(/```(?:json)?\n?/g, '').trim();
+      return JSON.parse(jsonStr);
+    }
+    return content;
   });
 }
 

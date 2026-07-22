@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "职业推荐系统",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["http-server", "E:\\高校学生ai", "-p", "3006", "--cors", "--utf8", "-c-1"],
+      "port": 3006
+    }
+  ]
+}

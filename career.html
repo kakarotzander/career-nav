@@ -1,0 +1,1589 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI职业规划助手 · 高校就业指导</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --primary: #1e40af; --primary-light: #3b82f6; --primary-bg: #eff6ff;
+    --accent: #059669; --accent-light: #d1fae5;
+    --gold: #d97706; --gold-bg: #fef3c7;
+    --red: #dc2626; --red-bg: #fee2e2;
+    --purple: #7c3aed; --purple-bg: #f5f3ff;
+    --gray-50: #f8fafc; --gray-100: #f1f5f9; --gray-200: #e2e8f0;
+    --gray-300: #cbd5e1; --gray-400: #94a3b8; --gray-500: #64748b;
+    --gray-600: #475569; --gray-700: #334155; --gray-800: #1e293b;
+    --gray-900: #0f172a;
+    --radius: 12px; --shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
+    --shadow-lg: 0 4px 24px rgba(0,0,0,.12);
+    --transition: .3s cubic-bezier(.4,0,.2,1);
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(135deg, #eff6ff 0%, #eef2ff 50%, #f0fdf4 100%);
+    min-height: 100vh; color: var(--gray-800); line-height: 1.6;
+  }
+  .header {
+    background: linear-gradient(135deg, #0f172a 0%, #1e40af 50%, #7c3aed 100%);
+    color: #fff; padding: 40px 24px 48px; text-align: center; position: relative; overflow: hidden;
+  }
+  .header::after {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 30% 50%, rgba(255,255,255,.08) 0%, transparent 60%);
+  }
+  .header * { position: relative; z-index: 1; }
+  .header .ai-badge {
+    display: inline-block; background: linear-gradient(135deg, #7c3aed, #3b82f6);
+    padding: 4px 16px; border-radius: 100px;
+    font-size: 12px; margin-bottom: 16px; font-weight: 600; letter-spacing: 1px;
+    box-shadow: 0 2px 8px rgba(124,58,237,.3);
+  }
+  .header h1 { font-size: 32px; font-weight: 800; letter-spacing: -.5px; margin-bottom: 8px; }
+  .header h1 span { color: #a78bfa; }
+  .header .subtitle { font-size: 15px; opacity: .85; max-width: 560px; margin: 0 auto; line-height: 1.7; }
+  .header .trust-line {
+    display: flex; justify-content: center; gap: 24px; margin-top: 14px; font-size: 13px; opacity: .7;
+  }
+  .header .trust-line span { display: flex; align-items: center; gap: 4px; }
+  .container { max-width: 800px; margin: -28px auto 60px; padding: 0 16px; position: relative; }
+  .progress-wrap {
+    background: #fff; border-radius: var(--radius); padding: 20px 24px;
+    box-shadow: var(--shadow); margin-bottom: 24px;
+  }
+  .progress-steps { display: flex; justify-content: space-between; position: relative; }
+  .progress-steps::before {
+    content: ''; position: absolute; top: 14px; left: 40px; right: 40px;
+    height: 3px; background: var(--gray-200); border-radius: 2px;
+  }
+  .progress-steps::after {
+    content: ''; position: absolute; top: 14px; left: 40px;
+    height: 3px; background: linear-gradient(90deg, var(--primary-light), var(--accent));
+    border-radius: 2px; transition: width var(--transition); width: 0%;
+  }
+  .progress-step {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    position: relative; z-index: 1; cursor: default;
+  }
+  .progress-step .circle {
+    width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700;
+    background: var(--gray-200); color: var(--gray-500);
+    transition: var(--transition); border: 2px solid transparent;
+  }
+  .progress-step.active .circle { background: var(--primary); color: #fff; border-color: var(--primary-light); box-shadow: 0 0 0 4px rgba(59,130,246,.2); }
+  .progress-step.done .circle { background: var(--accent); color: #fff; }
+  .progress-step .label { font-size: 11px; color: var(--gray-400); transition: var(--transition); white-space: nowrap; }
+  .progress-step.active .label { color: var(--primary); font-weight: 600; }
+  .step { display: none; animation: fadeUp .4s ease; }
+  .step.active { display: block; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes popIn { from { opacity: 0; transform: scale(.9); } to { opacity: 1; transform: scale(1); } }
+  .card {
+    background: #fff; border-radius: var(--radius); padding: 32px 28px;
+    box-shadow: var(--shadow); margin-bottom: 20px;
+  }
+  .card h2 { font-size: 20px; font-weight: 700; color: var(--gray-900); margin-bottom: 4px; }
+  .card .subtitle { color: var(--gray-500); font-size: 14px; margin-bottom: 20px; }
+  .card .progress-count { font-size: 13px; color: var(--gray-400); margin-bottom: 16px; }
+  .form-group { margin-bottom: 20px; }
+  .form-group label { display: block; font-size: 14px; font-weight: 600; color: var(--gray-700); margin-bottom: 6px; }
+  .form-group label .hint { font-weight: 400; color: var(--gray-400); font-size: 12px; }
+  .form-group input, .form-group select {
+    width: 100%; padding: 10px 14px; font-size: 15px; border: 1.5px solid var(--gray-200);
+    border-radius: 8px; transition: var(--transition); font-family: inherit;
+    background: #fff; color: var(--gray-800);
+  }
+  .form-group input:focus, .form-group select:focus {
+    outline: none; border-color: var(--primary-light); box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+  }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-group .custom-input { display: none; margin-top: 8px; }
+  .form-group .custom-input.show { display: block; }
+
+  /* ─── Questions ─── */
+  .question-item {
+    background: var(--gray-50); border-radius: 10px; padding: 18px 20px;
+    margin-bottom: 12px; border: 1.5px solid transparent; transition: var(--transition);
+    cursor: pointer;
+  }
+  .question-item.answered { border-color: var(--primary-light); background: var(--primary-bg); }
+  .question-item .q-title {
+    font-size: 15px; font-weight: 600; color: var(--gray-800);
+    margin-bottom: 10px; display: flex; gap: 8px;
+  }
+  .question-item .q-title .q-num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 24px; height: 24px; border-radius: 50%; background: var(--gray-200);
+    font-size: 12px; font-weight: 700; color: var(--gray-500); flex-shrink: 0;
+  }
+  .question-item.answered .q-title .q-num { background: var(--primary); color: #fff; }
+  .question-item .q-tags { display: flex; gap: 6px; margin-left: 32px; margin-bottom: 8px; flex-wrap: wrap; }
+  .question-item .q-tags span {
+    font-size: 11px; padding: 2px 8px; border-radius: 100px;
+    background: var(--gray-100); color: var(--gray-500);
+  }
+  .question-item .q-options { display: flex; flex-direction: column; gap: 5px; }
+  .question-item .q-options label {
+    display: flex; align-items: center; gap: 10px; padding: 8px 14px;
+    border-radius: 8px; cursor: pointer; transition: var(--transition);
+    font-size: 14px; color: var(--gray-600); border: 1.5px solid transparent;
+  }
+  .question-item .q-options label:hover { background: #fff; border-color: var(--gray-200); }
+  .question-item .q-options input[type="radio"] {
+    appearance: none; -webkit-appearance: none;
+    width: 18px; height: 18px; border: 2px solid var(--gray-300); border-radius: 50%;
+    transition: var(--transition); flex-shrink: 0; position: relative;
+  }
+  .question-item .q-options input[type="radio"]:checked {
+    border-color: var(--primary);
+    background: var(--primary);
+    box-shadow: inset 0 0 0 3px #fff;
+  }
+  .question-item .q-options label.selected {
+    background: #fff; border-color: var(--primary-light);
+    color: var(--gray-800); font-weight: 500;
+  }
+  .question-item .q-options label .opt-score {
+    display: none; margin-left: auto; font-size: 11px; color: var(--gray-400);
+  }
+  .question-item .q-options label.selected .opt-score { display: block; }
+
+  /* ─── Skill Profile ─── */
+  .skill-profile-wrap { display: none; }
+  .skill-profile-wrap.show { display: block; }
+  .skill-profile {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+    background: linear-gradient(135deg, #f0fdf4, #eff6ff);
+    border: 1.5px solid #bbf7d0; border-radius: var(--radius);
+    padding: 24px; margin-bottom: 20px;
+  }
+  .skill-profile .sp-title {
+    grid-column: 1 / -1; font-size: 16px; font-weight: 700; color: var(--gray-800);
+  }
+  .skill-profile .sp-item {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .skill-profile .sp-item .sp-icon { font-size: 20px; width: 28px; text-align: center; }
+  .skill-profile .sp-item .sp-info { flex: 1; }
+  .skill-profile .sp-item .sp-info .sp-name { font-size: 13px; font-weight: 600; color: var(--gray-700); }
+  .skill-profile .sp-item .sp-info .sp-track { height: 6px; background: #fff; border-radius: 3px; overflow: hidden; margin-top: 4px; }
+  .skill-profile .sp-item .sp-info .sp-track .sp-fill {
+    height: 100%; border-radius: 3px;
+    background: linear-gradient(90deg, var(--primary-light), var(--primary));
+    transition: width .8s ease;
+  }
+  .skill-profile .sp-item .sp-score { font-size: 18px; font-weight: 800; color: var(--primary); min-width: 28px; text-align: right; }
+  .skill-profile .sp-item .sp-score.max { color: var(--accent); }
+  .skill-profile .sp-item .sp-score.mid { color: var(--gold); }
+  .skill-profile .sp-item .sp-score.low { color: var(--gray-400); }
+
+  /* ─── Expectation sliders ─── */
+  .expect-grid { display: flex; flex-direction: column; gap: 14px; }
+  .expect-item { padding: 14px 20px; background: var(--gray-50); border-radius: 10px; border: 1.5px solid transparent; transition: var(--transition); }
+  .expect-item .e-name { font-size: 15px; font-weight: 600; color: var(--gray-800); margin-bottom: 2px; }
+  .expect-item .e-desc { font-size: 13px; color: var(--gray-400); margin-bottom: 10px; }
+  .expect-item .e-slider-wrap { display: flex; align-items: center; gap: 12px; }
+  .expect-item .e-slider-wrap .e-label {
+    font-size: 12px; color: var(--gray-400); min-width: 65px; text-align: center; line-height: 1.3;
+  }
+  .expect-item .e-slider-wrap .e-label:first-child { text-align: right; }
+  .expect-item .e-slider-wrap input[type="range"] {
+    flex: 1; height: 5px; appearance: none; -webkit-appearance: none;
+    background: var(--gray-200); border-radius: 3px; outline: none; border: none; padding: 0;
+  }
+  .expect-item .e-slider-wrap input[type="range"]::-webkit-slider-thumb {
+    appearance: none; -webkit-appearance: none;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--primary); cursor: pointer;
+    box-shadow: 0 1px 4px rgba(30,64,175,.3);
+  }
+  .expect-item .e-slider-wrap .e-val {
+    font-size: 13px; font-weight: 700; color: var(--primary); min-width: 22px; text-align: center;
+  }
+
+  /* ─── Buttons ─── */
+  .btn-row { display: flex; justify-content: space-between; gap: 12px; margin-top: 24px; }
+  .btn {
+    padding: 12px 28px; border: none; border-radius: 8px; font-size: 15px;
+    font-weight: 600; cursor: pointer; transition: var(--transition);
+    font-family: inherit; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { background: #1d4ed8; box-shadow: 0 4px 12px rgba(30,64,175,.3); }
+  .btn-outline { background: transparent; color: var(--gray-600); border: 1.5px solid var(--gray-200); }
+  .btn-outline:hover { background: var(--gray-50); border-color: var(--gray-300); }
+  .btn-success { background: var(--accent); color: #fff; }
+  .btn-success:hover { background: #047857; box-shadow: 0 4px 12px rgba(5,150,105,.3); }
+  .btn-sm { padding: 8px 18px; font-size: 13px; }
+
+  /* ─── Loading ─── */
+  .loading-wrap { text-align: center; padding: 60px 20px; }
+  .spinner { width: 48px; height: 48px; border: 4px solid var(--gray-200); border-top-color: var(--primary); border-radius: 50%; margin: 0 auto 20px; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ─── Results ─── */
+  .result-summary {
+    background: linear-gradient(135deg, #f0fdf4, #eff6ff);
+    border: 1px solid #bbf7d0; border-radius: var(--radius);
+    padding: 20px 24px; margin-bottom: 20px; text-align: center;
+  }
+  .result-summary .big { font-size: 36px; font-weight: 800; color: var(--accent); }
+  .result-summary p { color: var(--gray-600); font-size: 14px; margin-top: 4px; }
+
+  /* ─── Result Filters ─── */
+  .result-filters {
+    display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px;
+    padding: 16px 20px; background: #fff; border-radius: var(--radius); box-shadow: var(--shadow);
+    align-items: center;
+  }
+  .result-filters label { font-size: 13px; color: var(--gray-600); font-weight: 500; }
+  .result-filters select, .result-filters input {
+    padding: 6px 12px; font-size: 13px; border: 1.5px solid var(--gray-200);
+    border-radius: 6px; background: #fff; font-family: inherit;
+  }
+  .result-filters .filter-tag {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 12px; border-radius: 100px; font-size: 12px; font-weight: 500;
+    background: var(--primary-bg); color: var(--primary); cursor: pointer;
+    border: 1px solid var(--primary-light); transition: var(--transition);
+  }
+  .result-filters .filter-tag:hover { background: var(--primary-light); color: #fff; }
+  .result-filters .filter-tag.active { background: var(--primary); color: #fff; }
+
+  .result-card {
+    background: #fff; border-radius: var(--radius); padding: 24px;
+    box-shadow: var(--shadow); margin-bottom: 16px;
+    border-left: 4px solid var(--primary);
+    transition: var(--transition); animation: fadeUp .4s ease;
+  }
+  .result-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }
+  .result-card.top1 { border-left-color: var(--gold); }
+  .result-card.top2 { border-left-color: var(--gray-400); }
+  .result-card.top3 { border-left-color: #cd7f32; }
+  .result-card .rc-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+  .result-card .rc-title { font-size: 18px; font-weight: 700; color: var(--gray-900); }
+  .result-card .rc-title .rc-rank { font-size: 14px; }
+  .result-card .rc-industry { font-size: 13px; color: var(--gray-500); margin-top: 2px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .result-card .rc-industry .rc-tag {
+    font-size: 11px; padding: 1px 8px; border-radius: 100px;
+    background: var(--gray-100); color: var(--gray-500);
+  }
+  .result-card .rc-match {
+    font-size: 28px; font-weight: 800; display: flex; align-items: center; gap: 4px;
+  }
+  .result-card .rc-match .pct { font-size: 14px; font-weight: 400; }
+  .result-card .rc-match.high { color: var(--accent); }
+  .result-card .rc-match.med { color: var(--gold); }
+  .result-card .rc-match.low { color: var(--gray-500); }
+  .result-card .rc-desc { color: var(--gray-600); font-size: 14px; margin: 10px 0 14px; line-height: 1.7; }
+  .result-card .rc-quick {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;
+  }
+  .result-card .rc-quick .q-badge {
+    display: flex; align-items: center; gap: 4px;
+    padding: 4px 12px; border-radius: 100px; font-size: 12px;
+    background: var(--gray-50); color: var(--gray-600);
+  }
+  .result-card .rc-quick .q-badge.good { background: var(--accent-light); color: #065f46; }
+  .result-card .rc-quick .q-badge.warn { background: var(--gold-bg); color: #92400e; }
+
+  .result-card .rc-bars { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 20px; }
+  .result-card .bar-row { display: flex; flex-direction: column; gap: 2px; }
+  .result-card .bar-row .bar-label { font-size: 12px; color: var(--gray-500); display: flex; justify-content: space-between; }
+  .result-card .bar-row .bar-track { height: 6px; background: var(--gray-100); border-radius: 3px; overflow: hidden; }
+  .result-card .bar-row .bar-fill { height: 100%; border-radius: 3px; transition: width 1s ease; }
+  .bar-fill.bg-green { background: var(--accent); }
+  .bar-fill.bg-blue { background: var(--primary-light); }
+  .bar-fill.bg-gold { background: var(--gold); }
+  .bar-fill.bg-rose { background: #f43f5e; }
+
+  .result-card .rc-env {
+    margin-top: 10px; padding: 12px 16px; background: #f0f9ff;
+    border-radius: 8px;
+  }
+  .result-card .rc-env .env-title { font-size: 13px; font-weight: 600; color: var(--gray-700); margin-bottom: 8px; }
+  .result-card .rc-env .env-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; }
+  .result-card .rc-env .env-row { font-size: 12px; color: var(--gray-500); display: flex; justify-content: space-between; }
+  .result-card .rc-env .env-row .match-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
+  .match-dot.good { background: var(--accent); }
+  .match-dot.ok { background: var(--gold); }
+  .match-dot.poor { background: var(--red); }
+
+  .result-card .rc-why {
+    margin-top: 12px; padding: 12px 16px; background: var(--gray-50);
+    border-radius: 8px; font-size: 13px; color: var(--gray-600); line-height: 1.7;
+  }
+  .result-card .rc-why strong { color: var(--gray-800); }
+  .result-card .rc-gap {
+    margin-top: 10px; padding: 10px 16px; background: var(--gold-bg);
+    border-radius: 8px; font-size: 13px; color: #92400e; line-height: 1.6;
+  }
+  .result-card .rc-gap strong { color: #78350f; }
+  .result-card .rc-action {
+    margin-top: 14px; padding: 14px 16px; background: #f5f3ff;
+    border-radius: 8px; font-size: 13px; color: #5b21b6; line-height: 1.6;
+  }
+  .result-card .rc-action strong { color: #4c1d95; }
+  .result-card .rc-action .action-steps { margin-top: 4px; padding-left: 16px; }
+  .result-card .rc-market {
+    margin-top: 12px; padding: 12px 16px; background: #f0fdf4;
+    border-radius: 8px;
+  }
+  .result-card .rc-market .market-title {
+    font-size: 13px; font-weight: 600; color: var(--gray-700); margin-bottom: 8px;
+  }
+  .result-card .rc-market .market-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px;
+  }
+  .result-card .rc-market .market-item {
+    font-size: 12px; color: var(--gray-500); display: flex;
+    flex-direction: column; gap: 1px;
+  }
+  .result-card .rc-market .market-item .market-label {
+    font-size: 11px; color: var(--gray-400);
+  }
+  .result-card .rc-market .market-item .market-value {
+    font-size: 13px; font-weight: 500; color: var(--gray-700);
+  }
+  .result-card .rc-market .market-path { grid-column: 1 / -1; }
+  .result-card .rc-market .market-path-value {
+    font-size: 13px; font-weight: 500; color: var(--primary);
+  }
+  .result-card .rc-footer {
+    margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--gray-100);
+    display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--gray-500);
+  }
+  .result-card .rc-footer span { display: flex; align-items: center; gap: 4px; }
+
+  .no-result {
+    text-align: center; padding: 60px 20px; background: #fff;
+    border-radius: var(--radius); box-shadow: var(--shadow);
+  }
+  .no-result .big-icon { font-size: 56px; margin-bottom: 16px; }
+  .no-result h3 { color: var(--gray-700); margin-bottom: 8px; font-size: 18px; }
+  .no-result p { color: var(--gray-500); font-size: 14px; max-width: 400px; margin: 0 auto 20px; line-height: 1.7; }
+
+  .hidden { display: none !important; }
+  @media print { .print-hide { display: none !important; } }
+
+  @media (max-width: 600px) {
+    .header h1 { font-size: 24px; }
+    .header { padding: 28px 16px 36px; }
+    .container { margin-top: -20px; }
+    .card { padding: 20px 16px; }
+    .form-row, .skill-profile { grid-template-columns: 1fr; }
+    .result-card .rc-bars, .result-card .rc-env .env-grid { grid-template-columns: 1fr; }
+    .progress-step .label { font-size: 10px; }
+    .progress-wrap { padding: 14px 12px; }
+    .progress-steps::before, .progress-steps::after { left: 18px; right: 18px; }
+    .btn-row { flex-direction: column-reverse; gap: 8px; }
+    .btn-row .btn { justify-content: center; width: 100%; }
+    .result-filters { flex-direction: column; align-items: stretch; }
+    .expect-item .e-slider-wrap .e-label { min-width: 48px; font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+<header class="header">
+  <div class="ai-badge">🤖 AI 职业规划助手</div>
+  <h1><span>AI 职业</span>规划助手</h1>
+  <p class="subtitle">通过行为测评 + 职场画像 + 现实条件过滤，帮你找到"适合你 + 你愿意去 + 市场认可"的职业方向</p>
+  <div class="trust-line">
+    <span>🎯 3万+岗位数据库</span>
+    <span>🧠 AI 精准匹配</span>
+    <span>📈 职业成长路线</span>
+  </div>
+</header>
+
+<div class="container" id="app">
+  <div class="progress-wrap print-hide">
+    <div class="progress-steps" id="progressSteps">
+      <div class="progress-step active" data-step="1"><div class="circle">1</div><div class="label">基本信息</div></div>
+      <div class="progress-step" data-step="2"><div class="circle">2</div><div class="label">能力测评</div></div>
+      <div class="progress-step" data-step="3"><div class="circle">3</div><div class="label">职场期望</div></div>
+      <div class="progress-step" data-step="4"><div class="circle">4</div><div class="label">现实条件</div></div>
+      <div class="progress-step" data-step="5"><div class="circle">5</div><div class="label">推荐结果</div></div>
+    </div>
+  </div>
+
+  <!-- STEP 1: 基本信息 -->
+  <div class="step active" id="step1">
+    <div class="card">
+      <h2>📋 基本信息</h2>
+      <p class="subtitle">先告诉我你的教育背景，仅作为推荐的参考信息（权重约 10%）</p>
+      <div class="form-group">
+        <label for="school">学校名称</label>
+        <input type="text" id="school" placeholder="例如：清华大学" list="schoolList">
+        <datalist id="schoolList"></datalist>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="majorGroup">学科门类</label>
+          <select id="majorGroup" onchange="toggleMajorCustom()">
+            <option value="">请选择</option>
+            <option value="理工">理工类</option>
+            <option value="经管">经管类</option>
+            <option value="文史">文史哲类</option>
+            <option value="法政">法学/政治学</option>
+            <option value="教育">教育/师范类</option>
+            <option value="医学">医学/药学类</option>
+            <option value="农学">农学/生命类</option>
+            <option value="艺术">艺术/设计类</option>
+            <option value="其他">其他</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="major">具体专业</label>
+          <select id="major"></select>
+          <div class="custom-input" id="majorCustomWrap">
+            <input type="text" id="majorCustom" placeholder="请输入你的专业名称">
+          </div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="degree">学历层次</label>
+          <select id="degree">
+            <option value="">请选择</option>
+            <option value="专科">专科</option>
+            <option value="本科">本科</option>
+            <option value="硕士">硕士</option>
+            <option value="博士">博士</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="year">年级</label>
+          <select id="year">
+            <option value="">请选择</option>
+            <option value="大一">大一</option><option value="大二">大二</option>
+            <option value="大三">大三</option><option value="大四">大四</option>
+            <option value="研一">研一</option><option value="研二">研二</option>
+            <option value="研三">研三</option><option value="已毕业">已毕业</option>
+          </select>
+        </div>
+      </div>
+      <div class="btn-row"><div></div><button class="btn btn-primary" onclick="goStep(2)">开始能力测评 →</button></div>
+    </div>
+  </div>
+
+  <!-- STEP 2: 能力测评 -->
+  <div class="step" id="step2">
+    <div class="card">
+      <h2>🧠 能力测评</h2>
+      <p class="subtitle">请根据真实情况选择最符合你的选项，以评估你的核心能力</p>
+      <div class="progress-count" id="questionProgress"></div>
+
+      <!-- 题目列表 -->
+      <div id="questionContainer"></div>
+
+      <!-- 能力画像（答完全部题目后显示） -->
+      <div class="skill-profile-wrap" id="skillProfileWrap">
+        <div class="skill-profile" id="skillProfile">
+          <div class="sp-title">📊 你的能力画像（基于你的答题结果）</div>
+          <div id="skillProfileItems"></div>
+          <div style="grid-column:1/-1;text-align:center;color:var(--gray-400);font-size:13px;margin-top:-8px;">
+            👆 这是算法对你的能力评估，将用于后续职业匹配
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-row" id="step2Btns">
+        <button class="btn btn-outline" onclick="goStep(1)">← 上一步</button>
+        <button class="btn btn-primary" id="btnGoStep3" onclick="goStep(3)" disabled>查看能力画像 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3: 职场期望 -->
+  <div class="step" id="step3">
+    <div class="card">
+      <h2>🎯 职场期望</h2>
+      <p class="subtitle">拖动滑块，表达你对未来工作的期望与偏好</p>
+      <div style="font-size:13px;color:var(--gray-500);margin-bottom:16px;background:var(--primary-bg);padding:10px 14px;border-radius:8px;">
+        💡 你的能力画像已生成，现在来设定你的职场期望。最终推荐将综合 <strong>能力(50%)</strong> + <strong>期望契合度(35%)</strong> + <strong>背景(10%)</strong> + <strong>行业偏好(5%)</strong>
+      </div>
+
+      <p style="font-size:14px;font-weight:600;color:var(--gray-700);margin-bottom:12px;">你对职场环境的期望</p>
+      <div class="expect-grid" id="expectGrid"></div>
+
+      <hr style="border:none;border-top:1px solid var(--gray-100);margin:20px 0;">
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="prefIndustry">目标行业偏好（可多选，按住 Ctrl）</label>
+          <select id="prefIndustry" multiple style="height:120px;font-size:13px;">
+            <option value="互联网/IT">互联网/IT</option>
+            <option value="金融">金融/投资</option>
+            <option value="咨询">咨询/研究</option>
+            <option value="教育">教育/培训</option>
+            <option value="医疗">医疗/健康</option>
+            <option value="制造">制造/工程</option>
+            <option value="传媒">传媒/内容</option>
+            <option value="设计">设计/创意</option>
+            <option value="政府">政府/公共事业</option>
+            <option value="新能源">新能源/环保</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="prefCity">意向城市</label>
+          <select id="prefCity">
+            <option value="">不限</option>
+            <option value="北京">北京</option><option value="上海">上海</option>
+            <option value="广州">广州</option><option value="深圳">深圳</option>
+            <option value="杭州">杭州</option><option value="成都">成都</option>
+            <option value="南京">南京</option><option value="其他">其他城市</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-outline" onclick="goStep(2)">← 上一步</button>
+        <button class="btn btn-success" onclick="goStep(4)">下一步：现实条件过滤 →</button>
+      </div>
+    </div>
+  </div>
+  <!-- STEP 4: 现实条件 -->
+  <div class="step" id="step4">
+    <div class="card">
+      <h2>🔍 现实条件过滤</h2>
+      <p class="subtitle">能力和兴趣之外，以下现实条件决定岗位是否真正适合你。</p>
+      <div style="font-size:13px;color:var(--gray-500);margin-bottom:16px;background:var(--purple-bg);padding:10px 14px;border-radius:8px;">
+        💡 勾选你<strong>不能接受</strong>的条件。如果某个岗位包含你勾选的任意一项，系统会降低推荐排序。
+      </div>
+
+      <div id="realityGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"></div>
+
+      <hr style="border:none;border-top:1px solid var(--gray-100);margin:20px 0;">
+
+      <p style="font-size:14px;font-weight:600;color:var(--gray-700);margin-bottom:12px;">家庭与社会因素</p>
+      <div class="form-row">
+        <div class="form-group">
+          <label>家庭经济需求</label>
+          <select id="familyNeed" style="font-size:13px;">
+            <option value="0">无紧迫经济压力，可按兴趣选择</option>
+            <option value="1">有一定压力，薪资是重要因素</option>
+            <option value="2">压力较大，需要尽快经济独立</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>城市意愿</label>
+          <select id="cityPref" style="font-size:13px;">
+            <option value="0">一线城市（北上广深）</option>
+            <option value="1">新一线/二线城市</option>
+            <option value="2">回家乡/离家近</option>
+            <option value="3">不限地点</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-outline" onclick="goStep(3)">← 上一步</button>
+        <button class="btn btn-success" onclick="generateResult()">✨ 查看我的推荐结果</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 5: 结果 -->
+  <div class="step" id="step5">
+    <div class="card" id="resultLoading" style="display:none;">
+      <div class="loading-wrap">
+        <div class="spinner"></div>
+        <p>🔍 正在综合你的能力与期望，匹配最佳职业…</p>
+      </div>
+    </div>
+    <div id="resultContent" style="display:none;">
+      <div class="result-summary">
+        <div class="big" id="matchCount">0</div>
+        <p>个岗位与你的综合画像匹配</p>
+      </div>
+
+      <!-- Filters -->
+      <div class="result-filters print-hide" id="resultFilters">
+        <label>行业</label>
+        <select id="filterIndustry" onchange="applyFilters()">
+          <option value="all">全部行业</option>
+          <option value="互联网/IT">互联网/IT</option>
+          <option value="金融">金融</option>
+          <option value="咨询">咨询</option>
+          <option value="教育">教育</option>
+          <option value="医疗">医疗</option>
+          <option value="制造">制造/工程</option>
+          <option value="传媒">传媒/内容</option>
+          <option value="设计">设计/创意</option>
+          <option value="政府">政府/公共事业</option>
+          <option value="新能源">新能源</option>
+          <option value="综合">综合</option>
+        </select>
+        <label>最低匹配度</label>
+        <select id="filterMinScore" onchange="applyFilters()">
+          <option value="0">不限</option>
+          <option value="80">≥ 80%</option>
+          <option value="70">≥ 70%</option>
+          <option value="60">≥ 60%</option>
+        </select>
+        <div id="filterTags" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+      </div>
+
+      <div id="resultCards"></div>
+      <div id="reverseSection" style="display:none;">
+        <div class="reverse-section">
+          <div class="reverse-title">⛔ 不太推荐的岗位</div>
+          <p style="font-size:12px;color:var(--gray-400);margin-bottom:10px;">这些岗位与你的综合画像匹配度较低，可能不太适合你。以下分析供参考——不适合不等于不可能，只是需要更多努力。</p>
+          <div id="reverseGrid" class="reverse-grid"></div>
+        </div>
+      </div>
+
+      <div id="resultEmpty" class="no-result hidden">
+        <div class="big-icon">🔍</div>
+        <h3>没有符合筛选条件的岗位</h3>
+        <p>试试降低匹配度门槛或选择"全部行业"</p>
+      </div>
+
+      <div class="btn-row print-hide" style="justify-content:center;flex-wrap:wrap;">
+        <button class="btn btn-outline" onclick="goStep(3)" style="flex:0 1 auto;">← 修改期望</button>
+        <button class="btn btn-outline" onclick="goStep(2)" style="flex:0 1 auto;">← 修改答题</button>
+        <button class="btn btn-primary" onclick="window.print()" style="flex:0 1 auto;">🖨️ 保存/打印</button>
+        <button class="btn btn-outline" onclick="exportResult()" style="flex:0 1 auto;">📋 复制结果</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  题库（15 道）
+// ═══════════════════════════════════════════════
+const QUESTIONS = [
+  {id:1, text:"当遇到一个需要用编程解决的问题时，你通常会？",
+    skillMap:[{skill:"编程开发",w:0.7},{skill:"逻辑分析",w:0.3}], tag:"技术能力",
+    options:[
+      {text:"独立设计完整方案并编程实现，乐于解决技术难题",score:5},
+      {text:"能参考现有代码修改实现，有一定编程经验",score:4},
+      {text:"能理解代码逻辑但自己动手写有困难",score:3},
+      {text:"更倾向用非技术方式解决，编程非强项",score:2},
+      {text:"完全避开需要编程的任务，对此不感兴趣",score:1}]},
+  {id:2, text:"在团队技术项目或实验课中，你通常扮演什么角色？",
+    skillMap:[{skill:"编程开发",w:0.5},{skill:"工程技术",w:0.5}], tag:"技术能力",
+    options:[
+      {text:"核心开发/技术负责人，解决最关键的问题",score:5},
+      {text:"主要开发成员，承担大部分编码或实验操作",score:4},
+      {text:"参与部分工作，完成分配的具体任务",score:3},
+      {text:"负责文档、资料整理或辅助性工作",score:2},
+      {text:"基本不参与技术类任务",score:1}]},
+  {id:3, text:"面对一堆数据和信息需要分析时，你的第一反应是？",
+    skillMap:[{skill:"数据分析",w:0.6},{skill:"数学统计",w:0.4}], tag:"数据思维",
+    options:[
+      {text:"用编程或统计方法进行系统性建模分析",score:5},
+      {text:"用 Excel/SPSS 做表格图表辅助分析",score:4},
+      {text:"大致浏览找出关键数字和趋势",score:3},
+      {text:"凭直觉判断，不太做深入分析",score:2},
+      {text:"看到数据就头疼，希望有人总结好",score:1}]},
+  {id:4, text:"你如何评价自己的逻辑推理和思辨能力？",
+    skillMap:[{skill:"逻辑分析",w:0.7},{skill:"数据分析",w:0.3}], tag:"思维习惯",
+    options:[
+      {text:"非常强，能快速发现论证漏洞，建立分析框架",score:5},
+      {text:"较强，能进行结构化思考，推理清晰",score:4},
+      {text:"一般，能跟上基本的逻辑链条",score:3},
+      {text:"较弱，更容易凭直觉做判断",score:2},
+      {text:"不太关注逻辑性，随性而为",score:1}]},
+  {id:5, text:"你对人工智能/机器学习等技术了解多少？",
+    skillMap:[{skill:"算法与AI",w:1.0}], tag:"前沿技术",
+    options:[
+      {text:"能独立训练模型并调优，了解常用算法原理",score:5},
+      {text:"使用过 AI 框架/Tools，了解基本概念",score:4},
+      {text:"知道监督/非监督学习等概念，浅层了解",score:3},
+      {text:"仅听说过 AI 相关新闻，不太了解",score:2},
+      {text:"完全不感兴趣",score:1}]},
+  {id:6, text:"遇到一个需要优化或求解的复杂问题时，你习惯？",
+    skillMap:[{skill:"算法与AI",w:0.5},{skill:"逻辑分析",w:0.5}], tag:"问题解决",
+    options:[
+      {text:"先分析复杂度，选择/设计最优算法解决",score:5},
+      {text:"能想到用合适的经典方法来处理",score:4},
+      {text:"尝试用简单方法解决，不行再换思路",score:3},
+      {text:"需要别人提示才能找到切入点",score:2},
+      {text:"直接找现成答案或放弃",score:1}]},
+  {id:7, text:"你如何看待自己的创意和审美能力？",
+    skillMap:[{skill:"设计创意",w:1.0}], tag:"创意审美",
+    options:[
+      {text:"经常有新颖想法，审美常得到他人认可",score:5},
+      {text:"有一定创意，能做出不错的视觉效果",score:4},
+      {text:"能模仿参考优秀的设计",score:3},
+      {text:"不太擅长创意性工作",score:2},
+      {text:"完全不关注设计和创意",score:1}]},
+  {id:8, text:"在写报告、文章或做展示 PPT 时，你通常？",
+    skillMap:[{skill:"写作内容",w:0.6},{skill:"设计创意",w:0.4}], tag:"表达能力",
+    options:[
+      {text:"精心设计结构，注重排版和视觉呈现",score:5},
+      {text:"会注意美观和条理，花时间打磨",score:4},
+      {text:"使用模板，内容为主",score:3},
+      {text:"以内容完成为目标，外观过得去即可",score:2},
+      {text:"草草了事，不太在意质量",score:1}]},
+  {id:9, text:"在团队讨论或公开场合表达观点时，你的状态是？",
+    skillMap:[{skill:"沟通表达",w:0.7},{skill:"领导力",w:0.3}], tag:"人际沟通",
+    options:[
+      {text:"乐于发言，能清晰有逻辑地表达并影响他人",score:5},
+      {text:"做好准备后能自信表达自己的观点",score:4},
+      {text:"在小范围熟悉人群中能较好表达",score:3},
+      {text:"不太愿意主动发言，倾向倾听",score:2},
+      {text:"极力避免公开表达，感到紧张",score:1}]},
+  {id:10, text:"你的英语水平如何？",
+    skillMap:[{skill:"英语能力",w:1.0}], tag:"语言能力",
+    options:[
+      {text:"能流利交流，无障碍阅读专业英文文献",score:5},
+      {text:"能进行日常对话，借助词典阅读专业资料",score:4},
+      {text:"能阅读英文资料但口语和听力较弱",score:3},
+      {text:"基础水平，需要翻译工具辅助",score:2},
+      {text:"英语很差，影响学习和交流",score:1}]},
+  {id:11, text:"你如何管理自己的任务和时间？",
+    skillMap:[{skill:"项目管理",w:0.8},{skill:"运营管理",w:0.2}], tag:"执行力",
+    options:[
+      {text:"使用系统方法(计划表/工具)，高效推进多任务",score:5},
+      {text:"有基本计划，大多数任务能按时完成",score:4},
+      {text:"随性安排，基本不会耽误重要事项",score:3},
+      {text:"经常拖延，需要外部督促",score:2},
+      {text:"完全没有计划性，手忙脚乱",score:1}]},
+  {id:12, text:"如果让你负责策划并执行一次校园活动或项目，你？",
+    skillMap:[{skill:"项目管理",w:0.4},{skill:"运营管理",w:0.3},{skill:"产品策划",w:0.3}], tag:"组织策划",
+    options:[
+      {text:"能独立完成从方案到执行全流程，有条不紊",score:5},
+      {text:"能主导策划并协调团队分工完成",score:4},
+      {text:"能完成分配给我的具体执行任务",score:3},
+      {text:"需要明确指导才能一步一步完成",score:2},
+      {text:"不想承担这种责任",score:1}]},
+  {id:13, text:"你对商业、市场和财务方面的敏感度如何？",
+    skillMap:[{skill:"市场营销",w:0.5},{skill:"财务金融",w:0.5}], tag:"商业素养",
+    options:[
+      {text:"非常关注商业动态，有自己的理财和分析习惯",score:5},
+      {text:"了解基本商业逻辑，有预算意识",score:4},
+      {text:"大概知道怎么回事，不太深入",score:3},
+      {text:"不太关注，觉得离自己很远",score:2},
+      {text:"完全没有概念也不感兴趣",score:1}]},
+  {id:14, text:"在团队中，你通常扮演什么角色？",
+    skillMap:[{skill:"领导力",w:0.6},{skill:"沟通表达",w:0.4}], tag:"团队角色",
+    options:[
+      {text:"自然成为组织协调者，带领团队推进",score:5},
+      {text:"积极参与，关键时候能承担协调职责",score:4},
+      {text:"尽职完成分内工作，配合团队",score:3},
+      {text:"跟随安排，不太主动",score:2},
+      {text:"倾向于独立工作而非团队协作",score:1}]},
+  {id:15, text:"与他人意见不合时，你通常如何处理？",
+    skillMap:[{skill:"沟通表达",w:0.4},{skill:"领导力",w:0.3},{skill:"逻辑分析",w:0.3}], tag:"人际沟通",
+    options:[
+      {text:"理性讨论，用论证说服对方或达成共识",score:5},
+      {text:"倾听各方后表达自己的观点",score:4},
+      {text:"坚持己见但不愿过多争论",score:3},
+      {text:"容易让步妥协以避免冲突",score:2},
+      {text:"直接回避或情绪化应对",score:1}]}
+];
+
+const EXPECTATIONS = [
+  {key:"companyCulture", name:"公司氛围", desc:"你期望的工作环境风格", left:"传统/层级分明", right:"自由/开放扁平"},
+  {key:"managementStyle", name:"管理风格", desc:"你对上级管理的期望", left:"自主独立", right:"严格指导"},
+  {key:"overtime", name:"加班接受度", desc:"你对加班的接受程度", left:"完全不能接受", right:"愿意经常加班"},
+  {key:"careerGrowth", name:"职业发展速度", desc:"你对晋升节奏的期望", left:"稳定扎根", right:"快速晋升"},
+  {key:"workLife", name:"工作生活平衡", desc:"你对工作与生活优先级的倾向", left:"工作至上", right:"生活优先"},
+  {key:"stability", name:"求稳 vs 挑战", desc:"对工作稳定性和风险的偏好", left:"追求稳定", right:"拥抱变化"}
+];
+
+const CAREERS = [
+  {id:1, title:"软件工程师", industry:"互联网/IT", desc:"负责软件系统的设计、编码、测试与维护，互联网行业核心岗位。薪资高、需求大，技术迭代快需要持续学习。",
+    skills:{编程开发:5,逻辑分析:3,项目管理:2,英语能力:2}, realityFlags:["continuousStudy","highPressure"], env:{companyCulture:4,managementStyle:2,overtime:3,careerGrowth:4,workLife:2,stability:3},
+    majors:["计算机科学与技术","软件工程","信息工程","电子信息工程","通信工程","网络工程","数据科学与大数据技术","人工智能"],
+    related:["数学与应用数学","自动化"], edu:["本科","硕士","博士"],
+    salary:"15K-45K/月", note:"", trend:"稳定增长", demand:"持续旺盛",
+    path:"初级工程师 → 中级 → 高级 → 架构师/技术专家",
+    action:"刷 LeetCode 准备算法面试；参与开源项目积累实战经验；深入学习系统设计与微服务架构",
+    lifecycle:[{"stage":"0-1年","title":"初级工程师","desc":"熟悉团队技术栈与开发流程，掌握CRUD和常用框架"},{"stage":"2-4年","title":"中级/高级工程师","desc":"独立负责子系统设计，主导技术方案评审"},{"stage":"5年+","title":"架构师/技术专家","desc":"负责系统架构设计，技术选型与演进"}]},
+  {id:2, title:"前端开发工程师", industry:"互联网/IT", desc:"负责网站和App用户界面的开发，将设计转化为可交互产品。日新月异的技术栈要求持续学习。",
+    skills:{编程开发:5,设计创意:2,逻辑分析:3}, realityFlags:["continuousStudy"], env:{companyCulture:4,managementStyle:2,overtime:3,careerGrowth:4,workLife:2,stability:3},
+    majors:["计算机科学与技术","软件工程","数字媒体技术","网络工程"], related:["视觉传达设计","工业设计"], edu:["专科","本科","硕士"],
+    salary:"12K-35K/月", note:"", trend:"增长趋稳", demand:"竞争加剧",
+    path:"初级前端 → 高级前端 → 前端架构师 → 技术总监",
+    action:"深入掌握 React/Vue 框架及 TypeScript；建立个人作品集网站；了解后端和移动端基础知识",
+    lifecycle:[{"stage":"0-1年","title":"初级前端","desc":"掌握HTML/CSS/JS，能完成页面切图与交互开发"},{"stage":"2-4年","title":"高级前端","desc":"主导前端架构设计，性能优化与组件抽象"},{"stage":"5年+","title":"前端架构师","desc":"跨平台架构能力，前端工程化体系建设"}]},
+  {id:3, title:"数据科学家", industry:"互联网/IT", desc:"运用统计和机器学习从海量数据中提取洞察，驱动业务决策。AI 时代核心高薪岗，学历门槛较高。",
+    skills:{数据分析:5,算法与AI:5,编程开发:4,数学统计:5,英语能力:3,逻辑分析:5,沟通表达:3}, realityFlags:["continuousStudy","highPressure"], env:{companyCulture:3,managementStyle:2,overtime:3,careerGrowth:4,workLife:2,stability:3},
+    majors:["数据科学与大数据技术","统计学","数学与应用数学","计算机科学与技术","人工智能"], related:["物理学","经济学","金融学"], edu:["硕士","博士"],
+    salary:"20K-50K/月", note:"学历门槛高，通常要求硕博", trend:"高速增长", demand:"高学历人才稀缺",
+    path:"初级数据科学家 → 高级数据科学家 → 首席科学家 → VP of AI",
+    action:"扎实的数学/统计基础；精读经典 ML/DL 论文；参加 Kaggle 竞赛积累实战经验",
+    lifecycle:[{"stage":"0-1年","title":"初级数据科学家","desc":"熟悉统计建模与ML基础，能清洗数据和训练基础模型"},{"stage":"2-4年","title":"高级数据科学家","desc":"独立设计实验与建模方案，深入业务场景做特征工程"},{"stage":"5年+","title":"首席科学家","desc":"带领数据团队制定技术战略，推动AI落地"}]},
+  {id:4, title:"数据分析师", industry:"互联网/IT", desc:"用 SQL、Excel 和可视化工具分析业务数据，为运营和产品决策提供支持。入门门槛较低，数据领域最佳起点。",
+    skills:{数据分析:5,数学统计:3,英语能力:2,沟通表达:3,逻辑分析:4,项目管理:2}, realityFlags:[], env:{companyCulture:3,managementStyle:3,overtime:3,careerGrowth:3,workLife:3,stability:3},
+    majors:["统计学","数学与应用数学","经济学","信息管理与信息系统","计算机科学与技术","工商管理"], related:["金融学","市场营销"], edu:["本科","硕士"],
+    salary:"10K-25K/月", note:"", trend:"高速增长", demand:"入门竞争激烈",
+    path:"数据分析师 → 高级分析师 → 数据科学经理 → CDO",
+    action:"精通 SQL 与 Excel；学习 Python 数据分析栈(Pandas/Matplotlib)；掌握 BI 工具(FineBI/Tableau)",
+    lifecycle:[{"stage":"0-1年","title":"初级数据分析师","desc":"精通SQL取数与Excel报表，能制作数据看板"},{"stage":"2-4年","title":"高级分析师","desc":"独立负责业务线数据分析，驱动业务决策"},{"stage":"5年+","title":"数据科学经理","desc":"搭建数据指标体系，管理分析团队"}]},
+  {id:5, title:"产品经理", industry:"互联网/IT", desc:"负责产品规划、需求分析、功能设计，桥梁型岗位。需技术理解+商业洞察+用户同理心，竞争激烈。",
+    skills:{数据分析:3,沟通表达:5,项目管理:4,产品策划:5,运营管理:2,逻辑分析:4,领导力:3,创造性:3}, realityFlags:["frequentComm","highPressure"], env:{companyCulture:4,managementStyle:3,overtime:3,careerGrowth:4,workLife:2,stability:3},
+    majors:["心理学","经济学","工商管理","市场营销","工业设计","信息管理与信息系统","计算机科学与技术"], related:["汉语言文学","新闻传播学","社会学"], edu:["本科","硕士"],
+    salary:"15K-35K/月", note:"", trend:"稳定增长", demand:"优质PM稀缺",
+    path:"助理产品经理 → 产品经理 → 高级产品经理 → 产品总监 → CPO",
+    action:"学习交互设计与用研方法；培养数据分析能力；多做用户调研和产品分析报告",
+    lifecycle:[{"stage":"0-1年","title":"助理产品经理","desc":"完成需求文档撰写，跟进开发迭代"},{"stage":"2-4年","title":"产品经理","desc":"独立负责产品线规划，制定Roadmap"},{"stage":"5年+","title":"产品总监/CPO","desc":"制定产品战略，管理产品团队"}]},
+  {id:6, title:"AI/机器学习工程师", industry:"互联网/IT", desc:"研发和部署 ML/AI 模型，NLP/CV/推荐系统方向。当前最热门的高薪技术岗，学历门槛高。",
+    skills:{编程开发:5,算法与AI:5,数据分析:4,数学统计:5,英语能力:3,逻辑分析:5,创造性:3}, realityFlags:["continuousStudy","highPressure"], env:{companyCulture:3,managementStyle:2,overtime:3,careerGrowth:5,workLife:2,stability:2},
+    majors:["人工智能","计算机科学与技术","数学与应用数学","统计学","自动化"], related:["物理学","电子信息工程"], edu:["硕士","博士"],
+    salary:"25K-60K/月", note:"通常要求硕博", trend:"爆发增长", demand:"顶尖人才极度稀缺",
+    path:"ML工程师 → 高级ML工程师 → 技术专家 → 首席科学家",
+    action:"扎实的数学基础（线代/概率/优化）；精读经典论文并动手复现 SOTA 模型",
+    lifecycle:[{"stage":"0-1年","title":"初级ML工程师","desc":"复现经典模型，参与数据处理与特征工程"},{"stage":"2-4年","title":"高级ML工程师","desc":"独立设计模型方案，优化训练效率"},{"stage":"5年+","title":"技术专家/首席科学家","desc":"定义技术方向，建立团队技术壁垒"}]},
+  {id:7, title:"测试/QA工程师", industry:"互联网/IT", desc:"负责软件质量保障：功能测试、自动化测试、性能测试。向测试开发方向发展更有前景。",
+    skills:{编程开发:3,逻辑分析:4,项目管理:2}, realityFlags:["highPressure"], env:{companyCulture:3,managementStyle:3,overtime:3,careerGrowth:3,workLife:3,stability:4},
+    majors:["计算机科学与技术","软件工程","信息工程"], related:["电子信息工程"], edu:["专科","本科","硕士"],
+    salary:"10K-25K/月", note:"建议向测试开发方向发展", trend:"向自动化转型", demand:"传统测试饱和",
+    path:"手工测试 → 自动化测试 → 测试开发 → QA经理",
+    action:"学习自动化测试框架(Selenium/Cypress)；掌握性能测试工具；了解 CI/CD 流程",
+    lifecycle:[{"stage":"0-1年","title":"手工测试工程师","desc":"掌握测试用例设计方法，能执行功能测试"},{"stage":"2-4年","title":"自动化测试工程师","desc":"搭建自动化测试框架，提升回归效率"},{"stage":"5年+","title":"测试开发/QA经理","desc":"测试架构设计，质量体系建设"}]},
+  {id:8, title:"运维/DevOps工程师", industry:"互联网/IT", desc:"负责服务部署、监控、容灾和自动化运维，保障系统高可用。云原生时代角色日益重要。",
+    skills:{编程开发:4,逻辑分析:4,项目管理:2}, realityFlags:["overtimeNight","highPressure"], env:{companyCulture:3,managementStyle:3,overtime:4,careerGrowth:3,workLife:2,stability:3},
+    majors:["计算机科学与技术","网络工程","通信工程"], related:["电子信息工程","自动化"], edu:["专科","本科","硕士"],
+    salary:"12K-30K/月", note:"需要 on-call", trend:"增长中（云原生驱动）", demand:"DevOps人才需求上升",
+    path:"运维工程师 → DevOps工程师 → SRE → 云架构师",
+    action:"学习 Docker/K8s 容器化；掌握云服务(AWS/阿里云)；学习脚本编程",
+    lifecycle:[{"stage":"0-1年","title":"运维工程师","desc":"掌握Linux操作和常用中间件维护"},{"stage":"2-4年","title":"DevOps工程师","desc":"设计自动化部署流程，构建监控体系"},{"stage":"5年+","title":"SRE/云架构师","desc":"保障系统高可用与极致弹性"}]},
+  {id:9, title:"网络安全工程师", industry:"互联网/IT", desc:"负责安全体系建设：渗透测试、安全审计、应急响应。数据安全法推动行业需求增长。",
+    skills:{编程开发:4,逻辑分析:5,英语能力:3,沟通表达:2}, realityFlags:["continuousStudy","highPressure"], env:{companyCulture:3,managementStyle:3,overtime:3,careerGrowth:4,workLife:2,stability:3},
+    majors:["网络工程","信息安全","计算机科学与技术","网络空间安全"], related:["通信工程","信息工程"], edu:["专科","本科","硕士"],
+    salary:"15K-40K/月", note:"", trend:"高速增长（政策驱动）", demand:"人才缺口巨大",
+    path:"安全工程师 → 高级安全工程师 → 安全架构师 → CISO",
+    action:"考取安全认证(CISP/CISSP)；参加 CTF 竞赛；学习渗透测试技术",
+    lifecycle:[{"stage":"0-1年","title":"安全运维工程师","desc":"掌握安全工具使用，参与漏洞扫描"},{"stage":"2-4年","title":"安全工程师","desc":"独立完成渗透测试和安全审计"},{"stage":"5年+","title":"安全架构师/CISO","desc":"企业安全战略规划，安全体系建设"}]},
+  {id:10, title:"投资银行分析师", industry:"金融", desc:"在投行从事企业融资、并购、上市等业务。高强度高回报，每周工作 60-100 小时是常态。",
+    skills:{数据分析:4,财务金融:5,英语能力:5,沟通表达:5,逻辑分析:5,领导力:3}, realityFlags:["highPressure","overtimeNight","frequentComm","frequentTravel"], env:{companyCulture:1,managementStyle:4,overtime:5,careerGrowth:4,workLife:1,stability:2},
+    majors:["金融学","经济学","会计学","财务管理","国际经济与贸易"], related:["数学","统计学","法学"], edu:["本科","硕士"],
+    salary:"20K-50K/月", note:"工作强度极大", trend:"周期波动（头部集中）", demand:"顶尖院校竞争白热化",
+    path:"分析师 → 经理 → 副总裁(VP) → 董事总经理(MD)",
+    action:"通过 CFA/CPA 考试；练习财务建模(三张表联动)；关注资本市场动态",
+    lifecycle:[{"stage":"0-1年","title":"分析师","desc":"制作Pitch Book和Company Profile"},{"stage":"2-4年","title":"经理","desc":"带队完成交易执行，维护客户关系"},{"stage":"5年+","title":"副总裁/董事","desc":"主导交易谈判，开拓业务资源"}]},
+  {id:11, title:"风险管理师", industry:"金融", desc:"评估和管理金融机构的信用风险、市场风险和操作风险。金融监管趋严背景下需求稳定。",
+    skills:{数据分析:4,数学统计:4,财务金融:5,逻辑分析:5,英语能力:3}, realityFlags:["highPressure"], env:{companyCulture:2,managementStyle:3,overtime:3,careerGrowth:3,workLife:3,stability:4},
+    majors:["金融学","经济学","统计学","数学","会计学"], related:["计算机","信息管理"], edu:["本科","硕士","博士"],
+    salary:"15K-35K/月", note:"", trend:"稳定增长（监管趋严）", demand:"金融科技带来新需求",
+    path:"风控专员 → 风控经理 → 风控总监 → CRO",
+    action:"学习 SQL/Python；了解巴塞尔协议；备考 FRM 证书",
+    lifecycle:[{"stage":"0-1年","title":"风控专员","desc":"学习风控模型和审批流程"},{"stage":"2-4年","title":"风控经理","desc":"设计风控策略和模型"},{"stage":"5年+","title":"风控总监/CRO","desc":"搭建全面风险管理框架"}]},
+  {id:12, title:"财务分析师", industry:"金融", desc:"分析公司财务数据，编制预算和预测，为管理层提供决策支持。各行各业都需要的基础岗位。",
+    skills:{数据分析:3,财务金融:5,逻辑分析:4,沟通表达:3}, realityFlags:[], env:{companyCulture:2,managementStyle:3,overtime:3,careerGrowth:3,workLife:3,stability:4},
+    majors:["会计学","财务管理","金融学","经济学","审计学"], related:["工商管理","统计学"], edu:["专科","本科","硕士"],
+    salary:"8K-20K/月", note:"", trend:"平稳", demand:"供需基本平衡",
+    path:"财务专员 → 财务经理 → 财务总监 → CFO",
+    action:"考取 CPA/CMA 证书；精通 Excel；学习 ERP 系统",
+    lifecycle:[{"stage":"0-1年","title":"财务专员","desc":"掌握记账、报销、对账等基础财务工作"},{"stage":"2-4年","title":"财务经理","desc":"负责预算编制、财务分析和成本控制"},{"stage":"5年+","title":"财务总监/CFO","desc":"主导财务战略，投融资决策"}]},
+  {id:13, title:"审计师", industry:"金融", desc:"审查企业财务报表真实性和合规性，四大会计师事务所是主要雇主。职业跳板价值高。",
+    skills:{财务金融:5,数据分析:3,英语能力:4,逻辑分析:4,沟通表达:3}, realityFlags:["frequentTravel","overtimeNight","highPressure"], env:{companyCulture:2,managementStyle:4,overtime:4,careerGrowth:3,workLife:2,stability:4},
+    majors:["会计学","审计学","财务管理","金融学"], related:["经济学","工商管理"], edu:["本科","硕士"],
+    salary:"9K-15K/月", note:"出差加班多", trend:"平稳（跳板价值高）", demand:"四大招聘量稳定",
+    path:"审计员 → 高级审计 → 经理 → 合伙人",
+    action:"考取 CPA 证书；提升英语水平（四大外企必备）；熟悉会计准则",
+    lifecycle:[{"stage":"0-1年","title":"审计员","desc":"完成分配的审计底稿，参与盘点"},{"stage":"2-4年","title":"高级审计","desc":"带队完成中小型项目，出具审计报告"},{"stage":"5年+","title":"经理/合伙人","desc":"维护大客户关系，签署审计意见"}]},
+  {id:14, title:"管理咨询顾问", industry:"咨询", desc:"为企业和机构提供战略、运营和管理建议。精英行业，对逻辑分析和沟通能力要求极高。",
+    skills:{数据分析:4,沟通表达:5,逻辑分析:5,英语能力:5,领导力:3,项目管理:3}, realityFlags:["frequentTravel","highPressure","overtimeNight","frequentComm"], env:{companyCulture:2,managementStyle:3,overtime:4,careerGrowth:4,workLife:1,stability:2},
+    majors:["经济学","工商管理","金融学","统计学","数学","计算机","心理学"], related:["社会学","法学","英语"], edu:["本科","硕士","MBA"],
+    salary:"20K-45K/月", note:"需大量出差", trend:"稳定增长（精英赛道）", demand:"顶尖院校竞争白热化",
+    path:"分析师 → 咨询顾问 → 经理 → 合伙人",
+    action:"练习案例面试(Case Interview)；培养行业洞察力；提升 PPT 和 Excel 技能",
+    lifecycle:[{"stage":"0-1年","title":"分析师","desc":"桌面研究与数据分析，PPT制作"},{"stage":"2-4年","title":"咨询顾问","desc":"独立负责工作流模块，参与方案设计"},{"stage":"5年+","title":"经理/合伙人","desc":"主导项目交付，拓展客户关系"}]},
+  {id:15, title:"战略分析师", industry:"咨询", desc:"为企业提供市场分析、竞争策略和业务发展规划。在咨询公司或企业战略部工作。",
+    skills:{数据分析:4,沟通表达:4,逻辑分析:5,英语能力:4,写作内容:3}, realityFlags:[], env:{companyCulture:2,managementStyle:3,overtime:3,careerGrowth:3,workLife:2,stability:3},
+    majors:["经济学","工商管理","金融学","统计学","社会学","数学"], related:["法学","新闻传播学"], edu:["本科","硕士","MBA"],
+    salary:"15K-30K/月", note:"", trend:"平稳", demand:"企业需求稳定",
+    path:"战略专员 → 战略经理 → 战略总监 → CSO",
+    action:"建立行业分析框架；学习 Python/R 数据分析；关注商业动态",
+    lifecycle:[{"stage":"0-1年","title":"战略专员","desc":"收集行业数据和竞品信息"},{"stage":"2-4年","title":"战略经理","desc":"独立负责战略研究课题"},{"stage":"5年+","title":"战略总监/CSO","desc":"主导公司战略规划"}]},
+  {id:16, title:"市场营销专员", industry:"传媒/市场", desc:"负责品牌推广、活动策划和营销渠道管理。入门门槛不高但竞争激烈，需突出实战能力。",
+    skills:{数据分析:3,沟通表达:5,写作内容:4,创造性:4,项目管理:3,市场营销:4}, realityFlags:[], env:{companyCulture:3,managementStyle:3,overtime:3,careerGrowth:3,workLife:3,stability:3},
+    majors:["市场营销","工商管理","广告学","新闻传播学","电子商务","心理学"], related:["汉语言文学","社会学"], edu:["专科","本科","硕士"],
+    salary:"8K-20K/月", note:"", trend:"饱和竞争", demand:"入门门槛低竞争激烈",
+    path:"市场专员 → 市场主管 → 市场经理 → 市场总监 → CMO",
+    action:"学习数字营销工具(Google Analytics/巨量引擎)；掌握数据分析基础；培养文案和创意能力",
+    lifecycle:[{"stage":"0-1年","title":"市场专员","desc":"执行市场活动，管理物料和渠道"},{"stage":"2-4年","title":"市场经理","desc":"制定营销方案，管理预算"},{"stage":"5年+","title":"市场总监/CMO","desc":"制定品牌战略，对增长负责"}]},
+  {id:17, title:"新媒体运营", industry:"传媒/市场", desc:"负责公众号、抖音、小红书等社交媒体内容策划和运营。需随时在线，工作生活界限模糊。",
+    skills:{写作内容:5,设计创意:3,数据分析:3,沟通表达:4,运营管理:4,创造性:5}, realityFlags:["continuousStudy","highPressure"], env:{companyCulture:4,managementStyle:2,overtime:3,careerGrowth:3,workLife:2,stability:2},
+    majors:["新闻传播学","广告学","市场营销","汉语言文学","数字媒体艺术"], related:["心理学","社会学"], edu:["专科","本科","硕士"],
+    salary:"6K-16K/月", note:"", trend:"增长放缓（赛道成熟化）", demand:"量大但淘汰率高",
+    path:"运营专员 → 运营主管 → 运营经理 → 运营总监",
+    action:"精通主流平台算法规则；学习短视频拍摄与剪辑；培养网感和热点捕捉能力",
+    lifecycle:[{"stage":"0-1年","title":"运营专员","desc":"负责内容发布、评论互动和数据统计"},{"stage":"2-4年","title":"运营主管","desc":"制定运营策略，规划内容矩阵"},{"stage":"5年+","title":"运营总监","desc":"平台级运营策略，团队管理"}]},
+  {id:18, title:"内容运营", industry:"传媒/市场", desc:"通过优质内容策划、生产和分发，实现用户增长和活跃。优质内容价值持续提升。",
+    skills:{写作内容:5,数据分析:3,运营管理:4,沟通表达:4,创造性:4}, realityFlags:["continuousStudy"], env:{companyCulture:3,managementStyle:3,overtime:3,careerGrowth:3,workLife:3,stability:3},
+    majors:["新闻传播学","汉语言文学","广告学","市场营销","编辑出版学"], related:["心理学","社会学"], edu:["专科","本科","硕士"],
+    salary:"7K-18K/月", note:"", trend:"稳定增长（内容价值提升）", demand:"优质内容人才稀缺",
+    path:"内容专员 → 内容主管 → 内容经理 → 内容总监",
+    action:"建立个人作品集；学习 SEO/增长知识；熟练使用 CMS 工具",
+    lifecycle:[{"stage":"0-1年","title":"内容专员","desc":"文章撰写与排版发布，基础数据分析"},{"stage":"2-4年","title":"内容主管","desc":"内容策略制定，专题策划"},{"stage":"5年+","title":"内容总监","desc":"搭建内容生态体系"}]},
+  {id:19, title:"UI/UX设计师", industry:"设计/创意", desc:"负责产品界面视觉设计和交互体验优化。作品集是面试的关键。",
+    skills:{设计创意:5,编程开发:2,沟通表达:3,逻辑分析:3,创造性:5}, realityFlags:["continuousStudy"], env:{companyCulture:4,managementStyle:2,overtime:3,careerGrowth:3,workLife:3,stability:3},
+    majors:["视觉传达设计","工业设计","数字媒体艺术","产品设计","艺术设计"], related:["心理学","计算机"], edu:["专科","本科","硕士"],
+    salary:"12K-30K/月", note:"", trend:"稳定增长", demand:"中高级设计师紧缺",
+    path:"初级设计师 → 高级设计师 → 设计主管 → 设计总监",
+    action:"精通 Figma/Sketch/Adobe 系列；学习 Design System 方法论；建立高质量作品集",
+    lifecycle:[{"stage":"0-1年","title":"初级设计师","desc":"完成UI切图和设计稿输出"},{"stage":"2-4年","title":"高级设计师","desc":"主导产品设计改版，建立设计规范"},{"stage":"5年+","title":"设计总监","desc":"设计体系搭建与品牌管理"}]},
+  {id:20, title:"产品设计师", industry:"设计/创意", desc:"从用户需求出发，负责产品从概念到落地的全流程设计。需技术和商业理解力。",
+    skills:{设计创意:5,数据分析:3,沟通表达:4,产品策划:4,逻辑分析:4,创造性:5}, realityFlags:["frequentComm"], env:{companyCulture:4,managementStyle:2,overtime:3,careerGrowth:4,workLife:3,stability:3},
+    majors:["工业设计","产品设计","视觉传达设计","心理学"], related:["计算机","工商管理","市场营销"], edu:["本科","硕士"],
+    salary:"15K-35K/月", note:"", trend:"大厂需求增长", demand:"综合型设计师紧缺",
+    path:"产品设计师 → 高级设计师 → 设计Leader → 设计总监",
+    action:"掌握用户研究方法；学习交互原型工具；了解商业产品逻辑",
+    lifecycle:[{"stage":"0-1年","title":"初级产品设计师","desc":"完成功能原型和交互设计"},{"stage":"2-4年","title":"产品设计师","desc":"全链路设计思维，从洞察到落地"},{"stage":"5年+","title":"设计Leader","desc":"设计策略制定，产品体验方向把控"}]},
+  {id:21, title:"机械工程师", industry:"制造/工程", desc:"从事机械产品、设备和系统的设计、研发和制造。高端制造和智能制造是转型方向。",
+    skills:{工程技术:5,编程开发:2,逻辑分析:4,设计创意:2}, realityFlags:["manualLabor"], env:{companyCulture:2,managementStyle:3,overtime:3,careerGrowth:3,workLife:3,stability:4},
+    majors:["机械工程","机械设计制造及其自动化","车辆工程","材料成型及控制工程"], related:["自动化","工业工程","物理学"], edu:["本科","硕士","博士"],
+    salary:"8K-20K/月", note:"", trend:"转型期（智能制造升级）", demand:"传统岗位平稳，智能制造人才紧缺",
+    path:"助理工程师 → 工程师 → 高级工程师 → 总工程师",
+    action:"精通 CAD/SolidWorks；学习仿真分析(ANSYS)；关注智能制造技术",
+    lifecycle:[{"stage":"0-1年","title":"助理工程师","desc":"掌握绘图软件，参与零部件设计"},{"stage":"2-4年","title":"工程师","desc":"独立负责产品模块设计"},{"stage":"5年+","title":"高级/总工程师","desc":"主导重大技术攻关"}]},
+  {id:22, title:"电子工程师", industry:"制造/工程", desc:"从事电子电路、嵌入式系统和电子产品的设计开发。芯片国产化浪潮下前景广阔。",
+    skills:{工程技术:5,编程开发:3,逻辑分析:4}, realityFlags:["continuousStudy","highPressure"], env:{companyCulture:2,managementStyle:3,overtime:3,careerGrowth:3,workLife:3,stability:4},
+    majors:["电子信息工程","电子科学与技术","微电子科学与工程","集成电路设计与集成系统","通信工程","自动化"], related:["物理学","计算机"], edu:["本科","硕士","博士"],
+    salary:"10K-25K/月", note:"芯片方向学习曲线陡峭", trend:"增长中（芯片国产化驱动）", demand:"芯片设计人才极度稀缺",
+    path:"初级工程师 → 高级工程师 → 技术专家 → 技术总监",
+    action:"掌握 PCB 设计；学习嵌入式开发(C/STM32)；关注芯片行业动态",
+    lifecycle:[{"stage":"0-1年","title":"初级电子工程师","desc":"完成电路图和PCB layout"},{"stage":"2-4年","title":"电子工程师","desc":"独立设计嵌入式系统"},{"stage":"5年+","title":"技术专家/总监","desc":"主导芯片/系统级设计"}]},
+  {id:23, title:"土木/建筑工程师", industry:"制造/工程", desc:"从事建筑、道路、桥梁等工程项目的规划、设计和施工管理。考取执业证书至关重要。",
+    skills:{工程技术:5,项目管理:3,逻辑分析:4,沟通表达:2}, realityFlags:["frequentTravel","manualLabor"], env:{companyCulture:2,managementStyle:3,overtime:3,careerGrowth:2,workLife:3,stability:5},
+    majors:["土木工程","建筑学","工程管理","给排水科学与工程","道路桥梁"], related:["环境工程","力学类"], edu:["本科","硕士","博士"],
+    salary:"8K-18K/月", note:"", trend:"下行压力（房地产调整期）", demand:"基建领域尚可，房建降温",
+    path:"助理工程师 → 工程师 → 项目经理 → 总工程师",
+    action:"考取注册结构/建造师证书；掌握 BIM 技术；积累项目现场经验",
+    lifecycle:[{"stage":"0-1年","title":"助理工程师","desc":"完成施工图绘制和现场测量"},{"stage":"2-4年","title":"工程师","desc":"独立负责项目设计或现场管理"},{"stage":"5年+","title":"项目经理/总工","desc":"大型项目管理，技术决策"}]},
+  {id:24, title:"新能源工程师", industry:"新能源/环保", desc:"从事太阳能、风能、储能、氢能等新能源技术研发和应用。双碳目标下高速发展的朝阳行业。",
+    skills:{工程技术:5,数据分析:3,逻辑分析:4,创造性:3,英语能力:3}, realityFlags:["continuousStudy"], env:{companyCulture:3,managementStyle:3,overtime:3,careerGrowth:4,workLife:3,stability:2},
+    majors:["新能源科学与工程","能源与动力工程","电气工程及其自动化","材料科学与工程","环境工程"], related:["物理学","机械工程","自动化"], edu:["本科","硕士","博士"],
+    salary:"10K-25K/月", note:"", trend:"高速增长（双碳政策驱动）", demand:"复合型人才紧缺",
+    path:"技术员 → 工程师 → 高级工程师 → 技术总监",
+    action:"掌握能源系统仿真；了解储能/氢能技术；关注双碳政策动态",
+    lifecycle:[{"stage":"0-1年","title":"技术员","desc":"了解新能源发电原理和系统组成"},{"stage":"2-4年","title":"工程师","desc":"独立进行系统设计和方案优化"},{"stage":"5年+","title":"技术总监","desc":"主导新能源项目技术架构"}]},
+  {id:25, title:"教师", industry:"教育", desc:"在学校从事教学和教育工作。职业稳定有寒暑假，社会地位高。",
+    skills:{沟通表达:5,写作内容:3,领导力:3,计划组织:4,创造性:3}, realityFlags:[], env:{companyCulture:2,managementStyle:3,overtime:2,careerGrowth:2,workLife:5,stability:5},
+    majors:["教育学","汉语言文学","数学与应用数学","英语","物理学","化学","历史学","思想政治教育"], related:["心理学"], edu:["专科","本科","硕士","博士"],
+    salary:"6K-15K/月", note:"人口减少趋势下优质教师依然稀缺", trend:"分化加剧（人口减少挑战）", demand:"优质教师依旧稀缺",
+    path:"初级教师 → 中级教师 → 高级教师 → 特级教师/校长",
+    action:"考取教师资格证；积累教学实习经验；关注教育政策和改革",
+    lifecycle:[{"stage":"0-1年","title":"初级教师","desc":"备课上课，班级管理和教学反思"},{"stage":"2-4年","title":"中级教师","desc":"参与教研活动和课题研究"},{"stage":"5年+","title":"高级/特级教师","desc":"教学成果突出，引领学科发展"}]},
+  {id:26, title:"医药代表", industry:"医疗/健康", desc:"负责药品学术推广和医院渠道维护。集采政策下合规推广能力更加重要。",
+    skills:{沟通表达:5,市场营销:4,抗压能力:4,计划组织:3}, realityFlags:["frequentTravel","frequentComm","highPressure"], env:{companyCulture:2,managementStyle:3,overtime:3,careerGrowth:3,workLife:2,stability:3},
+    majors:["药学","临床医学","护理学","制药工程","生物工程","市场营销"], related:["化学","生物科学"], edu:["专科","本科","硕士"],
+    salary:"8K-25K/月", note:"", trend:"调整期（集采政策影响）", demand:"合规人才需求上升",
+    path:"医药代表 → 高级代表 → 区域经理 → 销售总监",
+    action:"深入了解产品医学知识；学习医药行业政策法规；培养客户管理能力",
+    lifecycle:[{"stage":"0-1年","title":"医药代表","desc":"熟悉产品和区域市场"},{"stage":"2-4年","title":"高级代表","desc":"建立稳定客户网络，完成指标"},{"stage":"5年+","title":"区域经理","desc":"管理销售团队，制定区域策略"}]},
+  {id:27, title:"公务员", industry:"政府/公共事业", desc:"在政府机关从事行政管理、政策执行和公共服务。稳定有保障，但竞争极其激烈。",
+    skills:{写作内容:4,沟通表达:4,逻辑分析:4,项目管理:3,计划组织:4}, realityFlags:[], env:{companyCulture:1,managementStyle:4,overtime:2,careerGrowth:2,workLife:5,stability:5},
+    majors:["法学","行政管理","公共管理","政治学","汉语言文学","经济学","社会学"], related:["几乎所有专业"], edu:["专科","本科","硕士","博士"],
+    salary:"5K-12K/月", note:"热门岗位几百比一", trend:"竞争持续加剧", demand:"热门岗位几百比一",
+    path:"科员 → 副科 → 正科 → 副处 → 正处",
+    action:"备考行测和申论；关注时政热点；研究报考岗位的招录比和历史分数线",
+    lifecycle:[{"stage":"0-1年","title":"科员","desc":"熟悉机关工作流程，完成行政事务"},{"stage":"2-4年","title":"副科/科长","desc":"独立负责条线工作"},{"stage":"5年+","title":"处级干部","desc":"在专业领域形成影响力"}]},
+  {id:28, title:"政策研究员", industry:"政府/公共事业", desc:"在智库和政府部门从事公共政策研究和分析。通常需要硕博学历。",
+    skills:{数据分析:4,写作内容:5,逻辑分析:5,英语能力:3,沟通表达:3}, realityFlags:["continuousStudy"], env:{companyCulture:2,managementStyle:3,overtime:2,careerGrowth:3,workLife:4,stability:4},
+    majors:["经济学","政治学","社会学","公共管理","法学","统计学","历史学"], related:["金融学","教育学","哲学"], edu:["硕士","博士"],
+    salary:"10K-20K/月", note:"", trend:"智库需求增长", demand:"硕博学历门槛",
+    path:"助理研究员 → 副研究员 → 研究员 → 高级研究员",
+    action:"培养学术写作能力；掌握定量研究方法；关注政策动态并发表论文",
+    lifecycle:[{"stage":"0-1年","title":"助理研究员","desc":"参与课题资料收集和分析"},{"stage":"2-4年","title":"副研究员","desc":"独立承担课题研究"},{"stage":"5年+","title":"研究员","desc":"主持重大课题，提供决策参考"}]},
+  {id:29, title:"律师", industry:"法律", desc:"为客户提供法律咨询、代理诉讼和非诉业务。入行前几年收入偏低。",
+    skills:{沟通表达:5,写作内容:4,逻辑分析:5,英语能力:3,抗压能力:4}, realityFlags:["highPressure","overtimeNight","frequentComm"], env:{companyCulture:2,managementStyle:3,overtime:4,careerGrowth:3,workLife:2,stability:3},
+    majors:["法学","知识产权","国际法"], related:["政治学","经济学","英语"], edu:["本科","硕士"],
+    salary:"6K-30K/月", note:"前期薪资较低", trend:"分化明显（二八定律）", demand:"红圈所竞争激烈",
+    path:"实习律师 → 律师 → 合伙人 → 高级合伙人",
+    action:"通过法律职业资格考试；选择专业方向深耕；积累实习经验",
+    lifecycle:[{"stage":"0-1年","title":"实习律师","desc":"整理案卷文书，法律检索"},{"stage":"2-4年","title":"执业律师","desc":"独立承办案件或项目"},{"stage":"5年+","title":"合伙人","desc":"带领团队，开拓案源"}]},
+  {id:30, title:"人力资源专员", industry:"管理/服务", desc:"负责招聘、培训、薪酬绩效、员工关系等 HR 管理工作。入门门槛不高。",
+    skills:{沟通表达:5,项目管理:3,写作内容:3,逻辑分析:3,领导力:2}, realityFlags:["frequentComm"], env:{companyCulture:3,managementStyle:3,overtime:3,careerGrowth:3,workLife:4,stability:4},
+    majors:["人力资源管理","工商管理","行政管理","心理学","劳动与社会保障"], related:["经济学","法学","教育学"], edu:["专科","本科","硕士"],
+    salary:"7K-16K/月", note:"", trend:"向HRBP模式转型", demand:"基础岗位竞争激烈",
+    path:"HR专员 → HR经理 → HRBP → HRD → CHRO",
+    action:"考取 HR 证书；学习劳动法知识；培养业务思维向 HRBP 方向发展",
+    lifecycle:[{"stage":"0-1年","title":"HR专员","desc":"执行招聘、入离职办理等事务"},{"stage":"2-4年","title":"HR经理","desc":"独立负责招聘/培训/绩效等模块"},{"stage":"5年+","title":"HRD/CHRO","desc":"制定人力资源战略，组织变革"}]},
+  {id:31, title:"供应链管理师", industry:"制造/工程", desc:"管理产品的采购、生产、仓储、物流全流程。后疫情时代重要性显著提升。",
+    skills:{数据分析:3,项目管理:4,逻辑分析:4,沟通表达:3,英语能力:3}, realityFlags:["highPressure","frequentComm"], env:{companyCulture:3,managementStyle:3,overtime:3,careerGrowth:3,workLife:3,stability:4},
+    majors:["物流管理","供应链管理","工商管理","工业工程","电子商务","交通运输"], related:["统计学","经济学"], edu:["专科","本科","硕士"],
+    salary:"8K-20K/月", note:"", trend:"增长中（全球化重构）", demand:"复合型人才紧缺",
+    path:"供应链专员 → 主管 → 经理 → 总监 → VP",
+    action:"学习 SAP/ERP 系统；掌握数据分析技能；了解国际贸易规则",
+    lifecycle:[{"stage":"0-1年","title":"供应链专员","desc":"处理采购订单和物流跟踪"},{"stage":"2-4年","title":"供应链经理","desc":"优化供应链流程，库存管理"},{"stage":"5年+","title":"供应链总监","desc":"全球化供应链战略，数字化转型"}]},
+  {id:32, title:"创业者/企业家", industry:"综合", desc:"创办经营自己的企业。高风险高回报，需要极强的抗压能力和全面的综合素养。",
+    skills:{沟通表达:5,领导力:5,创造性:5,项目管理:5,市场营销:4,财务金融:3,逻辑分析:4,数据分析:3,产品策划:4}, realityFlags:["highPressure","overtimeNight","frequentComm"], env:{companyCulture:5,managementStyle:1,overtime:5,careerGrowth:5,workLife:1,stability:1},
+    majors:[], related:[], edu:["专科","本科","硕士","博士"],
+    salary:"0-∞", note:"不适合所有人", trend:"创业活跃度波动", demand:"高风险高回报",
+    path:"创业 → A轮 → B轮 → IPO/被并购",
+    action:"找到靠谱的联合创始人；用精益创业方法快速验证想法；持续学习商业和财务知识",
+    lifecycle:[{"stage":"0-1年","title":"创业初期","desc":"验证商业假设，找到PMF"},{"stage":"2-4年","title":"增长期","desc":"规模化运营，完成A/B轮融资"},{"stage":"5年+","title":"成熟期","desc":"引领行业创新，IPO或并购"}]}
+];
+
+const MAJORS = {
+  "理工":["计算机科学与技术","软件工程","数学与应用数学","信息与计算科学","物理学","应用物理学","化学","应用化学","统计学","信息工程","电子信息工程","通信工程","自动化","机械工程","机械设计制造及其自动化","车辆工程","土木工程","建筑学","环境工程","材料科学与工程","化学工程与工艺","生物工程","新能源科学与工程","能源与动力工程","电气工程及其自动化","微电子科学与工程","集成电路设计与集成系统","数据科学与大数据技术","人工智能","网络工程","信息安全","物联网工程","工业设计","工业工程","测控技术与仪器","地理信息科学"],
+  "经管":["经济学","金融学","会计学","财务管理","工商管理","市场营销","人力资源管理","行政管理","信息管理与信息系统","物流管理","供应链管理","电子商务","旅游管理","国际经济与贸易","财政学","保险学","审计学","资产评估","文化产业管理"],
+  "文史":["汉语言文学","汉语国际教育","英语","翻译","日语","法语","德语","西班牙语","新闻学","广播电视学","广告学","历史学","考古学","哲学","社会学","人类学","民族学"],
+  "法政":["法学","知识产权","国际法","政治学与行政学","国际政治","外交学","公共事业管理","城市管理","劳动与社会保障"],
+  "教育":["教育学","学前教育","小学教育","特殊教育","教育技术学","体育教育","心理学","应用心理学"],
+  "医学":["临床医学","口腔医学","基础医学","预防医学","中医学","药学","中药学","护理学","医学检验技术","医学影像技术","康复治疗学","生物医学工程"],
+  "农学":["农学","园艺","植物保护","动物科学","动物医学","水产养殖学","林学","园林","食品科学与工程","食品质量与安全"],
+  "艺术":["视觉传达设计","环境设计","产品设计","服装与服饰设计","数字媒体艺术","动画","美术学","绘画","雕塑","音乐学","音乐表演","舞蹈学","广播电视编导","播音与主持艺术","摄影"]
+};
+const SCHOOLS = [
+  "北京大学","清华大学","复旦大学","上海交通大学","浙江大学","南京大学","武汉大学","华中科技大学","西安交通大学","哈尔滨工业大学",
+  "中山大学","南开大学","天津大学","同济大学","东南大学","厦门大学","北京航空航天大学","北京理工大学","四川大学","电子科技大学",
+  "华南理工大学","大连理工大学","吉林大学","湖南大学","中南大学","重庆大学","山东大学","兰州大学","西北工业大学","东北大学",
+  "北京师范大学","华东师范大学","中国人民大学","中国农业大学","西北农林科技大学","中央民族大学",
+  "北京邮电大学","北京交通大学","北京科技大学","北京工业大学","北京化工大学","北京外国语大学","上海外国语大学","上海大学",
+  "华东理工大学","东华大学","上海财经大学","南京航空航天大学","南京理工大学","河海大学","江南大学","中国矿业大学","中国地质大学","中国石油大学",
+  "西南交通大学","西南大学","西南财经大学","西安电子科技大学","长安大学","陕西师范大学","西北大学",
+  "武汉理工大学","华中师范大学","华中农业大学","中南财经政法大学","郑州大学","河南大学","苏州大学","南京师范大学","中国药科大学",
+  "合肥工业大学","安徽大学","福州大学","南昌大学","广西大学","云南大学","贵州大学","海南大学","内蒙古大学","宁夏大学","青海大学","石河子大学",
+  "深圳大学","南方科技大学","上海科技大学","中国科学院大学","中国社会科学院大学"
+].sort();
+
+let currentStep = 1;
+const userData = {};
+
+// ─── INIT ───
+function init() {
+  const sList = document.getElementById('schoolList');
+  SCHOOLS.forEach(s => { const o = document.createElement('option'); o.value = s; sList.appendChild(o); });
+
+  // Render questions with skill tags
+  const qc = document.getElementById('questionContainer');
+  QUESTIONS.forEach((q, idx) => {
+    const SKILL_ICONS = {编程开发:"💻",数据分析:"📊",算法与AI:"🧠",设计创意:"🎨",写作内容:"✍️",英语能力:"🌐",沟通表达:"💬",项目管理:"📋",市场营销:"📈",财务金融:"💰",运营管理:"⚙️",工程技术:"🔧",数学统计:"📐",产品策划:"📱",领导力:"👥",逻辑分析:"🧩"};
+    const tagNames = q.skillMap.map(s => SKILL_ICONS[s.skill] + ' ' + nameOfSkill(s.skill)).join(' · ');
+    const div = document.createElement('div'); div.className = 'question-item'; div.dataset.qid = q.id;
+    div.innerHTML = `
+      <div class="q-title"><span class="q-num">${idx+1}</span> ${q.text}</div>
+      <div class="q-tags"><span>${q.tag}</span><span>${tagNames}</span></div>
+      <div class="q-options">
+        ${q.options.map((o, oi) => `
+          <label data-option="${oi}">
+            <input type="radio" name="q${q.id}" value="${oi}">
+            <span>${o.text}</span>
+            <span class="opt-score">+${o.score}分</span>
+          </label>`).join('')}
+      </div>`;
+    qc.appendChild(div);
+    div.querySelectorAll('input[type="radio"]').forEach(r => {
+      r.addEventListener('change', () => {
+        div.querySelectorAll('label').forEach(l => l.classList.remove('selected'));
+        div.querySelector(`label[data-option="${r.value}"]`).classList.add('selected');
+        div.classList.add('answered');
+        updateQuestionProgress();
+      });
+    });
+  });
+
+  // Expectations
+  const eg = document.getElementById('expectGrid');
+  EXPECTATIONS.forEach(e => {
+    const div = document.createElement('div'); div.className = 'expect-item';
+    div.innerHTML = `
+      <div class="e-name">${e.name}</div>
+      <div class="e-desc">${e.desc}</div>
+      <div class="e-slider-wrap">
+        <span class="e-label">${e.left}</span>
+        <input type="range" min="1" max="5" value="3" data-expect="${e.key}">
+        <span class="e-label">${e.right}</span>
+        <span class="e-val">3</span>
+      </div>`;
+    eg.appendChild(div);
+    const slider = div.querySelector('input');
+    slider.addEventListener('input', () => { div.querySelector('.e-val').textContent = slider.value; });
+  });
+  // Reality conditions
+  const rg = document.getElementById('realityGrid');
+  if (rg) {
+    const REALITY_COND = [{"key":"frequentTravel","label":"经常出差","desc":"每月至少出差1-2次"},{"key":"highPressure","label":"高压工作","desc":"工作节奏快、压力大、Deadline密集"},{"key":"frequentComm","label":"高频社交/沟通","desc":"需要大量与他人沟通、谈判、应酬"},{"key":"continuousStudy","label":"持续学习","desc":"技术/知识更新快，业余时间也要学习"},{"key":"bigCity","label":"一线城市生活","desc":"需要在北京/上海/深圳等一线城市工作"},{"key":"overtimeNight","label":"频繁加班","desc":"经常加班到9点后或周末加班"},{"key":"manualLabor","label":"体力/户外工作","desc":"需要较多体力活动或在户外工作"},{"key":"jobHops","label":"频繁跳槽","desc":"行业流动性大，需要频繁换工作"}];
+    REALITY_COND.forEach(rc => {
+      const d = document.createElement('div');
+      d.className = 'reality-item';
+      d.innerHTML = '<input type="checkbox" id="rc_'+rc.key+'"> <label for="rc_'+rc.key+'"><strong>'+rc.label+'</strong><br><span>'+rc.desc+'</span></label>';
+      d.querySelector('input').addEventListener('change', function(){ d.classList.toggle('rejected', this.checked); });
+      rg.appendChild(d);
+    });
+  }
+
+  updateQuestionProgress();
+}
+
+function nameOfSkill(key) {
+  const m = {编程开发:"编程",数据分析:"数据分析",算法与AI:"AI/算法",设计创意:"设计创意",写作内容:"写作",英语能力:"英语",沟通表达:"沟通",项目管理:"项目管理",市场营销:"营销",财务金融:"财务",运营管理:"运营",工程技术:"工程",数学统计:"数学统计",产品策划:"产品",领导力:"领导力",逻辑分析:"逻辑"};
+  return m[key]||key;
+}
+
+function updateQuestionProgress() {
+  const total = QUESTIONS.length;
+  const done = document.querySelectorAll('.question-item.answered').length;
+  document.getElementById('questionProgress').textContent = `已答 ${done}/${total} 题`;
+  const btn = document.getElementById('btnGoStep3');
+  if (done === total) {
+    btn.disabled = false;
+    btn.textContent = '确认，去设定期望 →';
+  } else {
+    btn.disabled = true;
+    btn.textContent = '查看能力画像 →';
+  }
+}
+
+function toggleMajorCustom() {
+  const grp = document.getElementById('majorGroup').value;
+  const sel = document.getElementById('major'); const cust = document.getElementById('majorCustomWrap');
+  sel.innerHTML = '<option value="">请选择专业</option>';
+  if (grp === '其他') { cust.classList.add('show'); sel.style.display = 'none'; return; }
+  cust.classList.remove('show'); sel.style.display = 'block';
+  (MAJORS[grp]||[]).forEach(m => { const o = document.createElement('option'); o.value = m; o.textContent = m; sel.appendChild(o); });
+}
+
+// ─── NAVIGATION ───
+function goStep(n) {
+  if (n === 2 && !validateStep1()) return;
+  if (n === 3 && !validateStep2()) return;
+  // Special: step 2 → skill profile auto-show
+  if (n === 3) {
+    const allDone = document.querySelectorAll('.question-item.answered').length === QUESTIONS.length;
+    if (allDone) { buildSkillProfile(); }
+  }
+
+  currentStep = n;
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+  document.getElementById('step' + n).classList.add('active');
+  document.querySelectorAll('.progress-step').forEach(el => {
+    const s = parseInt(el.dataset.step);
+    el.classList.toggle('active', s === n);
+    el.classList.toggle('done', s < n);
+  });
+  const style = document.createElement('style');
+  style.id = 'progStyle';
+  const old = document.getElementById('progStyle'); if (old) old.remove();
+  const pct = ((n - 1) / 4) * 100;
+  style.textContent = `.progress-steps::after { width: ${pct}% !important; }`;
+  document.head.appendChild(style);
+}
+
+function validateStep1() {
+  const school = document.getElementById('school').value.trim();
+  const major = document.getElementById('majorGroup').value === '其他'
+    ? document.getElementById('majorCustom').value.trim() : document.getElementById('major').value;
+  const degree = document.getElementById('degree').value;
+  const year = document.getElementById('year').value;
+  if (!school) { alert('请输入学校名称'); return false; }
+  if (!major) { alert('请选择或输入专业'); return false; }
+  if (!degree) { alert('请选择学历层次'); return false; }
+  if (!year) { alert('请选择年级'); return false; }
+  userData.school = school; userData.major = major; userData.degree = degree; userData.year = year;
+  return true;
+}
+
+function validateStep2() {
+  const answered = document.querySelectorAll('.question-item.answered').length;
+  if (answered < QUESTIONS.length) {
+    alert(`还有 ${QUESTIONS.length - answered} 道题未作答`);
+    return false;
+  }
+  // Scroll to skill profile
+  document.getElementById('skillProfileWrap').classList.add('show');
+  document.getElementById('step2Btns').querySelector('.btn-primary').textContent = '确认，去设定期望 →';
+  document.getElementById('btnGoStep3').disabled = false;
+
+  const answers = {};
+  document.querySelectorAll('.question-item').forEach(el => {
+    const checked = el.querySelector('input[type="radio"]:checked');
+    if (checked) answers[parseInt(el.dataset.qid)] = parseInt(checked.value);
+  });
+  userData.questionAnswers = answers;
+
+  // Build profile
+  buildSkillProfile();
+  return true;
+}
+
+// ─── SKILL PROFILE ───
+function computeSkillScores(answers) {
+  const sums = {}, counts = {};
+  QUESTIONS.forEach(q => {
+    const ai = answers[q.id]; if (ai === undefined) return;
+    const sc = q.options[ai].score;
+    q.skillMap.forEach(({skill,w}) => { sums[skill] = (sums[skill]||0) + sc*w; counts[skill] = (counts[skill]||0) + w; });
+  });
+  const r = {};
+  Object.keys(sums).forEach(sk => r[sk] = Math.round((sums[sk]/counts[sk])*10)/10);
+  return r;
+}
+
+function buildSkillProfile() {
+  if (!userData.questionAnswers) return;
+  const scores = computeSkillScores(userData.questionAnswers);
+  const container = document.getElementById('skillProfileItems');
+  const SKILL_ICONS = {编程开发:"💻",数据分析:"📊",算法与AI:"🧠",设计创意:"🎨",写作内容:"✍️",英语能力:"🌐",沟通表达:"💬",项目管理:"📋",市场营销:"📈",财务金融:"💰",运营管理:"⚙️",工程技术:"🔧",数学统计:"📐",产品策划:"📱",领导力:"👥",逻辑分析:"🧩"};
+  const entries = Object.entries(scores).sort((a,b) => b[1] - a[1]);
+  container.innerHTML = entries.map(([sk, sc]) => {
+    const pct = (sc / 5) * 100;
+    const cls = sc >= 4 ? 'max' : sc >= 3 ? 'mid' : 'low';
+    return `<div class="sp-item">
+      <span class="sp-icon">${SKILL_ICONS[sk]||'📌'}</span>
+      <div class="sp-info">
+        <div class="sp-name">${nameOfSkill(sk)}</div>
+        <div class="sp-track"><div class="sp-fill" style="width:${pct}%"></div></div>
+      </div>
+      <span class="sp-score ${cls}">${sc}</span>
+    </div>`;
+  }).join('');
+  document.getElementById('skillProfileWrap').classList.add('show');
+}
+
+// ─── MATCHING ───
+function matchCareers() {
+  const userSkills = computeSkillScores(userData.questionAnswers);
+  const userEnv = {};
+  document.querySelectorAll('#expectGrid input[type="range"]').forEach(el => { userEnv[el.dataset.expect] = parseInt(el.value); });
+  const prefIndustry = Array.from(document.getElementById('prefIndustry').selectedOptions).map(o => o.value);
+
+  return CAREERS.map(career => {
+    // A. 能力匹配 50%
+    let skillScore = 0, skillWeight = 0;
+    Object.entries(career.skills).forEach(([sk, req]) => {
+      const uv = Math.min(userSkills[sk]||0, 5);
+      skillScore += Math.min(uv/req, 1) * 100 * req;
+      skillWeight += req;
+    });
+    skillScore = skillWeight > 0 ? skillScore/skillWeight : 0;
+
+    // B. 期望契合 35%
+    let envScore = 0, envWeight = 0;
+    Object.entries(career.env).forEach(([dim, cv]) => {
+      const uv = userEnv[dim]||3;
+      envScore += Math.max(0, (1 - Math.abs(uv-cv)/4)) * 100;
+      envWeight += 1;
+    });
+    envScore = envWeight > 0 ? envScore/envWeight : 50;
+
+    // C. 背景 10%
+    let majorScore = 30;
+    if (career.majors.some(m => userData.major.includes(m) || m.includes(userData.major))) majorScore = 100;
+    else if ((career.related||[]).some(m => userData.major.includes(m) || m.includes(userData.major))) majorScore = 75;
+    const dMap = {专科:0,本科:1,硕士:2,博士:3};
+    const ul = dMap[userData.degree]||0;
+    const lv = career.edu.map(e => dMap[e]||0);
+    let eduScore = 100;
+    if (ul < Math.min(...lv)) eduScore = Math.max(20, 100-(Math.min(...lv)-ul)*30);
+    else if (ul > Math.max(...lv)) eduScore = 70;
+    const bgScore = majorScore*0.6 + eduScore*0.4;
+
+    // D. 行业偏好 5%
+    let indScore = 50;
+    if (prefIndustry.length > 0) indScore = prefIndustry.includes(career.industry) ? 100 : 25;
+
+    
+    // E. Reality filter penalty
+    let realityPenalty = 0;
+    const rejected = userData.rejectedReality || [];
+    if (rejected.length > 0) {
+      const careerRealityFlags = (career.realityFlags || []);
+      const matchedFlags = rejected.filter(r => careerRealityFlags.includes(r));
+      realityPenalty = Math.min(30, matchedFlags.length * 10);
+    }
+    // F. Economic factor adjustment
+    const famNeed = userData.familyNeed || 0;
+    const salaryMin = parseInt((career.salary||'').match(/(\d+)K/)?.[1] || '0');
+    let ecoScore = 50;
+    if (famNeed === 0) ecoScore = 100;
+    else if (famNeed === 1 && salaryMin >= 10) ecoScore = 100;
+    else if (famNeed === 2 && salaryMin >= 15) ecoScore = 100;
+    else if (famNeed === 2 && salaryMin < 8) ecoScore = 20;
+    else if (famNeed === 1 && salaryMin < 6) ecoScore = 30;
+
+    const overall = skillScore*0.45 + envScore*0.30 + bgScore*0.08 + indScore*0.05 + ecoScore*0.02;
+    const finalScore = Math.round(Math.min(100, Math.max(0, overall - realityPenalty)));
+
+    // Insights
+    const highlights = [], gaps = [];
+    Object.entries(career.skills).forEach(([sk, req]) => {
+      const uv = userSkills[sk]||0;
+      if (req >= 4 && uv >= 4) highlights.push(`「${nameOfSkill(sk)}」能力突出`);
+      else if (req >= 4 && uv < 3) gaps.push(`「${nameOfSkill(sk)}」待加强(你${uv}/需${req})`);
+    });
+    const envDiffs = [];
+    Object.entries(career.env).forEach(([dim, cv]) => {
+      const uv = userEnv[dim]||3;
+      const d = Math.abs(uv-cv);
+      envDiffs.push({dim, match: d<=1?'good': d<=2?'ok':'poor'});
+    });
+    if (!highlights.length) highlights.push("综合基础扎实");
+    if (career.note) gaps.push(career.note);
+
+    return {...career, score:finalScore, skillScore:Math.round(skillScore), envScore:Math.round(envScore), bgScore:Math.round(bgScore), indScore:Math.round(indScore), envDiffs, highlights, gaps};
+  }).filter(r => r.score >= 45).sort((a,b) => b.score - a.score);
+}
+
+const ENV_NAMES = {companyCulture:"公司氛围", managementStyle:"管理风格", overtime:"加班文化", careerGrowth:"发展速度", workLife:"工作生活", stability:"稳定vs挑战"};
+
+// ─── RESULTS ───
+let allResults = [];
+
+function showResults(results) {
+  allResults = results;
+  document.getElementById('resultLoading').style.display = 'none';
+  document.getElementById('resultContent').style.display = 'block';
+
+  // Summary
+  const topN = results.filter(r => r.score >= 70).length;
+  document.getElementById('matchCount').textContent = results.length;
+
+  // Build industry filter tags
+  const inds = [...new Set(results.map(r => r.industry))];
+  const ft = document.getElementById('filterTags');
+  ft.innerHTML = inds.map(ind =>
+    `<span class="filter-tag" data-ind="${ind}" onclick="toggleIndFilter('${ind}')">${ind}</span>`
+  ).join('');
+
+  applyFilters();
+}
+
+function toggleIndFilter(ind) {
+  const sel = document.getElementById('filterIndustry');
+  if (sel.value === ind) { sel.value = 'all'; }
+  else { sel.value = ind; }
+  applyFilters();
+}
+
+function applyFilters() {
+  const ind = document.getElementById('filterIndustry').value;
+  const minScore = parseInt(document.getElementById('filterMinScore').value) || 0;
+  const filtered = allResults.filter(r => (ind === 'all' || r.industry === ind) && r.score >= minScore);
+
+  // Update tag states
+  document.querySelectorAll('.filter-tag').forEach(t => {
+    t.classList.toggle('active', t.dataset.ind === ind || (ind === 'all' && false));
+    if (ind === 'all') t.classList.remove('active');
+  });
+
+  const empty = document.getElementById('resultEmpty');
+  const cards = document.getElementById('resultCards');
+  cards.innerHTML = '';
+
+  if (!filtered.length) { empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+
+  filtered.forEach((r, idx) => {
+    const rank = idx === 0 ? 'top1' : idx === 1 ? 'top2' : idx === 2 ? 'top3' : '';
+    const scoreCls = r.score >= 80 ? 'high' : r.score >= 60 ? 'med' : 'low';
+    const rankBadge = idx === 0 ? '🏆 最推荐' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx+1}`;
+    const barData = [
+      {label:'能力匹配', val:r.skillScore, cls:'bg-green'},
+      {label:'期望契合', val:r.envScore, cls:'bg-blue'},
+      {label:'背景匹配', val:r.bgScore, cls:'bg-gold'},
+      {label:'行业偏好', val:r.indScore, cls:'bg-rose'}
+    ];
+
+    // 快速标签
+    const quickBadges = [];
+    if (r.skillScore >= 80) quickBadges.push({text:'✅ 能力高度匹配', cls:'good'});
+    else if (r.skillScore < 50) quickBadges.push({text:'⚠️ 能力需提升', cls:'warn'});
+    if (r.envScore >= 80) quickBadges.push({text:'✅ 期望高度吻合', cls:'good'});
+    else if (r.envScore < 50) quickBadges.push({text:'⚠️ 期望有落差', cls:'warn'});
+
+    const card = document.createElement('div');
+    card.className = `result-card ${rank}`;
+    card.innerHTML = `
+      <div class="rc-header">
+        <div>
+          <div class="rc-title"><span class="rc-rank">${rankBadge}</span> ${r.title}</div>
+          <div class="rc-industry">
+            <span>${r.industry}</span>
+            <span class="rc-tag">${r.salary}</span>
+          </div>
+        </div>
+        <div class="rc-match ${scoreCls}">${r.score}<span class="pct">%</span></div>
+      </div>
+      <div class="rc-desc">${r.desc}</div>
+      <div class="rc-quick">
+        ${quickBadges.map(b => `<span class="q-badge ${b.cls}">${b.text}</span>`).join('')}
+      </div>
+      <div class="rc-bars">
+        ${barData.map(b => `
+          <div class="bar-row">
+            <div class="bar-label"><span>${b.label}</span><span>${b.val}%</span></div>
+            <div class="bar-track"><div class="bar-fill ${b.cls}" style="width:${b.val}%"></div></div>
+          </div>`).join('')}
+      </div>
+      <div class="rc-env">
+        <div class="env-title">职场环境契合度</div>
+        <div class="env-grid">
+          ${r.envDiffs.map(d => `
+            <div class="env-row">
+              <span><span class="match-dot ${d.match}"></span>${ENV_NAMES[d.dim]||d.dim}</span>
+              <span>${d.match==='good'?'高度契合':d.match==='ok'?'基本一致':'差异较大'}</span>
+            </div>`).join('')}
+        </div>
+      </div>
+      <div class="rc-why"><strong>✅ 推荐理由：</strong>${r.highlights.join('；')}</div>
+      ${r.gaps.length ? `<div class="rc-gap"><strong>⚠️ 提升建议：</strong>${r.gaps.join('；')}</div>` : ''}
+      ${r.action ? `<div class="rc-action"><strong>🎯 行动指南：</strong><div class="action-steps">${r.action}</div></div>` : ''}
+      <div class="rc-market">
+        <div class="market-title">📊 岗位就业情况</div>
+        <div class="market-grid">
+          <div class="market-item">
+            <span class="market-label">市场趋势</span>
+            <span class="market-value">${(()=>{const t=r.trend||'稳定';const icon=t.includes('增长')||t.includes('上升')||t.includes('高速')||t.includes('爆发')?'📈':t.includes('下行')||t.includes('压力')||t.includes('饱和')||t.includes('分化')?'📉':'➡️';return `${icon} ${t}`;})()}</span>
+          </div>
+          <div class="market-item">
+            <span class="market-label">就业需求</span>
+            <span class="market-value">${r.demand||'—'}</span>
+          </div>
+          <div class="market-item market-path">
+            <span class="market-label">发展路径</span>
+            <span class="market-path-value">${r.path||'—'}</span>
+          </div>
+        </div>
+      </div>
+      <div class="rc-footer"></div>`;
+    // Add lifecycle section
+    if (r.lifecycle && r.lifecycle.length) {
+      var lcDiv = document.createElement("div");
+      lcDiv.className = "lifecycle-section";
+      var lcHTML = '<div class="lifecycle-title">\u{1F5FA}️ 职业发展路线图</div><div class="lifecycle-row">';
+      for (var li = 0; li < r.lifecycle.length; li++) {
+        var s = r.lifecycle[li];
+        lcHTML += '<div class="lc-card"><div class="lc-stage">' + s.stage + '</div><div class="lc-title">' + s.title + '</div><div class="lc-desc">' + s.desc + '</div></div>';
+      }
+      lcHTML += '</div>';
+      lcDiv.innerHTML = lcHTML;
+      card.appendChild(lcDiv);
+    }
+
+    cards.appendChild(card);
+  });
+
+  // Reverse recommendation
+  var revSec = document.getElementById("reverseSection");
+  if (revSec) {
+    var shownTitles = {};
+    filtered.forEach(function(r) { shownTitles[r.title] = true; });
+    var revCandidates = allResults.filter(function(r) {
+      return r.score >= 25 && r.score < 55 && !shownTitles[r.title];
+    }).slice(0, 5);
+    if (revCandidates.length > 0) {
+      var rg = document.getElementById("reverseGrid");
+      rg.innerHTML = revCandidates.map(function(r) {
+        return '<div class="reverse-item"><div class="ri-title">' + r.title + '</div><div class="ri-reason">匹配度 ' + r.score + '%</div></div>';
+      }).join("");
+      revSec.style.display = "block";
+    } else {
+      revSec.style.display = "none";
+    }
+  }
+}
+
+// ─── GENERATE ───
+function generateResult() {
+  if (!validateStep1()) return;
+  if (!validateStep2()) return;
+  const env = {};
+  document.querySelectorAll('#expectGrid input[type="range"]').forEach(el => { env[el.dataset.expect] = parseInt(el.value); });
+  userData.env = env;
+  
+  // Collect reality conditions
+  const rejectedReality = [];
+  document.querySelectorAll('#realityGrid input[type="checkbox"]:checked').forEach(el => { rejectedReality.push(el.id.replace('rc_','')); });
+  userData.rejectedReality = rejectedReality;
+  userData.familyNeed = parseInt(document.getElementById('familyNeed').value);
+  userData.cityPref = document.getElementById('cityPref').value;
+
+  document.getElementById('step4').classList.remove('active');
+  document.getElementById('step5').classList.add('active');
+  currentStep = 5;
+  document.querySelectorAll('.progress-step').forEach(el => {
+    const s = parseInt(el.dataset.step);
+    el.classList.toggle('active', s === 5); el.classList.toggle('done', s < 5);
+  });
+  const style = document.createElement('style');
+  style.id = 'progStyle';
+  const old = document.getElementById('progStyle');
+  if (old) old.remove();
+  style.textContent = `.progress-steps::after { width: 100% !important; }`;
+  document.head.appendChild(style);
+
+  document.getElementById('resultLoading').style.display = 'block';
+  document.getElementById('resultContent').style.display = 'none';
+  setTimeout(() => { showResults(matchCareers()); }, 800);
+}
+
+function exportResult() {
+  const cards = document.querySelectorAll('.result-card');
+  if (!cards.length) return;
+  let text = '📋 职业推荐结果\n' + '='.repeat(30) + '\n\n';
+  cards.forEach(c => {
+    text += `${c.querySelector('.rc-title')?.textContent||''} — 匹配度 ${c.querySelector('.rc-match')?.textContent||''}\n`;
+    text += `${c.querySelector('.rc-desc')?.textContent||''}\n\n`;
+  });
+  navigator.clipboard.writeText(text).then(() => alert('✅ 结果已复制到剪贴板')).catch(() => {});
+}
+
+
+function aichat() {
+  var modal = document.getElementById("aiModal");
+  modal.classList.toggle("show");
+}
+
+function aichatSend() {
+  var input = document.getElementById("aiChatInput");
+  var text = input.value.trim();
+  if (!text) return;
+  input.value = "";
+  var body = document.getElementById("aiChatBody");
+  var userDiv = document.createElement("div");
+  userDiv.className = "ai-msg user";
+  userDiv.textContent = text;
+  body.appendChild(userDiv);
+  var reply = aiGetReply(text);
+  setTimeout(function() {
+    var botDiv = document.createElement("div");
+    botDiv.className = "ai-msg bot";
+    botDiv.innerHTML = reply;
+    body.appendChild(botDiv);
+    body.scrollTop = body.scrollHeight;
+  }, 500);
+}
+
+function aiGetReply(text) {
+  var rules = [
+    {keys:["排名","推荐","第一","适合","为什么"], resp:"你的推荐结果基于4个维度综合评分：<br>1️⃣ <strong>能力匹配</strong>（45%）<br>2️⃣ <strong>期望契合</strong>（30%）<br>3️⃣ <strong>背景匹配</strong>（8%）<br>4️⃣ <strong>现实条件</strong>（12%）<br>排名高的岗位是在这四个维度中综合表现最好的。"},
+    {keys:["能力","技能","不够","差距","学习","提升","准备","如何"], resp:"提升核心竞争力的建议：<br><strong>短期（1-3个月）</strong>：确定1-2项目标岗位最重要的技能，每日投入1h系统学习<br><strong>中期（3-6个月）</strong>：通过项目实践将知识转化为实战经验<br><strong>长期（6个月+）</strong>：建立个人品牌，拓展行业人脉<br>每个岗位详情页都有行动指南！"},
+    {keys:["薪资","工资","薪酬","钱","收入","待遇"], resp:"薪资由行业、公司规模、城市、经验水平等多因素决定：<br>互联网/金融行业起薪较高，但竞争也更激烈<br>随着经验积累，薪资涨幅通常在每年10-30%<br>一线城市起薪高但生活成本也高<br>建议：关注薪资的同时也要考虑成长空间和学习机会。"},
+    {keys:["哪个","选择","纠结","犹豫","对比","offer"], resp:"做职业选择时，建议按这个优先级思考：<br>1️⃣ <strong>能力匹配</strong> — 你是否擅长这个方向？<br>2️⃣ <strong>发展空间</strong> — 这个岗位3-5年后的薪资和成长如何？<br>3️⃣ <strong>工作方式</strong> — 日常工作是怎样的？<br>4️⃣ <strong>现实条件</strong> — 是否需要经常出差/加班？"},
+    {keys:["考研","读研","学历","深造","学位","研究生"], resp:"关于学历的思考：<br>AI/数据科学/金融/咨询等行业有学历门槛，硕博更有竞争力<br>互联网技术岗更看重能力和项目经验，本科也可有很好的发展<br>建议权衡：考研的时间成本(2-3年) vs 工作中积累项目经验。"},
+    {keys:["城市","一线","北上广深","地点","去哪","杭州"], resp:"城市选择建议：<br><strong>一线城市</strong>：机会多/薪资高/成长快，但生活成本高<br><strong>新一线/二线</strong>：性价比高，新兴产业正在崛起<br><strong>回家乡</strong>：生活压力小，适合求稳<br>建议：刚毕业可以先去一线城市积累2-3年经验。"},
+    {keys:["你好","hi","hello","在吗","帮助","功能"], resp:"你好！😊 我是你的 AI 职业规划助手！你可以问我：<br>• 「为什么这个岗位排名第一？」 — 了解推荐逻辑<br>• 「我该怎么提升能力？」 — 获取学习建议<br>• 「薪资情况怎么样？」 — 了解行业薪酬<br>• 「考研还是工作？」 — 获取决策建议"},
+  ];
+  for (var i = 0; i < rules.length; i++) {
+    for (var j = 0; j < rules[i].keys.length; j++) {
+      if (text.indexOf(rules[i].keys[j]) >= 0) {
+        return rules[i].resp;
+      }
+    }
+  }
+  return "很好的问题！我的知识目前集中在职业推荐方面。建议你：<br>1️⃣ 查看岗位详情中的行动指南获取具体建议<br>2️⃣ 向就业指导中心的老师寻求专业咨询<br>或者试试问我关于能力提升、薪资对比、城市选择等问题！";
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+
+<div class="advisor-bubble" id="aiBubble" onclick="aichat()">💬</div>
+<div class="advisor-modal" id="aiModal">
+  <div class="advisor-modal-header">
+    <span>🤖 AI 职业顾问</span>
+    <button class="advisor-modal-close" onclick="aichat()">✕</button>
+  </div>
+  <div class="advisor-modal-body" id="aiChatBody">
+    <div class="ai-msg bot">你好！我是你的 AI 职业规划助手，可以帮你解读推荐结果、分析岗位特点或提供求职建议。请问你想了解什么？</div>
+  </div>
+  <div class="advisor-modal-input">
+    <input id="aiChatInput" placeholder="输入你的问题..." onkeydown="if(event.key==='Enter')aichatSend()">
+    <button onclick="aichatSend()">➤</button>
+  </div>
+</div>
+</body>
+</html>
