@@ -1058,7 +1058,7 @@ function trackEvent(name, data) {
     fetch(SB_URL + '/rest/v1/events', {
       method: 'POST',
       headers: {'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer ' + SB_KEY,'Prefer':'return=minimal'},
-      body: JSON.stringify({event_name:name, event_data:(data||{}), page_url:location.href, session_id:uid})
+      body: JSON.stringify({event_name:name, event_data:Object.assign({session_id:uid}, data||{}), page_url:location.href})
     }).catch(function(){});
   } catch(e) {}
 }
