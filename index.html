@@ -3463,6 +3463,8 @@ function callDeepSeek(messages, stage) {
     if (stage === 'analysis') {
       var jsonStr = content.trim();
       if (jsonStr.startsWith('```')) jsonStr = jsonStr.replace(/```(?:json)?\n?/g, '').trim();
+            var start = jsonStr.indexOf("{"); var end = jsonStr.lastIndexOf("}");
+      if (start >= 0 && end > start) jsonStr = jsonStr.substring(start, end + 1);
       return JSON.parse(jsonStr);
     }
     return content;
