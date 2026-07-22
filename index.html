@@ -180,7 +180,52 @@
   .skill-profile .sp-item .sp-score.mid { color: var(--gold); }
   .skill-profile .sp-item .sp-score.low { color: var(--gray-400); }
 
-  /* ─── Expectation radio buttons ─── */
+  
+  /* ─── Direction Picker ─── */
+  .direction-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px; margin: 16px 0;
+  }
+  .direction-card {
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    padding: 18px 14px; border-radius: 12px; background: #fff;
+    border: 2px solid var(--gray-200); cursor: pointer;
+    transition: var(--transition); text-align: center;
+  }
+  .direction-card:hover { border-color: var(--primary-light); box-shadow: var(--shadow); transform: translateY(-2px); }
+  .direction-card.selected { border-color: var(--primary); background: var(--primary-bg); }
+  .direction-card .dc-icon { font-size: 32px; }
+  .direction-card .dc-name { font-size: 14px; font-weight: 600; color: var(--gray-700); }
+  .direction-card .dc-desc { font-size: 11px; color: var(--gray-400); line-height: 1.4; }
+  .dir-progress { font-size: 13px; color: var(--gray-500); margin: 8px 0; }
+  .dir-question-item {
+    padding: 14px 16px; margin-bottom: 10px; border-radius: 10px;
+    background: #fff; border: 1.5px solid var(--gray-200);
+    transition: var(--transition);
+  }
+  .dir-question-item.answered { border-color: var(--primary-light); background: var(--primary-bg); }
+  .dir-question-item .dq-title { font-size: 14px; font-weight: 600; color: var(--gray-800); margin-bottom: 8px; }
+  .dir-question-item .dq-opts { display: flex; flex-direction: column; gap: 6px; }
+  .dir-question-item .dq-opts label {
+    display: flex; align-items: center; gap: 10px; padding: 8px 14px;
+    border-radius: 8px; cursor: pointer; transition: var(--transition);
+    font-size: 13px; color: var(--gray-600); border: 1.5px solid transparent;
+  }
+  .dir-question-item .dq-opts label:hover { background: #fff; border-color: var(--gray-200); }
+  .dir-question-item .dq-opts input[type="radio"] {
+    appearance: none; -webkit-appearance: none;
+    width: 18px; height: 18px; border: 2px solid var(--gray-300); border-radius: 50%;
+    transition: var(--transition); flex-shrink: 0; position: relative;
+  }
+  .dir-question-item .dq-opts input[type="radio"]:checked {
+    border-color: var(--primary); background: var(--primary);
+    box-shadow: inset 0 0 0 3px #fff;
+  }
+  .dir-question-item .dq-opts label.selected {
+    background: #fff; border-color: var(--primary-light);
+    color: var(--gray-800); font-weight: 500;
+  }
+/* ─── Expectation radio buttons ─── */
   .expect-grid { display: flex; flex-direction: column; gap: 14px; }
   .expect-item { padding: 14px 20px; background: var(--gray-50); border-radius: 10px; border: 1.5px solid transparent; transition: var(--transition); }
   .expect-item .e-name { font-size: 15px; font-weight: 600; color: var(--gray-800); margin-bottom: 8px; }
@@ -903,38 +948,60 @@
     </div>
   </div>
 
+  
   <!-- STEP 2: AI能力访谈 -->
   <div class="step" id="step2">
     <div class="card">
       <h2>🧠 AI 能力访谈</h2>
-      <p class="subtitle" id="interviewStatus">与 AI 面试官进行 3-5 轮简短对话，帮你发现自身能力优势</p>
+      <p class="subtitle" id="interviewStatus">选择方向并完成情景题，AI将为你深度分析能力</p>
 
-      <!-- Chat area -->
-      <div id="chatContainer" class="chat-container">
-        <div id="chatMessages" class="chat-messages">
-          <div class="chat-placeholder"><div class="cp-icon">🤖</div><p>点击下方按钮开始 AI 访谈</p></div>
-        </div>
-        <div class="chat-input-area">
-          <textarea id="chatInput" class="chat-input" placeholder="输入你的回答..." rows="2" disabled></textarea>
-          <button id="chatSendBtn" class="btn btn-primary chat-send-btn" onclick="sendChatMessage()" disabled>发送</button>
+      <!-- Phase 1: Direction Picker -->
+      <div id="directionPicker">
+        <p style="font-size:14px;font-weight:600;color:var(--gray-700);margin-bottom:4px;">选择你最感兴趣的方向</p>
+        <p style="font-size:12px;color:var(--gray-400);margin-bottom:12px;">选择一个方向，然后完成几道情景题，AI 访谈会据此做更有针对性的交流</p>
+        <div id="directionGrid" class="direction-grid"></div>
+      </div>
+
+      <!-- Phase 2: Questions -->
+      <div id="directionQuestions" class="hidden">
+        <p style="font-size:14px;font-weight:600;color:var(--gray-700);margin-bottom:4px;">情景选择题</p>
+        <p class="dir-progress" id="dirQuestionProgress">已答 0 / 5 题</p>
+        <div id="dirQuestionItems"></div>
+        <div style="display:flex;gap:12px;margin-top:16px;">
+          <button class="btn btn-outline" onclick="backToDirectionPicker()" style="flex:0">← 换方向</button>
+          <button class="btn btn-primary" id="btnStartInterview" onclick="startDirectionInterview()" disabled style="flex:1">进入 AI 深度访谈 →</button>
         </div>
       </div>
 
-      <!-- Loading overlay -->
-      <div id="chatLoading" class="loading-wrap hidden">
-        <div class="spinner"></div>
-        <p>AI 正在思考...</p>
-      </div>
+      <!-- Phase 3: Interview + Analysis (original content) -->
+      <div id="interviewPhase" class="hidden">
+        <!-- Chat area -->
+        <div id="chatContainer" class="chat-container">
+          <div id="chatMessages" class="chat-messages">
+            <div class="chat-placeholder"><div class="cp-icon">🤖</div><p>AI 访谈即将开始</p></div>
+          </div>
+          <div class="chat-input-area">
+            <textarea id="chatInput" class="chat-input" placeholder="输入你的回答..." rows="2" disabled></textarea>
+            <button id="chatSendBtn" class="btn btn-primary chat-send-btn" onclick="sendChatMessage()" disabled>发送</button>
+          </div>
+        </div>
 
-      <!-- Analysis results -->
-      <div id="analysisResult" class="hidden">
-        <div class="skill-profile" id="interviewSkillProfile">
-          <div class="sp-title">📊 AI 分析：你的能力画像</div>
-          <div class="sp-desc" id="analysisSummary" style="grid-column:1/-1;font-size:14px;color:var(--gray-600);margin-bottom:12px;"></div>
-          <div id="interviewSkillItems"></div>
-          <div style="grid-column:1/-1;margin-top:12px;padding:14px;background:var(--primary-bg);border-radius:8px;">
-            <div style="font-size:14px;font-weight:600;margin-bottom:6px;">🎯 AI 建议的职业方向</div>
-            <div id="suggestedCareers" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+        <!-- Loading overlay -->
+        <div id="chatLoading" class="loading-wrap hidden">
+          <div class="spinner"></div>
+          <p>AI 正在思考...</p>
+        </div>
+
+        <!-- Analysis results -->
+        <div id="analysisResult" class="hidden">
+          <div class="skill-profile" id="interviewSkillProfile">
+            <div class="sp-title">📊 AI 分析：你的能力画像</div>
+            <div class="sp-desc" id="analysisSummary" style="grid-column:1/-1;font-size:14px;color:var(--gray-600);margin-bottom:12px;"></div>
+            <div id="interviewSkillItems"></div>
+            <div style="grid-column:1/-1;margin-top:12px;padding:14px;background:var(--primary-bg);border-radius:8px;">
+              <div style="font-size:14px;font-weight:600;margin-bottom:6px;">🎯 AI 建议的职业方向</div>
+              <div id="suggestedCareers" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -946,8 +1013,7 @@
       </div>
     </div>
   </div>
-
-  <!-- STEP 3: 职场期望 -->
+<!-- STEP 3: 职场期望 -->
   <div class="step" id="step3">
     <div class="card">
       <h2>🎯 职场期望</h2>
@@ -2007,8 +2073,6 @@ function init() {
     });
   }
 
-  // Init chat
-  initChat();
 }
 
 function nameOfSkill(key) {
@@ -2029,9 +2093,7 @@ function toggleMajorCustom() {
 function goStep(n) {
   if (n === 2) {
     if (!validateStep1()) return;
-    if (!document.getElementById('chatMessages').querySelector('.chat-msg.bot')) {
-      setTimeout(function(){ startInterview(); }, 300);
-    }
+    renderDirectionPicker();
   }
   if (n === 3 && !validateStep2()) return;
   trackEvent('step_reached', {step:n});
@@ -2945,6 +3007,329 @@ function togglePlanItem(phase, index) {
 // ═══════════════════════════════════════════════
 //  AI Interview Chat Module
 // ═══════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════
+//  兴趣方向 + 情景题库
+// ═══════════════════════════════════════════════
+var selectedDirection = null;
+var directionAnswers = {};
+
+var DIRECTION_DATA = {
+  "技术研发": { icon:"💻", desc:"软件开发、编程、系统架构", skills:["编程开发","算法与AI","逻辑分析"] },
+  "数据分析": { icon:"📊", desc:"数据挖掘、统计分析、可视化", skills:["数据分析","数学统计","逻辑分析"] },
+  "设计创意": { icon:"🎨", desc:"UI/UX、视觉传达、创意设计", skills:["设计创意","产品策划","沟通表达"] },
+  "商业运营": { icon:"📈", desc:"市场运营、产品管理、商业分析", skills:["项目管理","市场营销","沟通表达"] },
+  "内容创作": { icon:"✍️", desc:"新媒体、文案写作、内容策划", skills:["写作内容","设计创意","运营管理"] },
+  "金融财务": { icon:"💰", desc:"财务分析、投资、风险管理", skills:["财务金融","数学统计","数据分析"] },
+  "教育咨询": { icon:"📚", desc:"教育培训、咨询顾问、知识传递", skills:["沟通表达","领导力","写作内容"] },
+  "工程实践": { icon:"🔧", desc:"硬件开发、工程制造、技术实施", skills:["工程技术","编程开发","逻辑分析"] }
+};
+
+var DIRECTION_QUESTIONS = {
+  "技术研发": [
+    { q:"团队要开发一个新功能，你会更倾向于怎么开始？", opts:[
+      {t:"先看现有代码结构，设计接口再动手",s:["编程开发",5,"逻辑分析",5]},
+      {t:"快速做出一个可用版本，再不断迭代优化",s:["编程开发",4,"产品策划",4]},
+      {t:"先调研有没有现成的方案或开源工具",s:["数据分析",4,"逻辑分析",4]}
+    ]},
+    { q:"遇到一个棘手的 Bug，你的第一反应是？", opts:[
+      {t:"系统性地排查，用日志和断点一步步定位",s:["逻辑分析",5,"编程开发",5]},
+      {t:"上网搜索类似问题的解决方案",s:["数据分析",4,"编程开发",3]},
+      {t:"换个思路，用其他方式绕过这个 Bug",s:["设计创意",4,"产品策划",4]}
+    ]},
+    { q:"对于新技术，你通常怎么学习？", opts:[
+      {t:"先看官方文档和源码，理解原理",s:["算法与AI",5,"编程开发",5]},
+      {t:"边做边学，直接写个小项目练手",s:["工程技术",4,"编程开发",4]},
+      {t:"先看视频教程或文章，建立整体认知",s:["写作内容",3,"沟通表达",3]}
+    ]},
+    { q:"团队里有人代码质量不达标，你会？", opts:[
+      {t:"主动和他一起 Code Review，帮他改进",s:["领导力",5,"沟通表达",4]},
+      {t:"建议建立更严格的代码规范和自动化检查",s:["项目管理",4,"逻辑分析",4]},
+      {t:"自己默默帮他改好，不伤和气",s:["运营管理",3,"沟通表达",3]}
+    ]},
+    { q:"项目时间紧任务重，你怎么保证进度？", opts:[
+      {t:"拆解任务优先级，核心功能先交付",s:["项目管理",5,"逻辑分析",4]},
+      {t:"主动加时赶工，确保全部按时完成",s:["运营管理",4,"领导力",3]},
+      {t:"找 Leader 沟通协调资源和人手",s:["沟通表达",4,"项目管理",4]}
+    ]}
+  ],
+  "数据分析": [
+    { q:"拿到一份新数据，你首先会做什么？", opts:[
+      {t:"检查数据质量、缺失值和异常值",s:["数据分析",5,"数学统计",5]},
+      {t:"先做几个可视化图表找找规律",s:["设计创意",4,"数据分析",4]},
+      {t:"直接跑模型看结果的显著性",s:["算法与AI",4,"数学统计",4]}
+    ]},
+    { q:"分析结果和预期不一致，你通常？", opts:[
+      {t:"检查数据采样和处理过程是否有偏差",s:["数据分析",5,"逻辑分析",5]},
+      {t:"尝试不同的分析方法和参数组合",s:["数学统计",4,"算法与AI",4]},
+      {t:"重新审视原始假设是否合理",s:["产品策划",4,"逻辑分析",4]}
+    ]},
+    { q:"如何向非技术背景的同事解释你的分析？", opts:[
+      {t:"用通俗的比喻和可视化图表来说明白",s:["沟通表达",5,"设计创意",4]},
+      {t:"聚焦业务结论，少讲技术细节",s:["产品策划",4,"项目管理",4]},
+      {t:"做一份详细的报告，方便他们自己看",s:["写作内容",4,"数据分析",3]}
+    ]},
+    { q:"你最喜欢处理哪种类型的数据？", opts:[
+      {t:"结构化表格数据，用 SQL 就能搞定",s:["数据分析",5,"数学统计",4]},
+      {t:"文本或图像等非结构化数据，更有挑战",s:["算法与AI",5,"编程开发",4]},
+      {t:"实时流式数据，搭建数据处理管道",s:["工程技术",4,"编程开发",4]}
+    ]},
+    { q:"数据分析最重要的能力是什么？", opts:[
+      {t:"从数据中发现业务洞察的能力",s:["产品策划",5,"逻辑分析",5]},
+      {t:"扎实的统计学和数学功底",s:["数学统计",5,"数据分析",5]},
+      {t:"数据处理和清洗的工程能力",s:["编程开发",4,"工程技术",4]}
+    ]}
+  ],
+  "设计创意": [
+    { q:"开始一个设计项目时，你最先做的是？", opts:[
+      {t:"调研用户需求和使用场景",s:["产品策划",5,"沟通表达",4]},
+      {t:"搜集参考灵感，建立情绪板",s:["设计创意",5,"写作内容",3]},
+      {t:"快速手绘草稿，探索多种方案",s:["设计创意",4,"产品策划",4]}
+    ]},
+    { q:"用户反馈你的设计不好用，你会？", opts:[
+      {t:"追问具体问题，观察用户实际操作",s:["沟通表达",5,"产品策划",5]},
+      {t:"重新研究交互模式和竞品方案",s:["设计创意",4,"数据分析",3]},
+      {t:"坚持自己的设计理念，尝试说服用户",s:["领导力",4,"沟通表达",4]}
+    ]},
+    { q:"你怎么看待 AI 在设计领域的发展？", opts:[
+      {t:"AI 是得力工具，可以提升效率释放创意",s:["算法与AI",4,"设计创意",5]},
+      {t:"保持关注，但核心创意还是要靠人",s:["设计创意",4,"产品策划",3]},
+      {t:"正在学习用 AI 工具辅助设计工作流",s:["编程开发",3,"工程技术",3]}
+    ]},
+    { q:"你对设计风格的偏好是？", opts:[
+      {t:"简约实用，形式和功能统一",s:["设计创意",5,"逻辑分析",4]},
+      {t:"大胆创新，打破常规的视觉冲击",s:["设计创意",5,"写作内容",4]},
+      {t:"温暖共情，注重用户体验细节",s:["产品策划",4,"沟通表达",4]}
+    ]},
+    { q:"和开发团队协作设计稿时，你通常？", opts:[
+      {t:"出详细的设计规范文档，标注清晰",s:["设计创意",4,"项目管理",4]},
+      {t:"保持沟通，随时调整方案",s:["沟通表达",5,"产品策划",4]},
+      {t:"用设计系统保证一致性和复用性",s:["编程开发",3,"项目管理",4]}
+    ]}
+  ],
+  "商业运营": [
+    { q:"一个产品上线后数据不达预期，你首先？", opts:[
+      {t:"拆解各环节转化率，定位流失点",s:["数据分析",5,"产品策划",5]},
+      {t:"调研用户反馈，了解真实原因",s:["沟通表达",4,"市场营销",4]},
+      {t:"调整推广渠道和运营策略",s:["市场营销",5,"运营管理",4]}
+    ]},
+    { q:"你如何制定一个活动的运营方案？", opts:[
+      {t:"先定目标和预算，再倒推各环节动作",s:["项目管理",5,"财务金融",3]},
+      {t:"参考过往成功案例，结合当前情况调整",s:["数据分析",4,"市场营销",4]},
+      {t:"快速上线测试，根据数据迭代优化",s:["运营管理",4,"产品策划",4]}
+    ]},
+    { q:"跨部门协作推进项目时遇到阻力，你？", opts:[
+      {t:"主动沟通了解对方顾虑，找到共赢点",s:["沟通表达",5,"领导力",4]},
+      {t:"向上反馈，寻求更高层面的协调",s:["项目管理",4,"领导力",4]},
+      {t:"调整方案降低协作依赖，自己多承担",s:["运营管理",4,"产品策划",3]}
+    ]},
+    { q:"你如何看待市场和运营的关系？", opts:[
+      {t:"市场负责引流，运营负责转化留存",s:["市场营销",5,"运营管理",5]},
+      {t:"两者密不可分，需要紧密配合",s:["沟通表达",4,"项目管理",4]},
+      {t:"核心还是产品本身，市场和运营是放大器",s:["产品策划",5,"逻辑分析",3]}
+    ]},
+    { q:"如果你要做一个校园推广活动，第一步是？", opts:[
+      {t:"确定目标人群和他们的核心需求",s:["市场营销",5,"数据分析",4]},
+      {t:"设计有吸引力的活动形式和奖励机制",s:["设计创意",4,"产品策划",4]},
+      {t:"寻找校园大使或合作渠道",s:["运营管理",4,"沟通表达",4]}
+    ]}
+  ],
+  "内容创作": [
+    { q:"创作一个内容前，你最重要的一步是？", opts:[
+      {t:"明确受众和内容的核心目标",s:["写作内容",5,"产品策划",4]},
+      {t:"收集素材和参考资料",s:["数据分析",4,"写作内容",4]},
+      {t:"想一个吸引人的切入角度",s:["设计创意",5,"写作内容",4]}
+    ]},
+    { q:"写的东西没人看，你会怎么办？", opts:[
+      {t:"分析数据，调整选题和标题策略",s:["数据分析",5,"市场营销",4]},
+      {t:"研究热门内容，学习他们的创作手法",s:["写作内容",4,"设计创意",4]},
+      {t:"坚持自己的风格，积累忠实读者",s:["运营管理",3,"领导力",3]}
+    ]},
+    { q:"你认为好内容的核心是什么？", opts:[
+      {t:"有价值的信息和独到的观点",s:["写作内容",5,"逻辑分析",4]},
+      {t:"情感的共鸣和讲故事的能力",s:["设计创意",4,"沟通表达",4]},
+      {t:"形式的创新和视觉表现力",s:["设计创意",5,"产品策划",3]}
+    ]},
+    { q:"你对 AI 辅助内容创作怎么看？", opts:[
+      {t:"AI 能提高效率，但创意和调性还是需要人把控",s:["写作内容",5,"算法与AI",3]},
+      {t:"积极使用 AI 工具来头脑风暴和生成初稿",s:["编程开发",3,"设计创意",4]},
+      {t:"保持距离，内容创作的核心是人的思考和情感",s:["写作内容",4,"沟通表达",3]}
+    ]},
+    { q:"同时管理多个内容平台，你怎么安排？", opts:[
+      {t:"制定内容日历，按计划分平台发布",s:["运营管理",5,"项目管理",4]},
+      {t:"根据各平台特性定制不同风格的内容",s:["市场营销",4,"写作内容",4]},
+      {t:"集中精力深耕一两个核心平台",s:["运营管理",4,"数据分析",3]}
+    ]}
+  ],
+  "金融财务": [
+    { q:"你如何评估一家公司的投资价值？", opts:[
+      {t:"分析财务报表和关键指标",s:["财务金融",5,"数学统计",4]},
+      {t:"研究行业趋势和竞争格局",s:["数据分析",4,"市场营销",3]},
+      {t:"关注管理团队和商业模式",s:["产品策划",4,"领导力",3]}
+    ]},
+    { q:"面对一个风险较高的投资机会，你？", opts:[
+      {t:"量化风险收益比，设置止损线",s:["财务金融",5,"数学统计",4]},
+      {t:"分散投资控制敞口风险",s:["财务金融",4,"项目管理",4]},
+      {t:"深入研究标的再做决定",s:["数据分析",5,"逻辑分析",4]}
+    ]},
+    { q:"你最喜欢的数学/统计工具是？", opts:[
+      {t:"Excel 和数据透视表，直观实用",s:["数据分析",4,"财务金融",4]},
+      {t:"Python/R 进行建模和回测",s:["编程开发",5,"数学统计",5]},
+      {t:"SQL 处理大规模财务数据",s:["数据分析",4,"编程开发",4]}
+    ]},
+    { q:"金融行业最重要的能力是什么？", opts:[
+      {t:"风险意识和审慎的判断力",s:["财务金融",5,"逻辑分析",5]},
+      {t:"对数字敏感和扎实的量化功底",s:["数学统计",5,"数据分析",4]},
+      {t:"对宏观经济和政策的理解",s:["市场营销",3,"逻辑分析",4]}
+    ]},
+    { q:"经济下行期你会怎么调整策略？", opts:[
+      {t:"控制成本，聚焦现金流稳健的方向",s:["财务金融",5,"运营管理",4]},
+      {t:"寻找逆周期和防御性资产",s:["数据分析",4,"财务金融",5]},
+      {t:"保持耐心，等待市场回暖",s:["项目管理",3,"逻辑分析",3]}
+    ]}
+  ],
+  "教育咨询": [
+    { q:"给学生/客户做咨询时，你的第一步是？", opts:[
+      {t:"了解对方的背景、需求和目标",s:["沟通表达",5,"产品策划",4]},
+      {t:"用测评工具收集客观数据",s:["数据分析",4,"数学统计",3]},
+      {t:"分享类似案例建立信任",s:["写作内容",3,"沟通表达",4]}
+    ]},
+    { q:"对方不认可你的建议怎么办？", opts:[
+      {t:"倾听反对理由，从对方角度重新分析",s:["沟通表达",5,"领导力",4]},
+      {t:"用数据和案例支撑自己的观点",s:["数据分析",4,"逻辑分析",4]},
+      {t:"尊重对方的选择，提供备选方案",s:["产品策划",4,"运营管理",3]}
+    ]},
+    { q:"你认为优秀的教育者最需要具备什么？", opts:[
+      {t:"同理心和沟通能力",s:["沟通表达",5,"领导力",4]},
+      {t:"扎实的专业知识和持续学习",s:["写作内容",4,"逻辑分析",4]},
+      {t:"激发他人兴趣和潜能的能力",s:["领导力",5,"设计创意",3]}
+    ]},
+    { q:"设计一门课程，你优先考虑的是？", opts:[
+      {t:"目标学员的认知水平和学习目标",s:["产品策划",5,"沟通表达",4]},
+      {t:"课程内容的体系化和逻辑结构",s:["逻辑分析",4,"写作内容",4]},
+      {t:"互动设计和学习体验",s:["设计创意",4,"产品策划",4]}
+    ]},
+    { q:"数字化时代传统教育面临什么挑战？", opts:[
+      {t:"如何保持学习者的专注度和参与感",s:["产品策划",5,"设计创意",4]},
+      {t:"线上线下融合的教学模式设计",s:["运营管理",4,"工程技术",3]},
+      {t:"教育资源的公平分配和可及性",s:["领导力",4,"沟通表达",4]}
+    ]}
+  ],
+  "工程实践": [
+    { q:"设计一个硬件方案时，你通常？", opts:[
+      {t:"先明确技术指标和约束条件",s:["工程技术",5,"逻辑分析",4]},
+      {t:"参考成熟方案，在基础上做改进",s:["数据分析",4,"工程技术",4]},
+      {t:"从原理出发进行创新设计",s:["设计创意",4,"编程开发",3]}
+    ]},
+    { q:"产品测试中发现设计缺陷，你会？", opts:[
+      {t:"分析根因，评估影响范围后出修复方案",s:["工程技术",5,"逻辑分析",5]},
+      {t:"临时方案先让产线不停，再找永久方案",s:["运营管理",4,"项目管理",4]},
+      {t:"重新设计并验证新方案",s:["设计创意",4,"工程技术",4]}
+    ]},
+    { q:"你如何平衡成本和性能？", opts:[
+      {t:"做多方案对比，找到性价比最优解",s:["数据分析",5,"财务金融",3]},
+      {t:"优先满足性能指标，成本其次",s:["工程技术",5,"项目管理",3]},
+      {t:"和供应商沟通，寻找更优元器件",s:["沟通表达",4,"运营管理",4]}
+    ]},
+    { q:"工程项目管理中你最重视什么？", opts:[
+      {t:"清晰的时间节点和交付标准",s:["项目管理",5,"工程技术",4]},
+      {t:"团队的技术能力和配合默契",s:["领导力",4,"沟通表达",4]},
+      {t:"技术方案的可靠性和容错设计",s:["工程技术",5,"逻辑分析",4]}
+    ]},
+    { q:"你对智能硬件/AIoT 的发展怎么看？", opts:[
+      {t:"很有前景，正在学习嵌入式开发和传感器技术",s:["工程技术",5,"编程开发",4]},
+      {t:"关注数据采集和云端协同的能力",s:["数据分析",4,"算法与AI",4]},
+      {t:"关注用户体验和场景落地",s:["产品策划",4,"设计创意",3]}
+    ]}
+  ]
+};
+
+function renderDirectionPicker() {
+  var grid = document.getElementById('directionGrid');
+  if (!grid) return;
+  grid.innerHTML = Object.entries(DIRECTION_DATA).map(function(e){
+    var k=e[0], v=e[1];
+    return '<div class="direction-card" onclick="onDirectionSelect(&quot;'+k+'&quot;)"><div class="dc-icon">'+v.icon+'</div><div class="dc-name">'+k+'</div><div class="dc-desc">'+v.desc+'</div></div>';
+  }).join('');
+  document.getElementById('directionPicker').classList.remove('hidden');
+  document.getElementById('directionQuestions').classList.add('hidden');
+  document.getElementById('interviewPhase').classList.add('hidden');
+  var s = document.getElementById('interviewStatus');
+  if (s) s.textContent = '选择方向并完成情景题，AI将为你深度分析能力';
+}
+
+function onDirectionSelect(dir) {
+  selectedDirection = dir;
+  document.querySelectorAll('.direction-card').forEach(function(c){ c.classList.remove('selected'); });
+  var cards = document.querySelectorAll('.direction-card');
+  var dirKeys = Object.keys(DIRECTION_DATA);
+  var idx = dirKeys.indexOf(dir);
+  if (idx >= 0 && cards[idx]) cards[idx].classList.add('selected');
+  renderDirectionQuestions(dir);
+}
+
+function renderDirectionQuestions(dir) {
+  var qs = DIRECTION_QUESTIONS[dir] || [];
+  var container = document.getElementById('dirQuestionItems');
+  if (!container) return;
+  directionAnswers = {};
+  var s = document.getElementById('interviewStatus');
+  if (s) s.textContent = '请回答 ' + dir + ' 方向的 5 道情景题';
+  container.innerHTML = qs.map(function(q, qi){
+    var optsHtml = q.opts.map(function(o, oi){
+      return '<label onclick="onDirAnswer('+qi+','+oi+')"><input type="radio" name="dq_'+qi+'" value="'+oi+'"><span>'+o.t+'</span></label>';
+    }).join('');
+    return '<div class="dir-question-item" id="dirQ_'+qi+'"><div class="dq-title">'+(qi+1)+'. '+q.q+'</div><div class="dq-opts">'+optsHtml+'</div></div>';
+  }).join('');
+  document.getElementById('directionPicker').classList.add('hidden');
+  document.getElementById('directionQuestions').classList.remove('hidden');
+  document.getElementById('interviewPhase').classList.add('hidden');
+  document.getElementById('btnStartInterview').disabled = true;
+  updateDirProgress();
+}
+
+function onDirAnswer(qi, oi) {
+  var qs = DIRECTION_QUESTIONS[selectedDirection];
+  if (!qs || !qs[qi]) return;
+  var opt = qs[qi].opts[oi];
+  directionAnswers[qs[qi].q] = opt.t;
+  var item = document.getElementById('dirQ_'+qi);
+  if (item) {
+    item.querySelectorAll('label').forEach(function(l){ l.classList.remove('selected'); });
+    var labels = item.querySelectorAll('label');
+    if (labels[oi]) labels[oi].classList.add('selected');
+    item.classList.add('answered');
+    var radio = item.querySelector('input[value="'+oi+'"]');
+    if (radio) radio.checked = true;
+  }
+  updateDirProgress();
+}
+
+function updateDirProgress() {
+  var answered = Object.keys(directionAnswers).length;
+  var total = (DIRECTION_QUESTIONS[selectedDirection] || []).length;
+  var p = document.getElementById('dirQuestionProgress');
+  if (p) p.textContent = '已答 ' + answered + ' / ' + total + ' 题';
+  document.getElementById('btnStartInterview').disabled = answered < total;
+}
+
+function backToDirectionPicker() {
+  selectedDirection = null;
+  directionAnswers = {};
+  document.getElementById('directionPicker').classList.remove('hidden');
+  document.getElementById('directionQuestions').classList.add('hidden');
+  renderDirectionPicker();
+}
+
+function startDirectionInterview() {
+  document.getElementById('directionQuestions').classList.add('hidden');
+  document.getElementById('interviewPhase').classList.remove('hidden');
+  document.getElementById('btnGoStep3').disabled = true;
+  document.getElementById('btnRestartChat').classList.add('hidden');
+  var s = document.getElementById('interviewStatus');
+  if (s) s.textContent = '与 AI 面试官深度交流中...';
+  startInterview();
+}
 var WORKER_URL = 'https://career-ai-worker.zander2630.workers.dev';
 var MAX_ROUNDS = 5;
 var interviewMessages = [];
@@ -2954,17 +3339,19 @@ var analysisComplete = false;
 function initChat() {
   var chatBox = document.getElementById('chatMessages');
   if (!chatBox) return;
-  chatBox.innerHTML = '<div class="chat-placeholder"><div class="cp-icon">🤖</div><p>开始 AI 访谈以发现你的能力优势</p></div>';
+  chatBox.innerHTML = '<div class="chat-placeholder"><div class="cp-icon">🤖</div><p>AI 访谈即将开始</p></div>';
   interviewMessages = [];
   interviewRound = 0;
   analysisComplete = false;
+  selectedDirection = null;
+  directionAnswers = {};
   var inp = document.getElementById('chatInput');
   var sbtn = document.getElementById('chatSendBtn');
   if (inp) inp.disabled = true;
   if (sbtn) sbtn.disabled = true;
   var ar = document.getElementById('analysisResult'); if (ar) ar.classList.add('hidden');
   var st = document.getElementById('interviewStatus');
-  if (st) st.textContent = '与 AI 面试官进行 3-5 轮简短对话，帮你发现自身能力优势';
+  if (st) st.textContent = '选择方向并完成情景题，AI将为你深度分析能力';
   var b3 = document.getElementById('btnGoStep3'); if (b3) b3.disabled = true;
   var rb = document.getElementById('btnRestartChat'); if (rb) rb.classList.add('hidden');
 }
@@ -2974,8 +3361,19 @@ function startInterview() {
   if (!chatBox) return;
   chatBox.innerHTML = '';
   interviewMessages = []; interviewRound = 0; analysisComplete = false;
+  var context = '';
+  if (selectedDirection) {
+    context = '我选择的兴趣方向是：' + selectedDirection + '。';
+    context += '我对以下情景题做出了选择：';
+    var qs = DIRECTION_QUESTIONS[selectedDirection] || [];
+    qs.forEach(function(q){
+      if (directionAnswers[q.q]) {
+        context += '[' + q.q + ' → ' + directionAnswers[q.q] + '] ';
+      }
+    });
+  }
   document.getElementById('chatLoading').classList.remove('hidden');
-  callWorkerChat([], 'interview').then(function(reply) {
+  callWorkerChat([{role:'user', content:'你好，我是大学生，想请你帮我做职业能力访谈。' + context}], 'interview').then(function(reply) {
     addBotMessage(reply);
     interviewMessages.push({role:'assistant', content:reply});
     enableChatInput();
@@ -3100,11 +3498,12 @@ function displayAnalysisResult(result) {
 
 function restartInterview() {
   document.getElementById('analysisResult').classList.add('hidden');
+  document.getElementById('interviewPhase').classList.add('hidden');
   document.getElementById('btnGoStep3').disabled = true;
   document.getElementById('btnRestartChat').classList.add('hidden');
   var s = document.getElementById('interviewStatus');
-  if (s) s.textContent = '与 AI 面试官进行 3-5 轮简短对话，帮你发现自身能力优势';
-  startInterview();
+  if (s) s.textContent = '选择方向并完成情景题，AI将为你深度分析能力';
+  renderDirectionPicker();
 }
 
 
