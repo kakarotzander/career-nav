@@ -3468,14 +3468,16 @@ function callDeepSeek(messages, stage) {
       try {
         return JSON.parse(jsonStr);
       } catch(e) {
+        // Retry: send conversation as plain text, not as chat messages
+        var convoText = messages.map(function(m){return (m.role==='user'?'学生':'面试官')+': '+m.content;}).join('\n');
         return fetch(DEEPSEEK_API_URL, {
           method: "POST",
           headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + DEEPSEEK_API_KEY},
           body: JSON.stringify({
             model: DEEPSEEK_MODEL,
             messages: [
-              {role: 'system', content: '你是一个JSON数据生成器。只输出JSON，不要任何其他文字。'},
-              {role: 'user', content: '根据以下对话输出能力分析JSON：' + JSON.stringify(messages.map(function(m){return m.role+': '+m.content;}))}
+              {role: 'system', content: '你只输出JSON，不输出任何其他文字。'},
+              {role: 'user', content: '这是一段职业访谈对话：\n\n' + convoText + '\n\n请分析后严格按照以下格式输出纯JSON（不要添加任何对话、点评、问候、前缀或后缀）：\n{"skillScores":{"编程开发":3,"数据分析":3,"算法与AI":3,"设计创意":3,"写作内容":3,"英语能力":3,"沟通表达":3,"项目管理":3,"市场营销":3,"财务金融":3,"运营管理":3,"工程技术":3,"数学统计":3,"产品策划":3,"领导力":3,"逻辑分析":3},"suggestedCareers":["职业1","职业2","职业3"],"reasoning":"评分理由","summary":"一句话总结"}'}
             ],
             temperature: 0.1,
             max_tokens: 2048
@@ -3486,19 +3488,14 @@ function callDeepSeek(messages, stage) {
           var s = retryStr.indexOf('{'), e = retryStr.lastIndexOf('}');
           if (s >= 0 && e > s) retryStr = retryStr.substring(s, e + 1);
           return JSON.parse(retryStr);
+        }).catch(function() {
+          // Ultimate fallback: return default scores
+          var defaultScores = {};
+          var allSkills = ['编程开发','数据分析','算法与AI','设计创意','写作内容','英语能力','沟通表达','项目管理','市场营销','财务金融','运营管理','工程技术','数学统计','产品策划','领导力','逻辑分析'];
+          allSkills.forEach(function(s){ defaultScores[s] = 3; });
+          return {skillScores: defaultScores, suggestedCareers: ['软件工程师','数据分析师','产品经理'], reasoning: 'AI分析暂时不可用，采用默认评分', summary: '请重试AI访谈以获得更精准的分析'};
         });
       }
-    }
-    return content;
-  });
-}function addBotMessage(text) {
-  var chatBox = document.getElementById('chatMessages');
-  if (!chatBox) return;
-  var ph = chatBox.querySelector('.chat-placeholder'); if (ph) ph.remove();
-  var div = document.createElement('div'); div.className = 'chat-msg bot'; div.textContent = text;
-  chatBox.appendChild(div); chatBox.scrollTop = chatBox.scrollHeight;
-}
-
 function addUserMessage(text) {
   var chatBox = document.getElementById('chatMessages');
   if (!chatBox) return;
