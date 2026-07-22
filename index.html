@@ -1046,7 +1046,25 @@
 </div>
 
 <script>
+// ═══════════════════════════════════════════════
+//  分析统计（Supabase）
+// ═══════════════════════════════════════════════
+var SB_URL = 'https://lhaikwphpwfotqagwqat.supabase.co';
+var SB_KEY = 'sb_publishable_h1lTpmwiz8bFwGIcGm1kJA_rAIm54Ve';
+var uid = 'u_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,6);
 
+function trackEvent(name, data) {
+  try {
+    fetch(SB_URL + '/rest/v1/events', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer ' + SB_KEY,'Prefer':'return=minimal'},
+      body: JSON.stringify({event_name:name, event_data:(data||{}), page_url:location.href, session_id:uid})
+    }).catch(function(){});
+  } catch(e) {}
+}
+
+// ─── 分析统计 ───
+trackEvent('page_view', {referrer:document.referrer||''});
 // ═══════════════════════════════════════════════
 //  题库（分支结构）
 // ═══════════════════════════════════════════════
@@ -2912,6 +2930,7 @@ function toggleMajorCustom() {
 function goStep(n) {
   if (n === 2 && !validateStep1()) return;
   if (n === 3 && !validateStep2()) return;
+  trackEvent('step_reached', {step:n});
   // Special: step 2 → skill profile auto-show
   if (n === 3) {
     const allDone = document.querySelectorAll('#questionContainer .question-item[data-qid]:not(.gate-item).answered').length > 0;
@@ -3348,6 +3367,7 @@ function applyFilters() {
 function generateResult() {
   if (!validateStep1()) return;
   if (!validateStep2()) return;
+  trackEvent('generate_result', {});
   const env = {};
   document.querySelectorAll('#expectGrid input[type="radio"]:checked').forEach(el => { env[el.name.replace('exp_','')] = parseInt(el.value); });
   userData.env = env;
@@ -3432,6 +3452,7 @@ function rateResult(score) {
     s.classList.toggle('rated', i < score);
   });
   document.getElementById('satFeedback').textContent = satFeedback[score - 1] + '（' + score + '/5）';
+  trackEvent('satisfaction_rating', {score:score});
 }
 
 // ─── GAMIFICATION: Player types & Achievements ───
@@ -3658,6 +3679,7 @@ function submitSkillTest(careerId) {
     alert('请完成所有测试题后再提交！');
     return;
   }
+  trackEvent('skill_test_submitted', {careerId:careerId, title:career.title, answered:answered, total:questions.length});
 
   // Compute average per skill
   var avgScores = {};
@@ -3702,6 +3724,7 @@ function setTargetCareer(careerId) {
   var career = allResults.find(function(r) { return r.id === careerId; });
   if (!career) return;
   targetCareerId = careerId;
+  trackEvent('set_target_career', {careerId:careerId, title:career.title});
 
   // Check if test already exists for this career
   if (userData.careerTestResults && userData.careerTestResults[careerId]) {
