@@ -3013,6 +3013,7 @@ function togglePlanItem(phase, index) {
 // ═══════════════════════════════════════════════
 var selectedDirection = null;
 var directionAnswers = {};
+var directionAnswerIndices = {};
 
 var DIRECTION_DATA = {
   "技术研发": { icon:"💻", desc:"软件开发、编程、系统架构", skills:["编程开发","算法与AI","逻辑分析"] },
@@ -3293,6 +3294,7 @@ function onDirAnswer(qi, oi) {
   if (!qs || !qs[qi]) return;
   var opt = qs[qi].opts[oi];
   directionAnswers[qs[qi].q] = opt.t;
+  directionAnswerIndices[qi] = oi;
   var item = document.getElementById('dirQ_'+qi);
   if (item) {
     item.querySelectorAll('label').forEach(function(l){ l.classList.remove('selected'); });
@@ -3340,7 +3342,6 @@ function checkRateLimit() {
   if (++rateLimitCount > 15) throw new Error('请求太频繁，请稍后再试');
 }
 var INTERVIEW_SYSTEM = '你是一位大学生职业规划访谈助手。你的任务是：\n\n1. 先问候学生，说明这是一个简短的能力访谈（3-5轮对话）\n2. 请学生分享一个他/她最有成就感或最有收获的经历（可以是项目、比赛、实习、课程设计、社团活动等）\n3. 根据学生的回答，追问具体细节：你在其中扮演什么角色？用了哪些能力？最喜欢哪个环节？遇到困难怎么解决的？\n4. 像你收到的用户提问一样探索用户的决策模式，而不是给选项。例如：\n   "如果给你两个工作机会：一个工资稳定但成长慢；一个风险更高但成长空间大。你会怎么选择？为什么？"\n5. 根据对话的深入程度，适时转向下一个话题\n\n始终保持对话式、鼓励性的语气。每次回复1-2个问题，不要一次问太多。\n注意：你的回答应该简洁、自然、像真人面试官一样交流。';
-var ANALYSIS_SYSTEM = '你是一位职业能力分析专家。请基于以下完整的面试对话，分析该学生的能力画像和潜在职业方向。\n\n【严格执行】你只能输出下面指定的JSON格式，不要输出任何其他内容。不要打招呼，不要点评，不要加对话。只输出JSON，仅此而已。\n\n请严格按以下JSON格式输出（不要包含markdown代码块标记，仅输出纯JSON）：\n{\n  "skillScores": {\n    "编程开发": <1-5>,\n    "数据分析": <1-5>,\n    "算法与AI": <1-5>,\n    "设计创意": <1-5>,\n    "写作内容": <1-5>,\n    "英语能力": <1-5>,\n    "沟通表达": <1-5>,\n    "项目管理": <1-5>,\n    "市场营销": <1-5>,\n    "财务金融": <1-5>,\n    "运营管理": <1-5>,\n    "工程技术": <1-5>,\n    "数学统计": <1-5>,\n    "产品策划": <1-5>,\n    "领导力": <1-5>,\n    "逻辑分析": <1-5>\n  },\n  "suggestedCareers": ["职业名称1", "职业名称2", "职业名称3"],\n  "reasoning": "简要说明为什么给出这些评分",\n  "summary": "一段简洁的学生能力描述（50字以内）"\n}\n\n评分标准：\n1 = 完全未体现 / 明确回避\n2 = 有所涉及但基础薄弱\n3 = 具备基本能力\n4 = 较为突出，能独立运用\n5 = 非常出色，有领导或创新表现\n\n请注意：评估必须基于对话证据，不要凭空猜测。如果某个技能在对话中完全没有涉及，给予默认值2。';
 var MAX_ROUNDS = 5;
 var interviewMessages = [];
 var interviewRound = 0;
@@ -3428,74 +3429,101 @@ function performAnalysis() {
   document.getElementById('chatLoading').classList.remove('hidden');
   var st = document.getElementById('interviewStatus');
   if (st) st.textContent = 'AI 正在分析你的能力画像...';
-  callDeepSeek(interviewMessages, 'analysis').then(function(result) {
+  callAnalysis().then(function(result) {
     displayAnalysisResult(result);
     analysisComplete = true;
     document.getElementById('btnGoStep3').disabled = false;
     document.getElementById('btnRestartChat').classList.remove('hidden');
     var s = document.getElementById('interviewStatus');
     if (s) s.textContent = '✅ 能力分析完成，请查看结果并确认';
-  }).catch(function(err) {
-    addBotMessage('分析失败：'+err.message+'。请点击「重新访谈」重试。');
+  }).catch(function() {
+    var quizScores = computeQuizFallback();
+    var dirInfo = DIRECTION_DATA[selectedDirection];
+    var suggested = dirInfo ? dirInfo.skills.slice(0,3).map(function(s){
+      var map = {'编程开发':'软件工程师','数据分析':'数据分析师','算法与AI':'AI工程师','设计创意':'UI设计师','写作内容':'内容运营','英语能力':'翻译','沟通表达':'咨询顾问','项目管理':'项目经理','市场营销':'市场专员','财务金融':'财务分析师','运营管理':'运营主管','工程技术':'硬件工程师','数学统计':'统计师','产品策划':'产品经理','领导力':'管理培训生','逻辑分析':'研究分析师'};
+      return map[s] || s;
+    }) : ['软件工程师','产品经理','数据分析师'];
+    displayAnalysisResult({skillScores: quizScores, suggestedCareers: suggested, reasoning: '基于方向情景题评估', summary: '基于你的方向选择与情景题答案生成的初步能力画像'});
+    analysisComplete = true;
+    document.getElementById('btnGoStep3').disabled = false;
+    document.getElementById('btnRestartChat').classList.remove('hidden');
+    var s = document.getElementById('interviewStatus');
+    if (s) s.textContent = '✅ 能力分析完成（基于情景题评估）';
   }).finally(function() {
     document.getElementById('chatLoading').classList.add('hidden');
   });
 }
 
-function callDeepSeek(messages, stage) {
-  try { checkRateLimit(); } catch(e) { return Promise.reject(e); }
-  var systemPrompt = stage === "analysis" ? ANALYSIS_SYSTEM : INTERVIEW_SYSTEM;
-  var temperature = stage === "analysis" ? 0.3 : 0.8;
+function callAnalysis() {
+  var convoText = interviewMessages.map(function(m){
+    return (m.role==='user'?'学生':'面试官')+': '+m.content;
+  }).join('\n');
+  var prompt = '这是一段AI职业访谈的完整对话记录，请分析学生的能力。\n\n' +
+    '学生选择的兴趣方向：' + (selectedDirection || '未指定') + '\n' +
+    '对话记录：\n' + convoText +
+    '\n\n请严格按照以下JSON格式输出分析结果，不要输出任何其他内容（不要打招呼、不要点评、不要前缀后缀、不要标记代码块）：\n' +
+    '{"skillScores":{"编程开发":3,"数据分析":3,"算法与AI":3,"设计创意":3,"写作内容":3,"英语能力":3,"沟通表达":3,"项目管理":3,"市场营销":3,"财务金融":3,"运营管理":3,"工程技术":3,"数学统计":3,"产品策划":3,"领导力":3,"逻辑分析":3},"suggestedCareers":["职业1","职业2","职业3"],"reasoning":"评分理由","summary":"一句话总结"}';
   return fetch(DEEPSEEK_API_URL, {
     method: "POST",
     headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + DEEPSEEK_API_KEY},
     body: JSON.stringify({
       model: DEEPSEEK_MODEL,
-      messages: [{role: 'system', content: systemPrompt}].concat(messages),
-      temperature: temperature,
-      max_tokens: stage === 'analysis' ? 2048 : 1024
+      messages: [{role:'system',content:'你只输出JSON，不输出任何其他文字。'},{role:'user',content:prompt}],
+      temperature: 0.1,
+      max_tokens: 2048
+    })
+  }).then(function(r) { return r.json(); }).then(function(d) {
+    var str = d.choices[0].message.content.trim();
+    if (str.startsWith('```')) str = str.replace(/```(?:json)?\n?/g, '').trim();
+    var s = str.indexOf('{'), e = str.lastIndexOf('}');
+    if (s >= 0 && e > s) str = str.substring(s, e + 1);
+    return JSON.parse(str);
+  });
+}
+
+function computeQuizFallback() {
+  var scores = {};
+  var allSkills = ['编程开发','数据分析','算法与AI','设计创意','写作内容','英语能力','沟通表达','项目管理','市场营销','财务金融','运营管理','工程技术','数学统计','产品策划','领导力','逻辑分析'];
+  allSkills.forEach(function(s){ scores[s] = []; });
+  var qs = DIRECTION_QUESTIONS[selectedDirection] || [];
+  qs.forEach(function(q, qi){
+    var oi = directionAnswerIndices[qi];
+    if (oi === undefined) return;
+    var opt = q.opts[oi];
+    if (!opt || !opt.s) return;
+    for (var k = 0; k < opt.s.length; k += 2) {
+      var skill = opt.s[k], val = opt.s[k+1];
+      if (scores[skill]) scores[skill].push(val);
+    }
+  });
+  var result = {};
+  allSkills.forEach(function(s){
+    var arr = scores[s];
+    if (arr.length === 0) { result[s] = 2; return; }
+    var sum = 0; arr.forEach(function(v){ sum += v; });
+    result[s] = Math.round(sum / arr.length);
+  });
+  return result;
+}
+
+function callDeepSeek(messages, stage) {
+  try { checkRateLimit(); } catch(e) { return Promise.reject(e); }
+  return fetch(DEEPSEEK_API_URL, {
+    method: POST,
+    headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + DEEPSEEK_API_KEY},
+    body: JSON.stringify({
+      model: DEEPSEEK_MODEL,
+      messages: [{role: 'system', content: INTERVIEW_SYSTEM}].concat(messages),
+      temperature: 0.8,
+      max_tokens: 1024
     })
   }).then(function(res) {
     if (!res.ok) return res.text().then(function(t){ throw new Error('API '+res.status+': '+t.substring(0,100)); });
     return res.json();
   }).then(function(data) {
-    var content = data.choices[0].message.content;
-    if (stage === 'analysis') {
-      var jsonStr = content.trim();
-      if (jsonStr.startsWith('```')) jsonStr = jsonStr.replace(/```(?:json)?\n?/g, '').trim();
-      var start = jsonStr.indexOf('{'); var end = jsonStr.lastIndexOf('}');
-      if (start >= 0 && end > start) jsonStr = jsonStr.substring(start, end + 1);
-      try {
-        return JSON.parse(jsonStr);
-      } catch(e) {
-        // Retry: send conversation as plain text, not as chat messages
-        var convoText = messages.map(function(m){return (m.role==='user'?'学生':'面试官')+': '+m.content;}).join('\n');
-        return fetch(DEEPSEEK_API_URL, {
-          method: "POST",
-          headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + DEEPSEEK_API_KEY},
-          body: JSON.stringify({
-            model: DEEPSEEK_MODEL,
-            messages: [
-              {role: 'system', content: '你只输出JSON，不输出任何其他文字。'},
-              {role: 'user', content: '这是一段职业访谈对话：\n\n' + convoText + '\n\n请分析后严格按照以下格式输出纯JSON（不要添加任何对话、点评、问候、前缀或后缀）：\n{"skillScores":{"编程开发":3,"数据分析":3,"算法与AI":3,"设计创意":3,"写作内容":3,"英语能力":3,"沟通表达":3,"项目管理":3,"市场营销":3,"财务金融":3,"运营管理":3,"工程技术":3,"数学统计":3,"产品策划":3,"领导力":3,"逻辑分析":3},"suggestedCareers":["职业1","职业2","职业3"],"reasoning":"评分理由","summary":"一句话总结"}'}
-            ],
-            temperature: 0.1,
-            max_tokens: 2048
-          })
-        }).then(function(r) { return r.json(); }).then(function(d) {
-          var retryStr = d.choices[0].message.content.trim();
-          if (retryStr.startsWith('```')) retryStr = retryStr.replace(/```(?:json)?\n?/g, '').trim();
-          var s = retryStr.indexOf('{'), e = retryStr.lastIndexOf('}');
-          if (s >= 0 && e > s) retryStr = retryStr.substring(s, e + 1);
-          return JSON.parse(retryStr);
-        }).catch(function() {
-          // Ultimate fallback: return default scores
-          var defaultScores = {};
-          var allSkills = ['编程开发','数据分析','算法与AI','设计创意','写作内容','英语能力','沟通表达','项目管理','市场营销','财务金融','运营管理','工程技术','数学统计','产品策划','领导力','逻辑分析'];
-          allSkills.forEach(function(s){ defaultScores[s] = 3; });
-          return {skillScores: defaultScores, suggestedCareers: ['软件工程师','数据分析师','产品经理'], reasoning: 'AI分析暂时不可用，采用默认评分', summary: '请重试AI访谈以获得更精准的分析'};
-        });
-      }
+    return data.choices[0].message.content;
+  });
+}
 function addUserMessage(text) {
   var chatBox = document.getElementById('chatMessages');
   if (!chatBox) return;
