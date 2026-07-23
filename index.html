@@ -3509,7 +3509,7 @@ function computeQuizFallback() {
 function callDeepSeek(messages, stage) {
   try { checkRateLimit(); } catch(e) { return Promise.reject(e); }
   return fetch(DEEPSEEK_API_URL, {
-    method: POST,
+    method: 'POST',
     headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + DEEPSEEK_API_KEY},
     body: JSON.stringify({
       model: DEEPSEEK_MODEL,
