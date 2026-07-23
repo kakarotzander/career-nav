@@ -3524,6 +3524,12 @@ function callDeepSeek(messages, stage) {
     return data.choices[0].message.content;
   });
 }
+function addBotMessage(text) {
+  var chatBox = document.getElementById('chatMessages');
+  if (!chatBox) return;
+  var div = document.createElement('div'); div.className = 'chat-msg bot'; div.textContent = text;
+  chatBox.appendChild(div); chatBox.scrollTop = chatBox.scrollHeight;
+}
 function addUserMessage(text) {
   var chatBox = document.getElementById('chatMessages');
   if (!chatBox) return;
