@@ -250,6 +250,9 @@
   .btn-accent:hover { box-shadow: 0 4px 12px rgba(5,150,105,.3); }
   .btn-outline { background: transparent; color: var(--gray-600); border: 1.5px solid var(--gray-200); }
   .btn-outline:hover { background: var(--gray-50); border-color: var(--gray-300); }
+  .btn-interest { padding: 14px 32px; font-size: 15px; font-weight: 600; border-radius: 12px; border: 2px solid var(--gray-200); background: white; cursor: pointer; transition: var(--transition); }
+  .btn-interest:hover { border-color: var(--primary); background: var(--primary-bg); }
+  .btn-interest.selected { border-color: var(--primary); background: var(--primary); color: white; }
   .btn-success { background: var(--accent); color: #fff; }
   .btn-success:hover { background: #047857; box-shadow: 0 4px 12px rgba(5,150,105,.3); }
   .btn-sm { padding: 8px 18px; font-size: 13px; }
@@ -859,10 +862,11 @@
   <div class="progress-wrap print-hide">
     <div class="progress-steps" id="progressSteps">
       <div class="progress-step active" data-step="1"><div class="circle">1</div><div class="label">基本信息</div></div>
-      <div class="progress-step" data-step="2"><div class="circle">2</div><div class="label">能力测评</div></div>
-      <div class="progress-step" data-step="3"><div class="circle">3</div><div class="label">职场期望</div></div>
-      <div class="progress-step" data-step="4"><div class="circle">4</div><div class="label">现实条件</div></div>
-      <div class="progress-step" data-step="5"><div class="circle">5</div><div class="label">推荐结果</div></div>
+      <div class="progress-step" data-step="2"><div class="circle">2</div><div class="label">专业方向</div></div>
+      <div class="progress-step" data-step="3"><div class="circle">3</div><div class="label">情景测评</div></div>
+      <div class="progress-step" data-step="4"><div class="circle">4</div><div class="label">经济情况</div></div>
+      <div class="progress-step" data-step="5"><div class="circle">5</div><div class="label">工作环境</div></div>
+      <div class="progress-step" data-step="6"><div class="circle">6</div><div class="label">AI 访谈推荐</div></div>
     </div>
   </div>
 
@@ -944,92 +948,130 @@
         </div>
         <div class="form-group"></div>
       </div>
-      <div class="btn-row"><div></div><button class="btn btn-primary" onclick="goStep(2)">开始 AI 访谈 →</button></div>
+      <div class="btn-row"><div></div><button class="btn btn-primary" onclick="goStep(2)">下一步：专业方向 →</button></div>
     </div>
   </div>
 
-  
-  <!-- STEP 2: AI能力访谈 -->
+
+  <!-- STEP 2: 专业方向 -->
   <div class="step" id="step2">
     <div class="card">
-      <h2>🧠 AI 能力访谈</h2>
-      <p class="subtitle" id="interviewStatus">选择方向并完成情景题，AI将为你深度分析能力</p>
+      <h2>🎯 专业兴趣与方向</h2>
+      <p class="subtitle">先告诉我你对现在专业的看法，再选择感兴趣的方向</p>
 
-      <!-- Phase 1: Direction Picker -->
-      <div id="directionPicker">
+      <!-- Interest question -->
+      <div id="interestQuestion">
+        <p style="font-size:14px;font-weight:600;color:var(--gray-700);margin-bottom:12px;">你对现在的专业感兴趣吗？</p>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+          <button class="btn btn-interest" onclick="selectInterest('interested')">👍 感兴趣</button>
+          <button class="btn btn-interest" onclick="selectInterest('not_interested')">👎 不感兴趣</button>
+          <button class="btn btn-interest" onclick="selectInterest('unsure')">🤔 不确定</button>
+        </div>
+      </div>
+
+      <!-- Direction picker -->
+      <div id="directionPickerStep2" class="hidden">
+        <hr style="border:none;border-top:1px solid var(--gray-100);margin:20px 0;">
         <p style="font-size:14px;font-weight:600;color:var(--gray-700);margin-bottom:4px;">选择你最感兴趣的方向</p>
-        <p style="font-size:12px;color:var(--gray-400);margin-bottom:12px;">选择一个方向，然后完成几道情景题，AI 访谈会据此做更有针对性的交流</p>
+        <p style="font-size:12px;color:var(--gray-400);margin-bottom:12px;">选择一个方向后进入情景测评环节</p>
         <div id="directionGrid" class="direction-grid"></div>
       </div>
 
-      <!-- Phase 2: Questions -->
-      <div id="directionQuestions" class="hidden">
-        <p style="font-size:14px;font-weight:600;color:var(--gray-700);margin-bottom:4px;">情景选择题</p>
-        <p class="dir-progress" id="dirQuestionProgress">已答 0 / 5 题</p>
-        <div id="dirQuestionItems"></div>
-        <div style="display:flex;gap:12px;margin-top:16px;">
-          <button class="btn btn-outline" onclick="backToDirectionPicker()" style="flex:0">← 换方向</button>
-          <button class="btn btn-primary" id="btnStartInterview" onclick="startDirectionInterview()" disabled style="flex:1">进入 AI 深度访谈 →</button>
-        </div>
-      </div>
-
-      <!-- Phase 3: Interview + Analysis (original content) -->
-      <div id="interviewPhase" class="hidden">
-        <!-- Chat area -->
-        <div id="chatContainer" class="chat-container">
-          <div id="chatMessages" class="chat-messages">
-            <div class="chat-placeholder"><div class="cp-icon">🤖</div><p>AI 访谈即将开始</p></div>
-          </div>
-          <div class="chat-input-area">
-            <textarea id="chatInput" class="chat-input" placeholder="输入你的回答..." rows="2" disabled></textarea>
-            <button id="chatSendBtn" class="btn btn-primary chat-send-btn" onclick="sendChatMessage()" disabled>发送</button>
-          </div>
-        </div>
-
-        <!-- Loading overlay -->
-        <div id="chatLoading" class="loading-wrap hidden">
-          <div class="spinner"></div>
-          <p>AI 正在思考...</p>
-        </div>
-
-        <!-- Analysis results -->
-        <div id="analysisResult" class="hidden">
-          <div class="skill-profile" id="interviewSkillProfile">
-            <div class="sp-title">📊 AI 分析：你的能力画像</div>
-            <div class="sp-desc" id="analysisSummary" style="grid-column:1/-1;font-size:14px;color:var(--gray-600);margin-bottom:12px;"></div>
-            <div id="interviewSkillItems"></div>
-            <div style="grid-column:1/-1;margin-top:12px;padding:14px;background:var(--primary-bg);border-radius:8px;">
-              <div style="font-size:14px;font-weight:600;margin-bottom:6px;">🎯 AI 建议的职业方向</div>
-              <div id="suggestedCareers" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="btn-row" id="step2Btns">
+      <div class="btn-row">
         <button class="btn btn-outline" onclick="goStep(1)">← 上一步</button>
-        <button class="btn btn-primary" id="btnGoStep3" onclick="goStep(3)" disabled>确认能力画像 →</button>
-        <button class="btn btn-accent hidden" id="btnRestartChat" onclick="restartInterview()">🔄 重新访谈</button>
+        <button class="btn btn-primary" id="btnStep2Next" onclick="goStep(3)" disabled>下一步：情景测评 →</button>
       </div>
     </div>
   </div>
-<!-- STEP 3: 职场期望 -->
+<!-- STEP 3: 情景测评 -->
   <div class="step" id="step3">
     <div class="card">
-      <h2>🎯 职场期望</h2>
-      <p class="subtitle">从以下选项中选择你倾向的工作方式，帮助你更准确匹配职场环境。</p>
-      <div style="font-size:13px;color:var(--gray-500);margin-bottom:16px;background:var(--primary-bg);padding:10px 14px;border-radius:8px;">
-        💡 你的能力画像已生成，现在来设定你的职场期望。最终推荐采用<strong>四步评估</strong>：<strong>专业匹配(10%)</strong> + <strong>能力匹配(35%)</strong> + <strong>职场期望(35%)</strong> + <strong>市场环境(20%)</strong>
+      <h2>📝 情景测评</h2>
+      <p class="subtitle" id="step3Status">请回答以下情景题</p>
+
+      <div id="directionQuestions">
+        <p class="dir-progress" id="dirQuestionProgress">已答 0 / 5 题</p>
+        <div id="dirQuestionItems"></div>
       </div>
+
+      <div class="btn-row">
+        <button class="btn btn-outline" onclick="goStep(2)">← 上一步</button>
+        <button class="btn btn-primary" id="btnStep3Next" onclick="goStep(4)" disabled>下一步：经济情况 →</button>
+      </div>
+    </div>
+  </div>
+  <!-- STEP 4: 经济情况 -->
+  <div class="step" id="step4">
+    <div class="card">
+      <h2>💰 经济与学业规划</h2>
+      <p class="subtitle">了解你的经济状况和学业规划，帮助更精准地匹配</p>
+
+      <div style="display:grid;gap:20px;">
+        <div>
+          <label style="font-weight:500;font-size:14px;display:block;margin-bottom:8px;">💰 期望薪资</label>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;">
+            <label class="e-opt" style="display:flex;align-items:center;gap:4px;padding:6px 14px;border:2px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;transition:var(--transition);"><input type="radio" name="salaryExpect" value="3"> <span>高薪优先</span></label>
+            <label class="e-opt" style="display:flex;align-items:center;gap:4px;padding:6px 14px;border:2px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;transition:var(--transition);"><input type="radio" name="salaryExpect" value="1" checked> <span>中等即可</span></label>
+            <label class="e-opt" style="display:flex;align-items:center;gap:4px;padding:6px 14px;border:2px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;transition:var(--transition);"><input type="radio" name="salaryExpect" value="0"> <span>够用就行</span></label>
+            <label class="e-opt" style="display:flex;align-items:center;gap:4px;padding:6px 14px;border:2px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;transition:var(--transition);"><input type="radio" name="salaryExpect" value="4"> <span>非常看重薪资</span></label>
+          </div>
+        </div>
+        <div>
+          <label style="font-weight:500;font-size:14px;display:block;margin-bottom:8px;">🏠 家庭经济情况</label>
+          <select id="familyNeed" style="font-size:13px;width:100%;">
+            <option value="0">无紧迫经济压力，可按兴趣选择</option>
+            <option value="1">有一定压力，薪资是重要因素</option>
+            <option value="2">压力较大，需要尽快经济独立</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-weight:500;font-size:14px;display:block;margin-bottom:8px;">🎓 学业规划</label>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;">
+            <label class="e-opt" style="display:flex;align-items:center;gap:4px;padding:6px 14px;border:2px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;transition:var(--transition);"><input type="radio" name="degreePlan" value="0" checked> <span>本科就业</span></label>
+            <label class="e-opt" style="display:flex;align-items:center;gap:4px;padding:6px 14px;border:2px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;transition:var(--transition);"><input type="radio" name="degreePlan" value="2"> <span>读研深造</span></label>
+            <label class="e-opt" style="display:flex;align-items:center;gap:4px;padding:6px 14px;border:2px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;transition:var(--transition);"><input type="radio" name="degreePlan" value="3"> <span>博士/留学</span></label>
+            <label class="e-opt" style="display:flex;align-items:center;gap:4px;padding:6px 14px;border:2px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;transition:var(--transition);"><input type="radio" name="degreePlan" value="1"> <span>边工作边学习</span></label>
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-outline" onclick="goStep(3)">← 上一步</button>
+        <button class="btn btn-primary" onclick="goStep(5)">下一步：工作环境 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 5: 工作环境 -->
+  <div class="step" id="step5">
+    <div class="card">
+      <h2>🏢 工作环境要求</h2>
+      <p class="subtitle">选择你倾向的工作方式和条件，帮助更准确匹配</p>
 
       <p style="font-size:14px;font-weight:600;color:var(--gray-700);margin-bottom:12px;">你对职场环境的期望</p>
       <div class="expect-grid" id="expectGrid"></div>
 
       <hr style="border:none;border-top:1px solid var(--gray-100);margin:20px 0;">
 
+      <div style="font-size:13px;color:var(--gray-500);margin-bottom:16px;background:var(--purple-bg);padding:10px 14px;border-radius:8px;">
+        💡 勾选你<strong>不能接受</strong>的条件。如果某个岗位包含你勾选的任意一项，系统会降低推荐排序。
+      </div>
+      <div id="realityGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"></div>
+
+      <hr style="border:none;border-top:1px solid var(--gray-100);margin:20px 0;">
+
       <div class="form-row">
         <div class="form-group">
-          <label for="prefIndustry">目标行业偏好（可多选，按住 Ctrl）</label>
+          <label for="cityPref">意向城市</label>
+          <select id="cityPref" style="font-size:13px;">
+            <option value="0">一线城市（北上广深）</option>
+            <option value="1">新一线/二线城市</option>
+            <option value="2">回家乡/离家近</option>
+            <option value="3">不限地点</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="prefIndustry">行业偏好（可多选，按住 Ctrl）</label>
           <select id="prefIndustry" multiple style="height:120px;font-size:13px;">
             <option value="互联网/IT">互联网/IT</option>
             <option value="金融">金融/投资</option>
@@ -1043,215 +1085,179 @@
             <option value="新能源">新能源/环保</option>
           </select>
         </div>
-        <div class="form-group">
-          <label for="prefCity">意向城市</label>
-          <select id="prefCity">
-            <option value="">不限</option>
-            <option value="北京">北京</option><option value="上海">上海</option>
-            <option value="广州">广州</option><option value="深圳">深圳</option>
-            <option value="杭州">杭州</option><option value="成都">成都</option>
-            <option value="南京">南京</option><option value="其他">其他城市</option>
-          </select>
+      </div>
+
+      <div style="margin-top:16px;">
+        <label style="font-weight:500;font-size:14px;display:block;margin-bottom:8px;">🏠 工作稳定性</label>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+          <label class="e-opt" style="display:flex;align-items:center;gap:4px;padding:6px 14px;border:2px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;transition:var(--transition);"><input type="radio" name="stabilityNeed" value="2" checked> <span>追求稳定</span></label>
+          <label class="e-opt" style="display:flex;align-items:center;gap:4px;padding:6px 14px;border:2px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;transition:var(--transition);"><input type="radio" name="stabilityNeed" value="1"> <span>可接受一定风险</span></label>
+          <label class="e-opt" style="display:flex;align-items:center;gap:4px;padding:6px 14px;border:2px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;transition:var(--transition);"><input type="radio" name="stabilityNeed" value="0"> <span>喜欢创业环境</span></label>
+          <label class="e-opt" style="display:flex;align-items:center;gap:4px;padding:6px 14px;border:2px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;transition:var(--transition);"><input type="radio" name="stabilityNeed" value="0"> <span>无所谓</span></label>
         </div>
       </div>
 
       <div class="btn-row">
-        <button class="btn btn-outline" onclick="goStep(2)">← 上一步</button>
-        <button class="btn btn-success" onclick="goStep(4)">下一步：现实条件过滤 →</button>
-      </div>
-    </div>
-  </div>
-  <!-- STEP 4: 现实条件 -->
-  <div class="step" id="step4">
-    <div class="card">
-      <h2>🔍 现实条件过滤</h2>
-      <p class="subtitle">能力和兴趣之外，以下现实条件决定岗位是否真正适合你。</p>
-      <div style="font-size:13px;color:var(--gray-500);margin-bottom:16px;background:var(--purple-bg);padding:10px 14px;border-radius:8px;">
-        💡 勾选你<strong>不能接受</strong>的条件。如果某个岗位包含你勾选的任意一项，系统会降低推荐排序。
-      </div>
-
-      <div id="realityGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"></div>
-
-      <hr style="border:none;border-top:1px solid var(--gray-100);margin:20px 0;">
-
-      <p style="font-size:14px;font-weight:600;color:var(--gray-700);margin-bottom:12px;">家庭与社会因素</p>
-      <div class="form-row">
-        <div class="form-group">
-          <label>家庭经济需求</label>
-          <select id="familyNeed" style="font-size:13px;">
-            <option value="0">无紧迫经济压力，可按兴趣选择</option>
-            <option value="1">有一定压力，薪资是重要因素</option>
-            <option value="2">压力较大，需要尽快经济独立</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>城市意愿</label>
-          <select id="cityPref" style="font-size:13px;">
-            <option value="0">一线城市（北上广深）</option>
-            <option value="1">新一线/二线城市</option>
-            <option value="2">回家乡/离家近</option>
-            <option value="3">不限地点</option>
-          </select>
-        </div>
-      </div>
-
-      <div style="margin-top:20px;border-top:2px dashed var(--gray-200);padding-top:16px;">
-      <div style="font-size:15px;font-weight:600;margin-bottom:12px;">📊 更多条件评估</div>
-      <div style="display:grid;gap:16px;">
-        <div>
-          <label style="font-weight:500;font-size:14px;display:block;margin-bottom:6px;">🎓 学历规划</label>
-          <div style="display:flex;flex-wrap:wrap;gap:8px;">
-            <label class="e-opt" style="display:flex;align-items:center;gap:4px;padding:6px 14px;border:2px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;transition:var(--transition);"><input type="radio" name="degreePlan" value="0" checked> <span>本科就业</span></label>
-            <label class="e-opt" style="display:flex;align-items:center;gap:4px;padding:6px 14px;border:2px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;transition:var(--transition);"><input type="radio" name="degreePlan" value="2"> <span>读研深造</span></label>
-            <label class="e-opt" style="display:flex;align-items:center;gap:4px;padding:6px 14px;border:2px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;transition:var(--transition);"><input type="radio" name="degreePlan" value="3"> <span>博士/留学</span></label>
-            <label class="e-opt" style="display:flex;align-items:center;gap:4px;padding:6px 14px;border:2px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;transition:var(--transition);"><input type="radio" name="degreePlan" value="1"> <span>边工作边学习</span></label>
-          </div>
-        </div>
-        <div>
-          <label style="font-weight:500;font-size:14px;display:block;margin-bottom:6px;">💰 期望薪资</label>
-          <div style="display:flex;flex-wrap:wrap;gap:8px;">
-            <label class="e-opt" style="display:flex;align-items:center;gap:4px;padding:6px 14px;border:2px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;transition:var(--transition);"><input type="radio" name="salaryExpect" value="3"> <span>高薪优先</span></label>
-            <label class="e-opt" style="display:flex;align-items:center;gap:4px;padding:6px 14px;border:2px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;transition:var(--transition);"><input type="radio" name="salaryExpect" value="1" checked> <span>中等即可</span></label>
-            <label class="e-opt" style="display:flex;align-items:center;gap:4px;padding:6px 14px;border:2px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;transition:var(--transition);"><input type="radio" name="salaryExpect" value="0"> <span>够用就行</span></label>
-            <label class="e-opt" style="display:flex;align-items:center;gap:4px;padding:6px 14px;border:2px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;transition:var(--transition);"><input type="radio" name="salaryExpect" value="4"> <span>非常看重薪资</span></label>
-          </div>
-        </div>
-        <div>
-          <label style="font-weight:500;font-size:14px;display:block;margin-bottom:6px;">🏠 工作稳定性</label>
-          <div style="display:flex;flex-wrap:wrap;gap:8px;">
-            <label class="e-opt" style="display:flex;align-items:center;gap:4px;padding:6px 14px;border:2px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;transition:var(--transition);"><input type="radio" name="stabilityNeed" value="2" checked> <span>追求稳定</span></label>
-            <label class="e-opt" style="display:flex;align-items:center;gap:4px;padding:6px 14px;border:2px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;transition:var(--transition);"><input type="radio" name="stabilityNeed" value="1"> <span>可接受一定风险</span></label>
-            <label class="e-opt" style="display:flex;align-items:center;gap:4px;padding:6px 14px;border:2px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;transition:var(--transition);"><input type="radio" name="stabilityNeed" value="0"> <span>喜欢创业环境</span></label>
-            <label class="e-opt" style="display:flex;align-items:center;gap:4px;padding:6px 14px;border:2px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;transition:var(--transition);"><input type="radio" name="stabilityNeed" value="0"> <span>无所谓</span></label>
-          </div>
-        </div>
-      </div>
-    </div>
-
-      <div class="btn-row">
-        <button class="btn btn-outline" onclick="goStep(3)">← 上一步</button>
-        <button class="btn btn-success" onclick="generateResult()">✨ 查看我的推荐结果</button>
+        <button class="btn btn-outline" onclick="goStep(4)">← 上一步</button>
+        <button class="btn btn-success" onclick="goStep(6)">🚀 开始 AI 深度访谈 →</button>
       </div>
     </div>
   </div>
 
-  <!-- STEP 5: 结果 -->
-  <div class="step" id="step5">
-    <div class="card" id="resultLoading" style="display:none;">
-      <div class="loading-wrap">
+  <!-- STEP 6: AI 访谈推荐 -->
+  <div class="step" id="step6">
+    <!-- Chat Phase -->
+    <div class="card" id="step6Chat">
+      <h2>🧠 AI 深度访谈</h2>
+      <p class="subtitle" id="step6Status">AI 正在了解你的完整背景...</p>
+
+      <div class="chat-container">
+        <div id="chatMessages" class="chat-messages">
+          <div class="chat-placeholder"><div class="cp-icon">🤖</div><p>AI 访谈即将开始</p></div>
+        </div>
+        <div class="chat-input-area">
+          <textarea id="chatInput" class="chat-input" placeholder="输入你的回答..." rows="2" disabled></textarea>
+          <button id="chatSendBtn" class="btn btn-primary chat-send-btn" onclick="sendChatMessage()" disabled>发送</button>
+        </div>
+      </div>
+
+      <div id="chatLoading" class="loading-wrap hidden">
         <div class="spinner"></div>
-        <p>🔍 正在综合你的能力与期望，匹配最佳职业…</p>
+        <p>AI 正在思考...</p>
+      </div>
+
+      <!-- Analysis results -->
+      <div id="analysisResult" class="hidden">
+        <div class="skill-profile">
+          <div class="sp-title">📊 AI 分析：你的能力画像</div>
+          <div class="sp-desc" id="analysisSummary" style="grid-column:1/-1;font-size:14px;color:var(--gray-600);margin-bottom:12px;"></div>
+          <div id="interviewSkillItems"></div>
+          <div style="grid-column:1/-1;margin-top:12px;padding:14px;background:var(--primary-bg);border-radius:8px;">
+            <div style="font-size:14px;font-weight:600;margin-bottom:6px;">🎯 AI 建议的职业方向</div>
+            <div id="suggestedCareers" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+          </div>
+        </div>
+        <div style="margin-top:16px;display:flex;gap:12px;">
+          <button class="btn btn-primary" id="btnShowResults" onclick="showStep6Results()" style="flex:1;">📊 查看完整岗位推荐</button>
+          <button class="btn btn-accent hidden" id="btnRestartChat6" onclick="restartStep6Interview()">🔄 重新访谈</button>
+        </div>
       </div>
     </div>
-    <div id="resultContent" style="display:none;">
-      <div class="result-summary">
-        <div class="big" id="matchCount">0</div>
-        <p>个岗位与你的综合画像匹配</p>
-      </div>
 
-      <div id="playerTypeArea" class="player-type-badge hidden"></div>
-
-      <div class="algo-card print-hide">
-        <div class="algo-title">🧮 四维匹配算法</div>
-        <div class="algo-layers">
-          <span>专业匹配 <strong>10%</strong></span><span>能力匹配 <strong>35%</strong></span><span>职场期望 <strong>35%</strong></span><span>市场环境 <strong>20%</strong></span>
+    <!-- Results Phase -->
+    <div class="card" id="step6Results" style="display:none;">
+      <div id="resultLoading" style="display:none;">
+        <div class="loading-wrap">
+          <div class="spinner"></div>
+          <p>🔍 正在综合你的能力与期望，匹配最佳职业…</p>
         </div>
       </div>
-      <div id="achieveArea" class="achieve-area hidden">
-        <div class="achieve-title" onclick="toggleAchievements()">🏅 成就徽章 <span id="achieveCount" style="font-weight:400;color:var(--gray-400)">(0/8)</span> <span style="margin-left:auto;font-size:10px;">▼</span></div>
-        <div class="achieve-grid" id="achieveGrid"></div>
-      </div>
-
-      <!-- Filters -->
-      <div class="result-filters print-hide" id="resultFilters">
-        <label>行业</label>
-        <select id="filterIndustry" onchange="applyFilters()">
-          <option value="all">全部行业</option>
-          <option value="互联网/IT">互联网/IT</option>
-          <option value="金融">金融</option>
-          <option value="咨询">咨询</option>
-          <option value="教育">教育</option>
-          <option value="医疗">医疗</option>
-          <option value="制造">制造/工程</option>
-          <option value="传媒">传媒/内容</option>
-          <option value="设计">设计/创意</option>
-          <option value="政府">政府/公共事业</option>
-          <option value="新能源">新能源</option>
-          <option value="综合">综合</option>
-        </select>
-        <label>最低匹配度</label>
-        <select id="filterMinScore" onchange="applyFilters()">
-          <option value="0">不限</option>
-          <option value="80">≥ 80%</option>
-          <option value="70">≥ 70%</option>
-          <option value="60">≥ 60%</option>
-        </select>
-        <div id="filterTags" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
-      </div>
-
-      <div id="resultCards"></div>
-      <div id="reverseSection" style="display:none;">
-        <div class="reverse-section">
-          <div class="reverse-title">⛔ 不太推荐的岗位</div>
-          <p style="font-size:12px;color:var(--gray-400);margin-bottom:10px;">这些岗位与你的综合画像匹配度较低，可能不太适合你。以下分析供参考——不适合不等于不可能，只是需要更多努力。</p>
-          <div id="reverseGrid" class="reverse-grid"></div>
+      <div id="resultContent" style="display:none;">
+        <div class="result-summary">
+          <div class="big" id="matchCount">0</div>
+          <p>个岗位与你的综合画像匹配</p>
         </div>
-      </div>
-	      <div id="growthCenter" class="growth-center hidden">
-	        <div class="growth-header">
-	          <h3>🎯 职业成长中心</h3>
-	          <span class="growth-target-tag" id="growthTargetTag"></span>
-	          <button class="growth-change-btn" onclick="clearTarget()">更换目标</button>
-	        </div>
 
-	        <div class="growth-title">📊 能力差距分析</div>
-	        <div class="gap-grid" id="gapBars"></div>
+        <div id="playerTypeArea" class="player-type-badge hidden"></div>
 
-	        <div class="growth-progress">
-	          <div class="progress-ring-wrap">
-	            <svg class="progress-ring-svg" viewBox="0 0 60 60">
-	              <circle cx="30" cy="30" r="27" class="progress-ring-bg"/>
-	              <circle cx="30" cy="30" r="27" class="progress-ring-fg"/>
-	            </svg>
-	            <div class="progress-ring-text" id="progressRingText">0%</div>
-	          </div>
-	          <div class="progress-info">
-	            <div class="progress-info-title" id="progressLabel">整体达标度</div>
-	            <div class="progress-info-desc" id="progressDesc">设置目标岗位后开始追踪</div>
-	          </div>
-	        </div>
-
-	        <div class="growth-title">🗺️ 成长计划</div>
-	        <div class="plan-phases" id="planTimeline"></div>
-	      </div>
-
-
-      <div id="resultEmpty" class="no-result hidden">
-        <div class="big-icon">🔍</div>
-        <h3>没有符合筛选条件的岗位</h3>
-        <p>试试降低匹配度门槛或选择"全部行业"</p>
-      </div>
-
-      <!-- Result satisfaction rating -->
-      <div class="satisfaction-section print-hide">
-        <div class="sat-title">这个结果符合你的情况吗？</div>
-        <div class="sat-sub">你的反馈能帮我做得更好</div>
-        <div class="sat-stars" id="satStars">
-          <button class="star-btn" data-score="1" onclick="rateResult(1)">☆</button>
-          <button class="star-btn" data-score="2" onclick="rateResult(2)">☆</button>
-          <button class="star-btn" data-score="3" onclick="rateResult(3)">☆</button>
-          <button class="star-btn" data-score="4" onclick="rateResult(4)">☆</button>
-          <button class="star-btn" data-score="5" onclick="rateResult(5)">☆</button>
+        <div class="algo-card print-hide">
+          <div class="algo-title">🧮 四维匹配算法</div>
+          <div class="algo-layers">
+            <span>专业匹配 <strong>10%</strong></span><span>能力匹配 <strong>35%</strong></span><span>职场期望 <strong>35%</strong></span><span>市场环境 <strong>20%</strong></span>
+          </div>
         </div>
-        <div class="sat-feedback" id="satFeedback"></div>
-      </div>
+        <div id="achieveArea" class="achieve-area hidden">
+          <div class="achieve-title" onclick="toggleAchievements()">🏅 成就徽章 <span id="achieveCount" style="font-weight:400;color:var(--gray-400)">(0/8)</span> <span style="margin-left:auto;font-size:10px;">▼</span></div>
+          <div class="achieve-grid" id="achieveGrid"></div>
+        </div>
 
-      <div class="btn-row print-hide" style="justify-content:center;flex-wrap:wrap;">
-        <button class="btn btn-outline" onclick="goStep(3)" style="flex:0 1 auto;">← 修改期望</button>
-        <button class="btn btn-outline" onclick="goStep(2)" style="flex:0 1 auto;">← 修改答题</button>
-        <button class="btn btn-primary" onclick="window.print()" style="flex:0 1 auto;">🖨️ 保存/打印</button>
-        <button class="btn btn-outline" onclick="exportResult()" style="flex:0 1 auto;">📋 复制结果</button>
-        <button class="btn btn-accent" onclick="shareResult()" style="flex:0 1 auto;">📤 分享</button>
+        <!-- Filters -->
+        <div class="result-filters print-hide" id="resultFilters">
+          <label>行业</label>
+          <select id="filterIndustry" onchange="applyFilters()">
+            <option value="all">全部行业</option>
+            <option value="互联网/IT">互联网/IT</option>
+            <option value="金融">金融</option>
+            <option value="咨询">咨询</option>
+            <option value="教育">教育</option>
+            <option value="医疗">医疗</option>
+            <option value="制造">制造/工程</option>
+            <option value="传媒">传媒/内容</option>
+            <option value="设计">设计/创意</option>
+            <option value="政府">政府/公共事业</option>
+            <option value="新能源">新能源</option>
+            <option value="综合">综合</option>
+          </select>
+          <label>最低匹配度</label>
+          <select id="filterMinScore" onchange="applyFilters()">
+            <option value="0">不限</option>
+            <option value="80">≥ 80%</option>
+            <option value="70">≥ 70%</option>
+            <option value="60">≥ 60%</option>
+          </select>
+          <div id="filterTags" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+        </div>
+
+        <div id="resultCards"></div>
+        <div id="reverseSection" style="display:none;">
+          <div class="reverse-section">
+            <div class="reverse-title">⛔ 不太推荐的岗位</div>
+            <p style="font-size:12px;color:var(--gray-400);margin-bottom:10px;">这些岗位与你的综合画像匹配度较低，可能不太适合你。以下分析供参考——不适合不等于不可能，只是需要更多努力。</p>
+            <div id="reverseGrid" class="reverse-grid"></div>
+          </div>
+        </div>
+        <div id="growthCenter" class="growth-center hidden">
+          <div class="growth-header">
+            <h3>🎯 职业成长中心</h3>
+            <span class="growth-target-tag" id="growthTargetTag"></span>
+            <button class="growth-change-btn" onclick="clearTarget()">更换目标</button>
+          </div>
+          <div class="growth-title">📊 能力差距分析</div>
+          <div class="gap-grid" id="gapBars"></div>
+          <div class="growth-progress">
+            <div class="progress-ring-wrap">
+              <svg class="progress-ring-svg" viewBox="0 0 60 60">
+                <circle cx="30" cy="30" r="27" class="progress-ring-bg"/>
+                <circle cx="30" cy="30" r="27" class="progress-ring-fg"/>
+              </svg>
+              <div class="progress-ring-text" id="progressRingText">0%</div>
+            </div>
+            <div class="progress-info">
+              <div class="progress-info-title" id="progressLabel">整体达标度</div>
+              <div class="progress-info-desc" id="progressDesc">设置目标岗位后开始追踪</div>
+            </div>
+          </div>
+          <div class="growth-title">🗺️ 成长计划</div>
+          <div class="plan-phases" id="planTimeline"></div>
+        </div>
+
+        <div id="resultEmpty" class="no-result hidden">
+          <div class="big-icon">🔍</div>
+          <h3>没有符合筛选条件的岗位</h3>
+          <p>试试降低匹配度门槛或选择"全部行业"</p>
+        </div>
+
+        <!-- Result satisfaction rating -->
+        <div class="satisfaction-section print-hide">
+          <div class="sat-title">这个结果符合你的情况吗？</div>
+          <div class="sat-sub">你的反馈能帮我做得更好</div>
+          <div class="sat-stars" id="satStars">
+            <button class="star-btn" data-score="1" onclick="rateResult(1)">☆</button>
+            <button class="star-btn" data-score="2" onclick="rateResult(2)">☆</button>
+            <button class="star-btn" data-score="3" onclick="rateResult(3)">☆</button>
+            <button class="star-btn" data-score="4" onclick="rateResult(4)">☆</button>
+            <button class="star-btn" data-score="5" onclick="rateResult(5)">☆</button>
+          </div>
+          <div class="sat-feedback" id="satFeedback"></div>
+        </div>
+
+        <div class="btn-row print-hide" style="justify-content:center;flex-wrap:wrap;">
+          <button class="btn btn-outline" onclick="goStep(5)" style="flex:0 1 auto;">← 修改工作环境</button>
+          <button class="btn btn-outline" onclick="goStep(2)" style="flex:0 1 auto;">← 修改方向</button>
+          <button class="btn btn-primary" onclick="window.print()" style="flex:0 1 auto;">🖨️ 保存/打印</button>
+          <button class="btn btn-outline" onclick="exportResult()" style="flex:0 1 auto;">📋 复制结果</button>
+          <button class="btn btn-accent" onclick="shareResult()" style="flex:0 1 auto;">📤 分享</button>
+        </div>
       </div>
     </div>
   </div>
@@ -2093,9 +2099,22 @@ function toggleMajorCustom() {
 function goStep(n) {
   if (n === 2) {
     if (!validateStep1()) return;
+    selectedDirection = null;
+    userData.majorInterest = null;
     renderDirectionPicker();
   }
-  if (n === 3 && !validateStep2()) return;
+  if (n === 3) {
+    if (!userData.majorInterest) { alert('请先选择对专业的兴趣'); return; }
+    if (!selectedDirection) { alert('请先选择感兴趣的方向'); return; }
+    renderStep3Questions(selectedDirection);
+  }
+  if (n === 4) {
+    if (Object.keys(directionAnswers).length < 5) { alert('请先完成所有情景题'); return; }
+  }
+  if (n === 6) {
+    collectStep5Data();
+    startStep6Interview();
+  }
   trackEvent('step_reached', {step:n});
   currentStep = n;
   document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
@@ -2108,7 +2127,7 @@ function goStep(n) {
   const style = document.createElement('style');
   style.id = 'progStyle';
   const old = document.getElementById('progStyle'); if (old) old.remove();
-  const pct = ((n - 1) / 4) * 100;
+  const pct = ((n - 1) / 5) * 100;
   style.textContent = '.progress-steps::after { width: ' + pct + '% !important; }';
   document.head.appendChild(style);
 }
@@ -2129,12 +2148,96 @@ function validateStep1() {
   return true;
 }
 
-function validateStep2() {
-  if (!analysisComplete || !userData.skillScores) {
-    alert('请先完成AI能力访谈');
-    return false;
+// ─── STEP 2: 专业方向 ───
+function selectInterest(val) {
+  userData.majorInterest = val;
+  document.querySelectorAll('.btn-interest').forEach(b => b.classList.remove('selected'));
+  // Find the correct button by value-text mapping
+  var btnText = {interested:'感兴趣', not_interested:'不感兴趣', unsure:'不确定'};
+  document.querySelectorAll('.btn-interest').forEach(function(b) {
+    if (b.textContent.includes(btnText[val])) b.classList.add('selected');
+  });
+  document.getElementById('directionPickerStep2').classList.remove('hidden');
+  checkStep2Ready();
+}
+
+function checkStep2Ready() {
+  document.getElementById('btnStep2Next').disabled = !(userData.majorInterest && selectedDirection);
+}
+
+function onDirectionSelect(dir) {
+  selectedDirection = dir;
+  document.querySelectorAll('.direction-card').forEach(function(c){ c.classList.remove('selected'); });
+  var cards = document.querySelectorAll('.direction-card');
+  var dirKeys = Object.keys(DIRECTION_DATA);
+  var idx = dirKeys.indexOf(dir);
+  if (idx >= 0 && cards[idx]) cards[idx].classList.add('selected');
+  checkStep2Ready();
+};
+
+// ─── STEP 3: 情景测评 ───
+function renderStep3Questions(dir) {
+  var qs = DIRECTION_QUESTIONS[dir] || [];
+  var container = document.getElementById('dirQuestionItems');
+  if (!container) return;
+  directionAnswers = {};
+  directionAnswerIndices = {};
+  var status = document.getElementById('step3Status');
+  if (status) status.textContent = '请回答 ' + dir + ' 方向的 5 道情景题';
+  container.innerHTML = qs.map(function(q, qi){
+    var optsHtml = q.opts.map(function(o, oi){
+      return '<label onclick="onStep3Answer('+qi+','+oi+')"><input type="radio" name="dq_'+qi+'" value="'+oi+'"><span>'+o.t+'</span></label>';
+    }).join('');
+    return '<div class="dir-question-item" id="dirQ_'+qi+'"><div class="dq-title">'+(qi+1)+'. '+q.q+'</div><div class="dq-opts">'+optsHtml+'</div></div>';
+  }).join('');
+  document.getElementById('btnStep3Next').disabled = true;
+  updateStep3Progress();
+}
+
+function onStep3Answer(qi, oi) {
+  var qs = DIRECTION_QUESTIONS[selectedDirection];
+  if (!qs || !qs[qi]) return;
+  var opt = qs[qi].opts[oi];
+  directionAnswers[qs[qi].q] = opt.t;
+  directionAnswerIndices[qi] = oi;
+  var item = document.getElementById('dirQ_'+qi);
+  if (item) {
+    item.querySelectorAll('label').forEach(function(l){ l.classList.remove('selected'); });
+    var labels = item.querySelectorAll('label');
+    if (labels[oi]) labels[oi].classList.add('selected');
+    item.classList.add('answered');
+    var radio = item.querySelector('input[value="'+oi+'"]');
+    if (radio) radio.checked = true;
   }
-  return true;
+  updateStep3Progress();
+}
+
+function updateStep3Progress() {
+  var answered = Object.keys(directionAnswers).length;
+  var total = (DIRECTION_QUESTIONS[selectedDirection] || []).length;
+  var p = document.getElementById('dirQuestionProgress');
+  if (p) p.textContent = '已答 ' + answered + ' / ' + total + ' 题';
+  document.getElementById('btnStep3Next').disabled = answered < total;
+}
+
+// ─── STEP 5 → 6: 数据收集 ───
+function collectStep5Data() {
+  const env = {};
+  document.querySelectorAll('#expectGrid input[type="radio"]:checked').forEach(el => { env[el.name.replace('exp_','')] = parseInt(el.value); });
+  userData.env = env;
+  const rejectedReality = [];
+  document.querySelectorAll('#realityGrid input[type="checkbox"]:checked').forEach(el => { rejectedReality.push(el.id.replace('rc_','')); });
+  userData.rejectedReality = rejectedReality;
+  userData.cityPref = document.getElementById('cityPref').value;
+  const stabilityNeed = document.querySelector('input[name="stabilityNeed"]:checked');
+  userData.stabilityNeed = stabilityNeed ? parseInt(stabilityNeed.value) : 0;
+
+  // Collect economic info from Step 4 (still in DOM)
+  userData.familyNeed = parseInt(document.getElementById('familyNeed').value);
+  const degreePlan = document.querySelector('input[name="degreePlan"]:checked');
+  const salaryExpect = document.querySelector('input[name="salaryExpect"]:checked');
+  userData.degreePlan = degreePlan ? parseInt(degreePlan.value) : 0;
+  userData.salaryExpect = salaryExpect ? parseInt(salaryExpect.value) : 0;
 }
 
 // ─── SKILL PROFILE ───
@@ -2483,43 +2586,8 @@ function applyFilters() {
 
 // ─── GENERATE ───
 function generateResult() {
-  if (!validateStep1()) return;
-  if (!validateStep2()) return;
-  trackEvent('generate_result', {});
-  const env = {};
-  document.querySelectorAll('#expectGrid input[type="radio"]:checked').forEach(el => { env[el.name.replace('exp_','')] = parseInt(el.value); });
-  userData.env = env;
-  
-  // Collect reality conditions
-  const rejectedReality = [];
-  document.querySelectorAll('#realityGrid input[type="checkbox"]:checked').forEach(el => { rejectedReality.push(el.id.replace('rc_','')); });
-  userData.rejectedReality = rejectedReality;
-  userData.familyNeed = parseInt(document.getElementById('familyNeed').value);
-  userData.cityPref = document.getElementById('cityPref').value;
-  const degreePlan = document.querySelector('input[name="degreePlan"]:checked');
-  const salaryExpect = document.querySelector('input[name="salaryExpect"]:checked');
-  const stabilityNeed = document.querySelector('input[name="stabilityNeed"]:checked');
-  userData.degreePlan = degreePlan ? parseInt(degreePlan.value) : 0;
-  userData.salaryExpect = salaryExpect ? parseInt(salaryExpect.value) : 0;
-  userData.stabilityNeed = stabilityNeed ? parseInt(stabilityNeed.value) : 0;
-
-  document.getElementById('step4').classList.remove('active');
-  document.getElementById('step5').classList.add('active');
-  currentStep = 5;
-  document.querySelectorAll('.progress-step').forEach(el => {
-    const s = parseInt(el.dataset.step);
-    el.classList.toggle('active', s === 5); el.classList.toggle('done', s < 5);
-  });
-  const style = document.createElement('style');
-  style.id = 'progStyle';
-  const old = document.getElementById('progStyle');
-  if (old) old.remove();
-  style.textContent = `.progress-steps::after { width: 100% !important; }`;
-  document.head.appendChild(style);
-
-  document.getElementById('resultLoading').style.display = 'block';
-  document.getElementById('resultContent').style.display = 'none';
-  setTimeout(() => { showResults(matchCareers()); }, 800);
+  // Legacy function - now handled by showStep6Results()
+  showStep6Results();
 }
 
 function exportResult() {
@@ -3250,87 +3318,8 @@ function renderDirectionPicker() {
   if (!grid) return;
   grid.innerHTML = Object.entries(DIRECTION_DATA).map(function(e){
     var k=e[0], v=e[1];
-    return '<div class="direction-card" onclick="onDirectionSelect(&quot;'+k+'&quot;)"><div class="dc-icon">'+v.icon+'</div><div class="dc-name">'+k+'</div><div class="dc-desc">'+v.desc+'</div></div>';
+    return '<div class="direction-card" onclick="onDirectionSelect(\''+k+'\')"><div class="dc-icon">'+v.icon+'</div><div class="dc-name">'+k+'</div><div class="dc-desc">'+v.desc+'</div></div>';
   }).join('');
-  document.getElementById('directionPicker').classList.remove('hidden');
-  document.getElementById('directionQuestions').classList.add('hidden');
-  document.getElementById('interviewPhase').classList.add('hidden');
-  var s = document.getElementById('interviewStatus');
-  if (s) s.textContent = '选择方向并完成情景题，AI将为你深度分析能力';
-}
-
-function onDirectionSelect(dir) {
-  selectedDirection = dir;
-  document.querySelectorAll('.direction-card').forEach(function(c){ c.classList.remove('selected'); });
-  var cards = document.querySelectorAll('.direction-card');
-  var dirKeys = Object.keys(DIRECTION_DATA);
-  var idx = dirKeys.indexOf(dir);
-  if (idx >= 0 && cards[idx]) cards[idx].classList.add('selected');
-  renderDirectionQuestions(dir);
-}
-
-function renderDirectionQuestions(dir) {
-  var qs = DIRECTION_QUESTIONS[dir] || [];
-  var container = document.getElementById('dirQuestionItems');
-  if (!container) return;
-  directionAnswers = {};
-  var s = document.getElementById('interviewStatus');
-  if (s) s.textContent = '请回答 ' + dir + ' 方向的 5 道情景题';
-  container.innerHTML = qs.map(function(q, qi){
-    var optsHtml = q.opts.map(function(o, oi){
-      return '<label onclick="onDirAnswer('+qi+','+oi+')"><input type="radio" name="dq_'+qi+'" value="'+oi+'"><span>'+o.t+'</span></label>';
-    }).join('');
-    return '<div class="dir-question-item" id="dirQ_'+qi+'"><div class="dq-title">'+(qi+1)+'. '+q.q+'</div><div class="dq-opts">'+optsHtml+'</div></div>';
-  }).join('');
-  document.getElementById('directionPicker').classList.add('hidden');
-  document.getElementById('directionQuestions').classList.remove('hidden');
-  document.getElementById('interviewPhase').classList.add('hidden');
-  document.getElementById('btnStartInterview').disabled = true;
-  updateDirProgress();
-}
-
-function onDirAnswer(qi, oi) {
-  var qs = DIRECTION_QUESTIONS[selectedDirection];
-  if (!qs || !qs[qi]) return;
-  var opt = qs[qi].opts[oi];
-  directionAnswers[qs[qi].q] = opt.t;
-  directionAnswerIndices[qi] = oi;
-  var item = document.getElementById('dirQ_'+qi);
-  if (item) {
-    item.querySelectorAll('label').forEach(function(l){ l.classList.remove('selected'); });
-    var labels = item.querySelectorAll('label');
-    if (labels[oi]) labels[oi].classList.add('selected');
-    item.classList.add('answered');
-    var radio = item.querySelector('input[value="'+oi+'"]');
-    if (radio) radio.checked = true;
-  }
-  updateDirProgress();
-}
-
-function updateDirProgress() {
-  var answered = Object.keys(directionAnswers).length;
-  var total = (DIRECTION_QUESTIONS[selectedDirection] || []).length;
-  var p = document.getElementById('dirQuestionProgress');
-  if (p) p.textContent = '已答 ' + answered + ' / ' + total + ' 题';
-  document.getElementById('btnStartInterview').disabled = answered < total;
-}
-
-function backToDirectionPicker() {
-  selectedDirection = null;
-  directionAnswers = {};
-  document.getElementById('directionPicker').classList.remove('hidden');
-  document.getElementById('directionQuestions').classList.add('hidden');
-  renderDirectionPicker();
-}
-
-function startDirectionInterview() {
-  document.getElementById('directionQuestions').classList.add('hidden');
-  document.getElementById('interviewPhase').classList.remove('hidden');
-  document.getElementById('btnGoStep3').disabled = true;
-  document.getElementById('btnRestartChat').classList.add('hidden');
-  var s = document.getElementById('interviewStatus');
-  if (s) s.textContent = '与 AI 面试官深度交流中...';
-  startInterview();
 }
 var DEEPSEEK_API_KEY = localStorage.getItem('deepseek_api_key') || 'sk-2843d8b826104c1e905a065e0907a544';
 var DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
@@ -3348,23 +3337,7 @@ var interviewRound = 0;
 var analysisComplete = false;
 
 function initChat() {
-  var chatBox = document.getElementById('chatMessages');
-  if (!chatBox) return;
-  chatBox.innerHTML = '<div class="chat-placeholder"><div class="cp-icon">🤖</div><p>AI 访谈即将开始</p></div>';
-  interviewMessages = [];
-  interviewRound = 0;
-  analysisComplete = false;
-  selectedDirection = null;
-  directionAnswers = {};
-  var inp = document.getElementById('chatInput');
-  var sbtn = document.getElementById('chatSendBtn');
-  if (inp) inp.disabled = true;
-  if (sbtn) sbtn.disabled = true;
-  var ar = document.getElementById('analysisResult'); if (ar) ar.classList.add('hidden');
-  var st = document.getElementById('interviewStatus');
-  if (st) st.textContent = '选择方向并完成情景题，AI将为你深度分析能力';
-  var b3 = document.getElementById('btnGoStep3'); if (b3) b3.disabled = true;
-  var rb = document.getElementById('btnRestartChat'); if (rb) rb.classList.add('hidden');
+  // Not used in current flow - kept for compatibility
 }
 
 function startInterview() {
@@ -3372,19 +3345,44 @@ function startInterview() {
   if (!chatBox) return;
   chatBox.innerHTML = '';
   interviewMessages = []; interviewRound = 0; analysisComplete = false;
-  var context = '';
+
+  // Build enhanced context from all prior steps
+  var context = '我的基本信息：我是' + (userData.school||'某大学') + '的' + (userData.major||'某专业') + '专业' + (userData.degree||'本科生') + '（' + (userData.year||'') + '）。\n';
+  context += '我对当前专业的态度：' + (userData.majorInterest === 'interested' ? '感兴趣' : userData.majorInterest === 'not_interested' ? '不感兴趣' : '不确定') + '。\n';
+
   if (selectedDirection) {
-    context = '我选择的兴趣方向是：' + selectedDirection + '。';
-    context += '我对以下情景题做出了选择：';
+    context += '我感兴趣的方向是：' + selectedDirection + '。\n';
+    context += '我的情景题选择：';
     var qs = DIRECTION_QUESTIONS[selectedDirection] || [];
     qs.forEach(function(q){
       if (directionAnswers[q.q]) {
         context += '[' + q.q + ' → ' + directionAnswers[q.q] + '] ';
       }
     });
+    context += '\n';
   }
+
+  // Economic info
+  context += '期望薪资：';
+  var salMap = {0:'够用就行',1:'中等即可',3:'高薪优先',4:'非常看重薪资'};
+  context += (salMap[parseInt(document.querySelector('input[name="salaryExpect"]:checked')?.value)] || '中等') + '。\n';
+  context += '家庭经济情况：' + (document.getElementById('familyNeed')?.options[document.getElementById('familyNeed')?.selectedIndex]?.text || '一般') + '。\n';
+  var degPlan = document.querySelector('input[name="degreePlan"]:checked');
+  var degMap = {0:'本科就业',1:'边工作边学习',2:'读研深造',3:'博士/留学'};
+  context += '学业规划：' + (degMap[parseInt(degPlan?.value)] || '未定') + '。\n';
+
+  // Work environment (read from Step 5 DOM or userData)
+  var envPrefs = [];
+  document.querySelectorAll('#expectGrid input[type="radio"]:checked').forEach(function(el){
+    var key = el.name.replace('exp_','');
+    var val = parseInt(el.value);
+    var labels = {0:'偏左',1:'偏左中',2:'中等',3:'偏右中'};
+    envPrefs.push(key + ':' + (labels[val]||val));
+  });
+  if (envPrefs.length) context += '工作环境偏好：' + envPrefs.join(', ') + '。\n';
+
   document.getElementById('chatLoading').classList.remove('hidden');
-  callDeepSeek([{role:'user', content:'你好，我是大学生，想请你帮我做职业能力访谈。' + context}], 'interview').then(function(reply) {
+  callDeepSeek([{role:'user', content:'你好，我是一名大学生，想请你帮我做职业能力访谈。以下是关于我的完整背景信息，请基于此进行有针对性的提问和交流：\n\n' + context}], 'interview').then(function(reply) {
     addBotMessage(reply);
     interviewMessages.push({role:'assistant', content:reply});
     enableChatInput();
@@ -3427,15 +3425,15 @@ function sendChatMessage() {
 function performAnalysis() {
   disableChatInput();
   document.getElementById('chatLoading').classList.remove('hidden');
-  var st = document.getElementById('interviewStatus');
+  var st = document.getElementById('step6Status');
   if (st) st.textContent = 'AI 正在分析你的能力画像...';
   callAnalysis().then(function(result) {
     displayAnalysisResult(result);
     analysisComplete = true;
-    document.getElementById('btnGoStep3').disabled = false;
-    document.getElementById('btnRestartChat').classList.remove('hidden');
-    var s = document.getElementById('interviewStatus');
-    if (s) s.textContent = '✅ 能力分析完成，请查看结果并确认';
+    document.getElementById('btnShowResults').disabled = false;
+    document.getElementById('btnRestartChat6').classList.remove('hidden');
+    var s = document.getElementById('step6Status');
+    if (s) s.textContent = '✅ 能力分析完成，请查看完整推荐';
   }).catch(function() {
     var quizScores = computeQuizFallback();
     var dirInfo = DIRECTION_DATA[selectedDirection];
@@ -3445,13 +3443,52 @@ function performAnalysis() {
     }) : ['软件工程师','产品经理','数据分析师'];
     displayAnalysisResult({skillScores: quizScores, suggestedCareers: suggested, reasoning: '基于方向情景题评估', summary: '基于你的方向选择与情景题答案生成的初步能力画像'});
     analysisComplete = true;
-    document.getElementById('btnGoStep3').disabled = false;
-    document.getElementById('btnRestartChat').classList.remove('hidden');
-    var s = document.getElementById('interviewStatus');
+    document.getElementById('btnShowResults').disabled = false;
+    document.getElementById('btnRestartChat6').classList.remove('hidden');
+    var s = document.getElementById('step6Status');
     if (s) s.textContent = '✅ 能力分析完成（基于情景题评估）';
   }).finally(function() {
     document.getElementById('chatLoading').classList.add('hidden');
   });
+}
+
+// ─── STEP 6: 访谈入口 ───
+function startStep6Interview() {
+  document.getElementById('step6Chat').classList.remove('hidden');
+  document.getElementById('step6Results').style.display = 'none';
+  document.getElementById('analysisResult').classList.add('hidden');
+  document.getElementById('btnShowResults').disabled = true;
+  document.getElementById('btnRestartChat6').classList.add('hidden');
+  var s = document.getElementById('step6Status');
+  if (s) s.textContent = '与 AI 面试官深度交流中...';
+  startInterview();
+}
+
+function showStep6Results() {
+  document.getElementById('step6Chat').style.display = 'none';
+  document.getElementById('step6Results').style.display = 'block';
+  document.getElementById('resultLoading').style.display = 'block';
+  document.getElementById('resultContent').style.display = 'none';
+  setTimeout(function() { showResults(matchCareers()); }, 800);
+}
+
+function restartStep6Interview() {
+  document.getElementById('analysisResult').classList.add('hidden');
+  document.getElementById('step6Results').style.display = 'none';
+  document.getElementById('step6Chat').style.display = 'block';
+  document.getElementById('btnShowResults').disabled = true;
+  document.getElementById('btnRestartChat6').classList.add('hidden');
+  var s = document.getElementById('step6Status');
+  if (s) s.textContent = '与 AI 面试官深度交流中...';
+  interviewMessages = [];
+  interviewRound = 0;
+  analysisComplete = false;
+  startInterview();
+}
+
+function restartInterview() {
+  // Kept for compatibility - delegates to restartStep6Interview
+  restartStep6Interview();
 }
 
 function callAnalysis() {
