@@ -3323,7 +3323,7 @@ function renderDirectionPicker() {
 }
 var DEEPSEEK_API_KEY = localStorage.getItem('deepseek_api_key') || 'sk-2843d8b826104c1e905a065e0907a544';
 var DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
-var DEEPSEEK_MODEL = 'deepseek-chat';
+var DEEPSEEK_MODEL = 'deepseek-v4-flash';
 // 简单频率限制：每分钟最多 15 次调用
 var rateLimitCount = 0, rateLimitReset = Date.now() + 60000;
 function checkRateLimit() {

@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "职业推荐系统",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": ["http-server", "D:\\职业推荐agent\\高校学生ai", "-p", "3006", "--cors", "--utf8", "-c-1"],
+      "runtimeExecutable": "C:\\Users\\zander\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+      "runtimeArgs": ["-m", "http.server", "3006", "--directory", "D:\\职业推荐agent\\高校学生ai"],
       "port": 3006
     }
   ]
