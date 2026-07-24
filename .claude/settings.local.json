@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s *)",
+      "Bash(git *)",
+      "Bash(git status *)",
+      "Bash(git log *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(git remote *)",
+      "Bash(git diff *)",
+      "Bash(git config *)",
+      "Bash(ls *)",
+      "Bash(npx http-server *)",
+      "Bash(python *)",
+      "Bash(python3 *)",
+      "Bash(node *)",
+      "Bash(gh *)",
+      "Bash(taskkill *)",
+      "Bash(TASKKILL *)",
+      "WebFetch",
+      "WebSearch"
+    ]
+  }
+}
