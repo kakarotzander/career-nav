@@ -1126,32 +1126,16 @@
         <p>AI 正在思考...</p>
       </div>
 
-      <!-- Analysis results -->
+      <!-- Analysis results — shows after AI interview -->
       <div id="analysisResult" class="hidden">
         <div class="skill-profile">
           <div class="sp-title">📊 AI 分析：你的能力画像</div>
           <div class="sp-desc" id="analysisSummary" style="grid-column:1/-1;font-size:14px;color:var(--gray-600);margin-bottom:12px;"></div>
           <div id="interviewSkillItems"></div>
-          <div style="grid-column:1/-1;margin-top:12px;padding:14px;background:var(--primary-bg);border-radius:8px;">
-            <div style="font-size:14px;font-weight:600;margin-bottom:6px;">🎯 AI 建议的职业方向</div>
-            <div id="suggestedCareers" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
-          </div>
-        </div>
-        <div style="margin-top:16px;display:flex;gap:12px;">
-          <button class="btn btn-primary" id="btnShowResults" onclick="showStep6Results()" style="flex:1;">📊 查看完整岗位推荐</button>
-          <button class="btn btn-accent hidden" id="btnRestartChat6" onclick="restartStep6Interview()">🔄 重新访谈</button>
         </div>
       </div>
-    </div>
 
-    <!-- Results Phase -->
-    <div class="card" id="step6Results" style="display:none;">
-      <div id="resultLoading" style="display:none;">
-        <div class="loading-wrap">
-          <div class="spinner"></div>
-          <p>🔍 正在综合你的能力与期望，匹配最佳职业…</p>
-        </div>
-      </div>
+      <!-- Results — auto-loaded after analysis -->
       <div id="resultContent" style="display:none;">
         <div class="result-summary">
           <div class="big" id="matchCount">0</div>
@@ -1171,7 +1155,6 @@
           <div class="achieve-grid" id="achieveGrid"></div>
         </div>
 
-        <!-- Filters -->
         <div class="result-filters print-hide" id="resultFilters">
           <label>行业</label>
           <select id="filterIndustry" onchange="applyFilters()">
@@ -1202,7 +1185,7 @@
         <div id="reverseSection" style="display:none;">
           <div class="reverse-section">
             <div class="reverse-title">⛔ 不太推荐的岗位</div>
-            <p style="font-size:12px;color:var(--gray-400);margin-bottom:10px;">这些岗位与你的综合画像匹配度较低，可能不太适合你。以下分析供参考——不适合不等于不可能，只是需要更多努力。</p>
+            <p style="font-size:12px;color:var(--gray-400);margin-bottom:10px;">这些岗位与你的综合画像匹配度较低，可能不太适合你。</p>
             <div id="reverseGrid" class="reverse-grid"></div>
           </div>
         </div>
@@ -1237,7 +1220,6 @@
           <p>试试降低匹配度门槛或选择"全部行业"</p>
         </div>
 
-        <!-- Result satisfaction rating -->
         <div class="satisfaction-section print-hide">
           <div class="sat-title">这个结果符合你的情况吗？</div>
           <div class="sat-sub">你的反馈能帮我做得更好</div>
@@ -1252,6 +1234,7 @@
         </div>
 
         <div class="btn-row print-hide" style="justify-content:center;flex-wrap:wrap;">
+          <button class="btn btn-accent" id="btnRestartChat6" onclick="restartStep6Interview()" style="flex:0 1 auto;">🔄 重新访谈</button>
           <button class="btn btn-outline" onclick="goStep(5)" style="flex:0 1 auto;">← 修改工作环境</button>
           <button class="btn btn-outline" onclick="goStep(2)" style="flex:0 1 auto;">← 修改方向</button>
           <button class="btn btn-primary" onclick="window.print()" style="flex:0 1 auto;">🖨️ 保存/打印</button>
@@ -2384,7 +2367,6 @@ function showResults(results) {
   // 最多展示30个岗位，保证推荐质量
   if (results.length > 30) results = results.slice(0, 30);
   allResults = results;
-  document.getElementById('resultLoading').style.display = 'none';
   document.getElementById('resultContent').style.display = 'block';
 
   // Summary
@@ -3424,34 +3406,35 @@ function performAnalysis() {
   callAnalysis().then(function(result) {
     displayAnalysisResult(result);
     analysisComplete = true;
-    document.getElementById('btnShowResults').disabled = false;
-    document.getElementById('btnRestartChat6').classList.remove('hidden');
+    loadAndShowResults();
     var s = document.getElementById('step6Status');
-    if (s) s.textContent = '✅ 能力分析完成，请查看完整推荐';
+    if (s) s.textContent = '✅ 分析完成，以下是匹配结果';
   }).catch(function() {
     var quizScores = computeQuizFallback();
-    var dirInfo = DIRECTION_DATA[selectedDirection];
-    var suggested = dirInfo ? dirInfo.skills.slice(0,3).map(function(s){
-      var map = {'编程开发':'软件工程师','数据分析':'数据分析师','算法与AI':'AI工程师','设计创意':'UI设计师','写作内容':'内容运营','英语能力':'翻译','沟通表达':'咨询顾问','项目管理':'项目经理','市场营销':'市场专员','财务金融':'财务分析师','运营管理':'运营主管','工程技术':'硬件工程师','数学统计':'统计师','产品策划':'产品经理','领导力':'管理培训生','逻辑分析':'研究分析师'};
-      return map[s] || s;
-    }) : ['软件工程师','产品经理','数据分析师'];
-    displayAnalysisResult({skillScores: quizScores, suggestedCareers: suggested, reasoning: '基于方向情景题评估', summary: '基于你的方向选择与情景题答案生成的初步能力画像'});
+    displayAnalysisResult({skillScores: quizScores, reasoning: '基于方向情景题评估', summary: '基于你的方向选择与情景题答案生成的初步能力画像'});
     analysisComplete = true;
-    document.getElementById('btnShowResults').disabled = false;
-    document.getElementById('btnRestartChat6').classList.remove('hidden');
+    loadAndShowResults();
     var s = document.getElementById('step6Status');
-    if (s) s.textContent = '✅ 能力分析完成（基于情景题评估）';
+    if (s) s.textContent = '✅ 分析完成（基于情景题评估）';
   }).finally(function() {
     document.getElementById('chatLoading').classList.add('hidden');
   });
 }
 
+function loadAndShowResults() {
+  document.getElementById('resultContent').style.display = 'block';
+  showResults(matchCareers());
+  document.getElementById('btnRestartChat6').classList.remove('hidden');
+  setTimeout(function() {
+    document.getElementById('resultContent').scrollIntoView({behavior:'smooth',block:'start'});
+  }, 200);
+}
+
 // ─── STEP 6: 访谈入口 ───
 function startStep6Interview() {
   document.getElementById('step6Chat').classList.remove('hidden');
-  document.getElementById('step6Results').style.display = 'none';
   document.getElementById('analysisResult').classList.add('hidden');
-  document.getElementById('btnShowResults').disabled = true;
+  document.getElementById('resultContent').style.display = 'none';
   document.getElementById('btnRestartChat6').classList.add('hidden');
   var s = document.getElementById('step6Status');
   if (s) s.textContent = '与 AI 面试官深度交流中...';
@@ -3459,18 +3442,12 @@ function startStep6Interview() {
 }
 
 function showStep6Results() {
-  document.getElementById('step6Chat').style.display = 'none';
-  document.getElementById('step6Results').style.display = 'block';
-  document.getElementById('resultLoading').style.display = 'block';
-  document.getElementById('resultContent').style.display = 'none';
-  setTimeout(function() { showResults(matchCareers()); }, 800);
+  loadAndShowResults();
 }
 
 function restartStep6Interview() {
   document.getElementById('analysisResult').classList.add('hidden');
-  document.getElementById('step6Results').style.display = 'none';
-  document.getElementById('step6Chat').style.display = 'block';
-  document.getElementById('btnShowResults').disabled = true;
+  document.getElementById('resultContent').style.display = 'none';
   document.getElementById('btnRestartChat6').classList.add('hidden');
   var s = document.getElementById('step6Status');
   if (s) s.textContent = '与 AI 面试官深度交流中...';
@@ -3592,13 +3569,8 @@ function displayAnalysisResult(result) {
     var sk=e[0], sc=e[1], pct=(sc/5)*100, cls=sc>=4?'max':sc>=3?'mid':'low';
     return '<div class="sp-item"><span class="sp-icon">'+(SKILL_ICONS[sk]||'📌')+'</span><div class="sp-info"><div class="sp-name">'+nameOfSkill(sk)+'</div><div class="sp-track"><div class="sp-fill" style="width:'+pct+'%"></div></div></div><span class="sp-score '+cls+'">'+sc+'</span></div>';
   }).join('');
-  var careers = result.suggestedCareers || [];
-  document.getElementById('suggestedCareers').innerHTML = careers.map(function(c){
-    return '<span style="padding:6px 14px;background:var(--primary-bg);color:var(--primary);border-radius:100px;font-size:13px;font-weight:500;">'+c+'</span>';
-  }).join('');
   userData.skillScores = scores;
   userData.aiInterviewSummary = result.summary || '';
-  userData.suggestedCareers = careers;
   userData.interviewMessages = interviewMessages;
 }
 
