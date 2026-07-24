@@ -1,27 +1,7 @@
 // Supabase Edge Function — DeepSeek API 代理
-// Key 存在 Supabase Secret，浏览器不可见
-// 调用：POST /functions/v1/chat → api.deepseek.com
-
 const DEEPSEEK_URL = "https://api.deepseek.com/v1/chat/completions";
-const DEEPSEEK_KEY = Deno.env.get("DEEPSEEK_API_KEY") || "";
-
-// 每个 IP 每分钟最多 20 次
-const rateMap = new Map<string, { count: number; reset: number }>();
-
-function checkRate(ip: string): boolean {
-  const now = Date.now();
-  const entry = rateMap.get(ip);
-  if (!entry || now > entry.reset) {
-    rateMap.set(ip, { count: 1, reset: now + 60_000 });
-    return true;
-  }
-  if (entry.count >= 20) return false;
-  entry.count++;
-  return true;
-}
 
 Deno.serve(async (req: Request) => {
-  // CORS
   if (req.method === "OPTIONS") {
     return new Response(null, {
       status: 204,
@@ -32,17 +12,12 @@ Deno.serve(async (req: Request) => {
       },
     });
   }
-
   if (req.method !== "POST") {
     return Response.json({ error: "Method not allowed" }, { status: 405 });
   }
 
-  const ip = req.headers.get("x-forwarded-for") || "unknown";
-  if (!checkRate(ip)) {
-    return Response.json({ error: "请求太频繁，请稍后重试" }, { status: 429 });
-  }
-
-  if (!DEEPSEEK_KEY) {
+  const key = Deno.env.get("DEEPSEEK_API_KEY");
+  if (!key) {
     return Response.json({ error: "Server not configured" }, { status: 500 });
   }
 
@@ -50,30 +25,34 @@ Deno.serve(async (req: Request) => {
     const { messages, temperature, max_tokens } = await req.json();
     const resp = await fetch(DEEPSEEK_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${DEEPSEEK_KEY}` },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
       body: JSON.stringify({
         model: "deepseek-v4-flash",
-        messages,
+        messages: messages || [],
         temperature: temperature ?? 0.8,
-        max_tokens: max_tokens ?? 1024,
+        // V4 Flash 是推理模型，需要足够 token 给 reasoning + content
+        max_tokens: max_tokens || 2048,
       }),
     });
 
     if (!resp.ok) {
-      const errText = await resp.text().catch(() => "");
+      const text = await resp.text();
       return Response.json(
-        { error: `DeepSeek API error: ${resp.status} ${errText.slice(0, 200)}` },
-        { status: resp.status },
+        { error: `DeepSeek ${resp.status}: ${text.slice(0, 300)}` },
+        { status: resp.status, headers: { "Access-Control-Allow-Origin": "*" } },
       );
     }
 
     const data = await resp.json();
+    const reply = data.choices?.[0]?.message?.content;
     return Response.json(
-      { reply: data.choices[0].message.content },
+      { reply: reply ?? "" },
       { headers: { "Access-Control-Allow-Origin": "*" } },
     );
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : String(e);
-    return Response.json({ error: msg }, { status: 500 });
+    return Response.json(
+      { error: e instanceof Error ? e.message : String(e) },
+      { status: 500, headers: { "Access-Control-Allow-Origin": "*" } },
+    );
   }
 });
