@@ -3609,66 +3609,6 @@ function displayAnalysisResult(result) {
   userData.interviewMessages = interviewMessages;
 }
 
-function restartInterview() {
-  document.getElementById('analysisResult').classList.add('hidden');
-  document.getElementById('interviewPhase').classList.add('hidden');
-  document.getElementById('btnGoStep3').disabled = true;
-  document.getElementById('btnRestartChat').classList.add('hidden');
-  var s = document.getElementById('interviewStatus');
-  if (s) s.textContent = '选择方向并完成情景题，AI将为你深度分析能力';
-  renderDirectionPicker();
-}
-
-
-function aichat() {
-  var modal = document.getElementById("aiModal");
-  modal.classList.toggle("show");
-}
-
-function aichatSend() {
-  var input = document.getElementById("aiChatInput");
-  var text = input.value.trim();
-  if (!text) return;
-  input.value = "";
-  var body = document.getElementById("aiChatBody");
-  var userDiv = document.createElement("div");
-  userDiv.className = "ai-msg user";
-  userDiv.textContent = text;
-  body.appendChild(userDiv);
-  var reply = aiGetReply(text);
-  setTimeout(function() {
-    var botDiv = document.createElement("div");
-    botDiv.className = "ai-msg bot";
-    botDiv.innerHTML = reply;
-    body.appendChild(botDiv);
-    body.scrollTop = body.scrollHeight;
-  }, 500);
-}
-
-function aiGetReply(text) {
-  var rules = [
-    {keys:["排名","推荐","第一","适合","为什么","算法"], resp:"你的推荐结果基于<strong>四维匹配算法</strong>：<br>1️⃣ <strong>专业匹配</strong>（10%）— 专业背景与岗位关联度<br>2️⃣ <strong>能力匹配</strong>（30%）— 技能与岗位的契合度<br>3️⃣ <strong>职场期望</strong>（30%）— 职场环境与你的期望匹配<br>4️⃣ <strong>现实条件</strong>（30%）— 薪资趋势+市场前景+现实过滤<div style='margin-top:8px;padding:8px 10px;background:var(--primary-bg);border-radius:6px;font-size:12px;'>排名高的岗位是这4个维度综合表现最好的</div>"},
-    {keys:["能力","技能","不够","差距","学习","提升","准备","如何"], resp:"提升核心竞争力的建议：<br><strong>短期（1-3个月）</strong>：确定1-2项目标岗位最重要的技能，每日投入1h系统学习<br><strong>中期（3-6个月）</strong>：通过项目实践将知识转化为实战经验<br><strong>长期（6个月+）</strong>：建立个人品牌，拓展行业人脉<br>每个岗位详情页都有行动指南！"},
-    {keys:["薪资","工资","薪酬","钱","收入","待遇"], resp:"薪资由行业、公司规模、城市、经验水平等多因素决定：<br>互联网/金融行业起薪较高，但竞争也更激烈<br>随着经验积累，薪资涨幅通常在每年10-30%<br>一线城市起薪高但生活成本也高<br>建议：关注薪资的同时也要考虑成长空间和学习机会。"},
-    {keys:["哪个","选择","纠结","犹豫","对比","offer"], resp:"做职业选择时，建议按这个优先级思考：<br>1️⃣ <strong>能力匹配</strong> — 你是否擅长这个方向？<br>2️⃣ <strong>发展空间</strong> — 这个岗位3-5年后的薪资和成长如何？<br>3️⃣ <strong>工作方式</strong> — 日常工作是怎样的？<br>4️⃣ <strong>现实条件</strong> — 是否需要经常出差/加班？"},
-    {keys:["考研","读研","学历","深造","学位","研究生"], resp:"关于学历的思考：<br>AI/数据科学/金融/咨询等行业有学历门槛，硕博更有竞争力<br>互联网技术岗更看重能力和项目经验，本科也可有很好的发展<br>建议权衡：考研的时间成本(2-3年) vs 工作中积累项目经验。"},
-    {keys:["城市","一线","北上广深","地点","去哪","杭州"], resp:"城市选择建议：<br><strong>一线城市</strong>：机会多/薪资高/成长快，但生活成本高<br><strong>新一线/二线</strong>：性价比高，新兴产业正在崛起<br><strong>回家乡</strong>：生活压力小，适合求稳<br>建议：刚毕业可以先去一线城市积累2-3年经验。"},
-    {keys:["你好","hi","hello","在吗","帮助","功能"], resp:"你好！😊 我是你的 AI 职业规划助手！你可以问我：<br>• 「为什么这个岗位排名第一？」 — 了解推荐逻辑<br>• 「我该怎么提升能力？」 — 获取学习建议<br>• 「薪资情况怎么样？」 — 了解行业薪酬<br>• 「考研还是工作？」 — 获取决策建议"},
-  ];
-  // Growth plan rules
-  rules.push({keys:["成长","计划","目标岗位","90天","阶段","进度"], resp:"<strong>职业成长中心</strong>帮助你从知道方向到到达目标：<br>1️⃣ <strong>设为目标岗位</strong> — 在推荐结果中点击设为目标岗位按钮<br>2️⃣ <strong>差距分析</strong> — 自动对比你的能力与岗位要求<br>3️⃣ <strong>90天计划</strong> — 分三阶段（基础→实战→冲刺）逐步提升<br>4️⃣ <strong>进度跟踪</strong> — 勾选已完成项，达标度会自动更新<br>坚持执行90天计划，你会看到自己稳步靠近目标！"});
-  rules.push({keys:["差距","达标","能力不足","怎么学","从哪","入门"], resp:"差距分析帮你定位需要提升的技能：<br>• 每个技能显示你的当前水平 vs 岗位要求水平<br>• <strong>红色需要提升</strong>的技能是你的优先攻克目标<br>• <strong>黄色接近达标</strong>的技能再努力一步就到位<br>建议：从差距最大的技能入手，每天投入1-2小时系统学习，配合项目实践效果更好！"});
-  rules.push({keys:["目标","方向","迷茫","不知道","适合什么","建议"], resp:"还没有明确目标？建议先完成以下步骤：<br>1️⃣ <strong>重新测评</strong> — 检查基本信息是否填写准确<br>2️⃣ <strong>查看全部推荐</strong> — 浏览系统推荐的岗位有哪些<br>3️⃣ <strong>设为目标岗位</strong> — 选一个感兴趣且匹配度高的作为目标<br>4️⃣ <strong>执行成长计划</strong> — 按照90天计划一步步来<br>职业规划不是一蹴而就的，先迈出第一步最重要！"});
-  for (var i = 0; i < rules.length; i++) {
-    for (var j = 0; j < rules[i].keys.length; j++) {
-      if (text.indexOf(rules[i].keys[j]) >= 0) {
-        return rules[i].resp;
-      }
-    }
-  }
-  return "很好的问题！我的知识目前集中在职业推荐方面。建议你：<br>1️⃣ 查看岗位详情中的行动指南获取具体建议<br>2️⃣ 向就业指导中心的老师寻求专业咨询<br>或者试试问我关于能力提升、薪资对比、城市选择等问题！";
-}
-
 document.addEventListener('DOMContentLoaded', init);
 
 </script>
