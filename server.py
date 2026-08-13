@@ -8,12 +8,17 @@ import socketserver
 PORT = 3006
 DEEPSEEK_URL = "https://api.deepseek.com/v1/chat/completions"
 API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
+API_SECRET = os.environ.get("API_SECRET", "")
 
 class Handler(http.server.SimpleHTTPRequestHandler):
     def do_POST(self):
         if self.path == "/api/chat":
             length = int(self.headers.get("Content-Length", 0))
             body = json.loads(self.rfile.read(length)) if length else {}
+
+            if API_SECRET and self.headers.get("x-api-key") != API_SECRET:
+                self._json({"error": "Unauthorized"}, 401)
+                return
 
             req = urllib.request.Request(DEEPSEEK_URL,
                 data=json.dumps({
@@ -41,7 +46,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     def _cors(self):
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, x-api-key")
 
     def _json(self, data, status=200):
         self.send_response(status)

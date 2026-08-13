@@ -8,7 +8,7 @@ Deno.serve(async (req: Request) => {
       headers: {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Headers": "Content-Type, x-api-key",
       },
     });
   }
@@ -19,6 +19,14 @@ Deno.serve(async (req: Request) => {
   const key = Deno.env.get("DEEPSEEK_API_KEY");
   if (!key) {
     return Response.json({ error: "Server not configured" }, { status: 500 });
+  }
+
+  const apiSecret = Deno.env.get("API_SECRET");
+  if (apiSecret && req.headers.get("x-api-key") !== apiSecret) {
+    return Response.json(
+      { error: "Unauthorized" },
+      { status: 401, headers: { "Access-Control-Allow-Origin": "*" } },
+    );
   }
 
   try {
