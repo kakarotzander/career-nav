@@ -17,10 +17,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
             req = urllib.request.Request(DEEPSEEK_URL,
                 data=json.dumps({
-                    "model": "deepseek-v4-flash",
+                    "model": "deepseek-chat",
                     "messages": body.get("messages", []),
                     "temperature": body.get("temperature", 0.8),
-                    "max_tokens": body.get("max_tokens", 1024),
+                    "max_tokens": body.get("max_tokens", 512),
                 }).encode(),
                 headers={"Content-Type": "application/json", "Authorization": f"Bearer {API_KEY}"})
 

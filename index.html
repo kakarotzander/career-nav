@@ -3477,7 +3477,7 @@ function callAnalysis() {
     body: JSON.stringify({
       messages: [{role:'system',content:'你只输出JSON，不输出任何其他文字。'},{role:'user',content:prompt}],
       temperature: 0.1,
-      max_tokens: 2048
+      max_tokens: 1024
     })
   }).then(function(r) { return r.json(); }).then(function(d) {
     if (d.error) throw new Error(d.error);
@@ -3521,7 +3521,7 @@ function callDeepSeek(messages, stage) {
     body: JSON.stringify({
       messages: [{role: 'system', content: INTERVIEW_SYSTEM}].concat(messages),
       temperature: 0.8,
-      max_tokens: 1024
+      max_tokens: 512
     })
   }).then(function(res) {
     if (!res.ok) return res.text().then(function(t){ throw new Error('API '+res.status+': '+t.substring(0,100)); });

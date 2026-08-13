@@ -1,0 +1,8 @@
+# Cloudflare Wrangler 本地缓存/账户状态
+.wrangler/
+
+# Supabase 本地临时文件
+supabase/.temp/
+
+# 本地开发配置
+.claude/settings.local.json

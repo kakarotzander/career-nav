@@ -27,11 +27,10 @@ Deno.serve(async (req: Request) => {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
       body: JSON.stringify({
-        model: "deepseek-v4-flash",
+        model: "deepseek-chat",
         messages: messages || [],
         temperature: temperature ?? 0.8,
-        // V4 Flash 是推理模型，需要足够 token 给 reasoning + content
-        max_tokens: max_tokens || 2048,
+        max_tokens: max_tokens || 512,
       }),
     });
 
