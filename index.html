@@ -1011,7 +1011,7 @@
           <label style="font-weight:500;font-size:14px;display:block;margin-bottom:8px;">💰 期望薪资</label>
           <div style="display:flex;flex-wrap:wrap;gap:8px;">
             <label class="e-opt" style="display:flex;align-items:center;gap:4px;padding:6px 14px;border:2px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;transition:var(--transition);"><input type="radio" name="salaryExpect" value="3"> <span>高薪优先</span></label>
-            <label class="e-opt" style="display:flex;align-items:center;gap:4px;padding:6px 14px;border:2px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;transition:var(--transition);"><input type="radio" name="salaryExpect" value="1" checked> <span>中等即可</span></label>
+            <label class="e-opt" style="display:flex;align-items:center;gap:4px;padding:6px 14px;border:2px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;transition:var(--transition);"><input type="radio" name="salaryExpect" value="1"> <span>中等即可</span></label>
             <label class="e-opt" style="display:flex;align-items:center;gap:4px;padding:6px 14px;border:2px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;transition:var(--transition);"><input type="radio" name="salaryExpect" value="0"> <span>够用就行</span></label>
             <label class="e-opt" style="display:flex;align-items:center;gap:4px;padding:6px 14px;border:2px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;transition:var(--transition);"><input type="radio" name="salaryExpect" value="4"> <span>非常看重薪资</span></label>
           </div>
@@ -1027,7 +1027,7 @@
         <div>
           <label style="font-weight:500;font-size:14px;display:block;margin-bottom:8px;">🎓 学业规划</label>
           <div style="display:flex;flex-wrap:wrap;gap:8px;">
-            <label class="e-opt" style="display:flex;align-items:center;gap:4px;padding:6px 14px;border:2px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;transition:var(--transition);"><input type="radio" name="degreePlan" value="0" checked> <span>本科就业</span></label>
+            <label class="e-opt" style="display:flex;align-items:center;gap:4px;padding:6px 14px;border:2px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;transition:var(--transition);"><input type="radio" name="degreePlan" value="0"> <span>本科就业</span></label>
             <label class="e-opt" style="display:flex;align-items:center;gap:4px;padding:6px 14px;border:2px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;transition:var(--transition);"><input type="radio" name="degreePlan" value="2"> <span>读研深造</span></label>
             <label class="e-opt" style="display:flex;align-items:center;gap:4px;padding:6px 14px;border:2px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;transition:var(--transition);"><input type="radio" name="degreePlan" value="3"> <span>博士/留学</span></label>
             <label class="e-opt" style="display:flex;align-items:center;gap:4px;padding:6px 14px;border:2px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;transition:var(--transition);"><input type="radio" name="degreePlan" value="1"> <span>边工作边学习</span></label>
@@ -2104,6 +2104,18 @@ function goStep(n) {
   }
   if (n === 4) {
     if (Object.keys(directionAnswers).length < 5) { alert('请先完成所有情景题'); return; }
+  }
+  if (n === 5) {
+    // Step 4 的经济与学业规划：去掉默认值后需显式校验，否则未答也按 0 处理
+    if (!document.querySelector('input[name="salaryExpect"]:checked')) {
+      alert('请选择你的期望薪资倾向');
+      return;
+    }
+    if (!document.querySelector('input[name="degreePlan"]:checked')) {
+      alert('请选择你的学业规划');
+      return;
+    }
+    // 家庭经济情况是 select，首项 value="0" 为「无紧迫经济压力」，属有效选项，无需校验
   }
   if (n === 6) {
     const missing = EXPECTATIONS.filter(e =>
