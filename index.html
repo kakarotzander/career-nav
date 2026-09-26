@@ -1276,7 +1276,11 @@ function trackEvent(name, data) {
 }
 
 // ─── 分析统计 ───
+window.__flowStart = Date.now();
 trackEvent('page_view', {referrer:document.referrer||''});
+// Step 1 是落地页，用户不会经过 goStep(1)，需单独补记，
+// 否则漏斗首步缺失，后续步骤会算出大于 100% 的留存率。
+trackEvent('step_reached', {step:1});
 // ═══════════════════════════════════════════════
 
 // ═══════════════════════════════════════════════
@@ -3551,17 +3555,21 @@ function performAnalysis() {
   document.getElementById('chatLoading').classList.remove('hidden');
   var st = document.getElementById('step6Status');
   if (st) st.textContent = 'AI 正在分析你的能力画像...';
+  var _t0 = Date.now();
   callAnalysis().then(function(result) {
     displayAnalysisResult(result);
     analysisComplete = true;
     loadAndShowResults();
+    trackEvent('ai_analysis', {result:'success', ms: Date.now() - _t0, rounds: interviewRound});
     var s = document.getElementById('step6Status');
     if (s) s.textContent = '✅ 分析完成，以下是匹配结果';
-  }).catch(function() {
+  }).catch(function(err) {
     var quizScores = computeQuizFallback();
     displayAnalysisResult({skillScores: quizScores, reasoning: '基于方向情景题评估', summary: '基于你的方向选择与情景题答案生成的初步能力画像'});
     analysisComplete = true;
     loadAndShowResults();
+    trackEvent('ai_analysis', {result:'fallback', ms: Date.now() - _t0, rounds: interviewRound,
+                               reason: String(err && err.message || err).slice(0, 120)});
     var s = document.getElementById('step6Status');
     if (s) s.textContent = '✅ 分析完成（基于情景题评估）';
   }).finally(function() {
@@ -3572,6 +3580,7 @@ function performAnalysis() {
 function loadAndShowResults() {
   document.getElementById('resultContent').style.display = 'block';
   showResults(matchCareers());
+  trackEvent('flow_completed', {totalMs: Date.now() - (window.__flowStart || Date.now())});
   document.getElementById('btnRestartChat6').classList.remove('hidden');
   setTimeout(function() {
     document.getElementById('resultContent').scrollIntoView({behavior:'smooth',block:'start'});

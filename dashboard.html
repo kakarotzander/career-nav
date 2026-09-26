@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<!--
+  数据看板 — 读取 Supabase events 表的埋点数据，展示漏斗与关键指标。
+  与主站共用同一个 anon key（只读，写入策略由 RLS 控制）。
+  入口：/dashboard.html
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>数据看板 · AI职业导航系统</title>
+<style>
+  :root {
+    --bg: #0f1419; --card: #1a2029; --line: #2a323d;
+    --text: #e6edf3; --muted: #8b98a8; --accent: #4a9eff;
+    --good: #3fb950; --warn: #d29922; --bad: #f85149;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 32px 24px; background: var(--bg); color: var(--text);
+    font: 14px/1.6 -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 0 0 4px; font-weight: 600; }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 28px; }
+  .sub a { color: var(--accent); }
+  h2 { font-size: 15px; font-weight: 600; margin: 32px 0 14px; color: var(--muted);
+       text-transform: uppercase; letter-spacing: .05em; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 18px; }
+  .card .k { color: var(--muted); font-size: 12px; margin-bottom: 8px; }
+  .card .v { font-size: 28px; font-weight: 600; line-height: 1.1; }
+  .card .u { font-size: 13px; color: var(--muted); font-weight: 400; margin-left: 3px; }
+
+  table { width: 100%; border-collapse: collapse; background: var(--card);
+          border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  th, td { padding: 11px 14px; text-align: left; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-size: 12px; font-weight: 500; text-transform: uppercase;
+       letter-spacing: .04em; }
+  tr:last-child td { border-bottom: none; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .bar { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; min-width: 60px; }
+  .bar i { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
+  .good { color: var(--good); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+  .muted { color: var(--muted); }
+  .state { padding: 40px; text-align: center; color: var(--muted); }
+  .note { margin-top: 10px; font-size: 12px; color: var(--muted); }
+  code { background: #232b36; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>数据看板</h1>
+  <div class="sub">
+    AI 职业导航系统 · 埋点数据实时读取 ·
+    <a href="index.html">← 返回主站</a> ·
+    <span id="range">加载中…</span>
+  </div>
+
+  <div id="app"><div class="state">正在读取数据…</div></div>
+</div>
+
+<script>
+var SB_URL = 'https://lhaikwphpwfotqagwqat.supabase.co';
+var SB_KEY = 'sb_publishable_h1lTpmwiz8bFwGIcGm1kJA_rAIm54Ve';
+
+var STEP_NAMES = {1:'基本信息', 2:'专业方向', 3:'情景测评', 4:'经济情况', 5:'工作环境', 6:'AI访谈'};
+
+function q(params) {
+  return fetch(SB_URL + '/rest/v1/events?' + params, {
+    headers: {'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY}
+  }).then(function(r) {
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  });
+}
+
+// 分页拉取全部事件（Supabase 单次上限 1000）
+function fetchAll() {
+  var page = 1000, all = [];
+  function loop(from) {
+    return q('select=*&order=created_at.desc&limit=' + page + '&offset=' + from)
+      .then(function(rows) {
+        all = all.concat(rows);
+        return rows.length === page ? loop(from + page) : all;
+      });
+  }
+  return loop(0);
+}
+
+function pct(a, b) { return b > 0 ? Math.round(a / b * 100) : 0; }
+function uniq(arr) { return Array.from(new Set(arr)); }
+
+function render(rows) {
+  if (!rows.length) {
+    document.getElementById('app').innerHTML =
+      '<div class="state">还没有埋点数据。<br><br>去 <a href="index.html" style="color:#4a9eff">主站</a> 走一遍流程就会产生数据。</div>';
+    return;
+  }
+
+  var sessions = uniq(rows.map(function(r) { return r.event_data && r.event_data.session_id; }).filter(Boolean));
+  var viewed = uniq(rows.filter(function(r) { return r.event_name === 'page_view'; })
+                        .map(function(r) { return r.event_data.session_id; }));
+  var completed = rows.filter(function(r) { return r.event_name === 'flow_completed'; });
+  var completedSessions = uniq(completed.map(function(r) { return r.event_data.session_id; }));
+
+  // 漏斗：每一步有多少独立 session 到达
+  var steps = {};
+  rows.filter(function(r) { return r.event_name === 'step_reached'; }).forEach(function(r) {
+    var s = r.event_data.step, sid = r.event_data.session_id;
+    if (!s) return;
+    (steps[s] = steps[s] || []).push(sid);
+  });
+  Object.keys(steps).forEach(function(k) { steps[k] = uniq(steps[k]).length; });
+
+  // AI 分析成功率
+  var ai = rows.filter(function(r) { return r.event_name === 'ai_analysis'; });
+  var aiOk = ai.filter(function(r) { return r.event_data.result === 'success'; }).length;
+  var aiDurations = ai.map(function(r) { return r.event_data.ms; }).filter(function(x) { return x > 0; });
+  var avgAiMs = aiDurations.length ? Math.round(aiDurations.reduce(function(a, b) { return a + b; }, 0) / aiDurations.length) : 0;
+
+  // 满意度
+  var ratings = rows.filter(function(r) { return r.event_name === 'satisfaction_rating'; })
+                    .map(function(r) { return r.event_data.score; }).filter(Boolean);
+  var avgRating = ratings.length ? (ratings.reduce(function(a, b) { return a + b; }, 0) / ratings.length).toFixed(1) : '—';
+
+  // 完成耗时
+  var dur = completed.map(function(r) { return r.event_data.totalMs; }).filter(function(x) { return x > 0; })
+                     .sort(function(a, b) { return a - b; });
+  var medianDur = dur.length ? Math.round(dur[Math.floor(dur.length / 2)] / 1000) : 0;
+
+  var html = '';
+
+  // ── 核心指标 ──
+  html += '<h2>核心指标</h2><div class="cards">';
+  html += card('独立访客', sessions.length, '人');
+  html += card('完成全流程', completedSessions.length, '人');
+  html += card('完答率', pct(completedSessions.length, sessions.length), '%',
+               completedSessions.length / Math.max(sessions.length, 1) >= 0.3 ? 'good' : 'warn');
+  html += card('AI 分析成功', ai.length ? pct(aiOk, ai.length) : '—', '%',
+               ai.length && aiOk / ai.length >= 0.8 ? 'good' : 'warn');
+  html += card('平均完成耗时', medianDur ? Math.round(medianDur / 60) : '—', '分');
+  html += card('满意度均分', avgRating, ratings.length ? '/ 5' : '');
+  html += '</div>';
+
+  // ── 漏斗 ──
+  html += '<h2>步骤漏斗</h2><table><thead><tr>' +
+          '<th>步骤</th><th class="num">到达人数</th><th class="num">占首步</th>' +
+          '<th class="num">较上步</th><th>留存</th></tr></thead><tbody>';
+  // 以漏斗中第一个有数据的步骤为基准。Step 1 的埋点可能早于本版本上线，
+  // 若首步缺失则用最大到达数兜底，避免算出大于 100% 的留存率。
+  var maxStep = 0;
+  for (var k = 1; k <= 6; k++) maxStep = Math.max(maxStep, steps[k] || 0);
+  var base = Math.max(steps[1] || 0, maxStep, sessions.length) || 1;
+  var prev = null;
+  for (var i = 1; i <= 6; i++) {
+    var n = steps[i] || 0;
+    var drop = prev === null ? null : (prev > 0 ? Math.min(100, pct(n, prev)) : 0);
+    var dropCls = drop === null ? '' : (drop >= 80 ? 'good' : drop >= 60 ? 'warn' : 'bad');
+    html += '<tr><td>' + i + '. ' + (STEP_NAMES[i] || '') + '</td>' +
+            '<td class="num">' + n + '</td>' +
+            '<td class="num muted">' + Math.min(100, pct(n, base)) + '%</td>' +
+            '<td class="num ' + dropCls + '">' + (drop === null ? '—' : drop + '%') + '</td>' +
+            '<td><div class="bar"><i style="width:' + Math.min(100, pct(n, base)) + '%"></i></div></td></tr>';
+    if (n > 0) prev = n;
+  }
+  html += '</tbody></table>';
+  html += '<div class="note">「较上步」低于 60% 的步骤通常是流失点，值得优先优化。</div>';
+
+  // ── AI 与交互 ──
+  html += '<h2>AI 与交互</h2><table><thead><tr><th>指标</th><th class="num">数值</th><th>说明</th></tr></thead><tbody>';
+  html += row('AI 分析总次数', ai.length, '');
+  html += row('其中成功', aiOk, ai.length ? pct(aiOk, ai.length) + '%' : '');
+  html += row('走兜底评分', ai.length - aiOk, 'AI 输出异常时降级到情景题评分');
+  html += row('平均分析耗时', avgAiMs ? (avgAiMs / 1000).toFixed(1) + ' 秒' : '—', '');
+  html += row('技能测试提交', rows.filter(function(r) { return r.event_name === 'skill_test_submitted'; }).length, '');
+  html += row('设为目标岗位', rows.filter(function(r) { return r.event_name === 'set_target_career'; }).length, '');
+  html += row('满意度反馈', ratings.length, ratings.length ? '均分 ' + avgRating : '');
+  html += '</tbody></table>';
+
+  // ── 热门目标岗位 ──
+  var targets = rows.filter(function(r) { return r.event_name === 'set_target_career'; })
+                    .map(function(r) { return r.event_data.title; }).filter(Boolean);
+  var tc = {};
+  targets.forEach(function(t) { tc[t] = (tc[t] || 0) + 1; });
+  var top = Object.keys(tc).sort(function(a, b) { return tc[b] - tc[a]; }).slice(0, 10);
+  if (top.length) {
+    html += '<h2>热门目标岗位</h2><table><thead><tr><th>岗位</th><th class="num">被设为目标次数</th></tr></thead><tbody>';
+    top.forEach(function(t) { html += '<tr><td>' + t + '</td><td class="num">' + tc[t] + '</td></tr>'; });
+    html += '</tbody></table>';
+  }
+
+  document.getElementById('app').innerHTML = html;
+  document.getElementById('range').textContent =
+    '共 ' + rows.length + ' 条事件 · 最近一条 ' +
+    (rows[0].created_at ? new Date(rows[0].created_at).toLocaleString('zh-CN') : '—');
+
+  function card(k, v, u, cls) {
+    return '<div class="card"><div class="k">' + k + '</div><div class="v ' + (cls || '') + '">' +
+           v + '<span class="u">' + (u || '') + '</span></div></div>';
+  }
+  function row(k, v, note) {
+    return '<tr><td>' + k + '</td><td class="num">' + v + '</td><td class="muted">' + (note || '') + '</td></tr>';
+  }
+}
+
+fetchAll().then(render).catch(function(e) {
+  document.getElementById('app').innerHTML =
+    '<div class="state">读取失败：' + e.message +
+    '<br><br>请确认 <code>events</code> 表存在，且 RLS 允许匿名读取（select 策略）。</div>';
+});
+</script>
+</body>
+</html>
