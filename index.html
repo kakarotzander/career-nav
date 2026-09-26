@@ -2296,6 +2296,31 @@ function expandIndustryPrefs(prefs) {
   return out;
 }
 
+// ─── 评分权重（合计 1.0）───
+// 当前为过渡结构：兴趣方向已接入，AI 综合分尚未实现，
+// 待 AI 综合分上线后需重新分配这五项与 AI 的占比。
+const SCORE_W = {
+  major:    0.10,   // 学历 + 专业对口
+  interest: 0.10,   // 兴趣方向匹配
+  ability:  0.30,   // 专业知识（能力测评）
+  env:      0.30,   // 工作环境偏好
+  market:   0.20,   // 现实条件 + 市场行情 + 经济压力
+};
+
+// ─── 兴趣方向匹配 ───
+// 用户在 Step 2 选的兴趣方向此前只用于出题和拼 AI 上下文，不参与打分。
+// 这里按「岗位所需技能与所选方向特征技能的重合度」给出兴趣分。
+function interestScoreOf(career, dir) {
+  if (!dir || !DIRECTION_DATA[dir]) return 50;      // 未选方向，取中性值
+  const tags = DIRECTION_DATA[dir].skills || [];
+  const strong = tags.filter(t => (career.skills[t] || 0) >= 3).length;  // 达到要求等级
+  const anyReq = tags.filter(t => career.skills[t]).length;              // 岗位有要求
+  if (strong >= 2) return 100;
+  if (strong === 1) return 70;
+  if (anyReq >= 1) return 50;
+  return 30;
+}
+
 // ─── 学历辅助函数 ───
 const FULLTIME_PENALTY_INDUSTRIES = ["医疗/健康","教育","政府/公共事业","科研/学术","法律"];
 function getDegreeCore(deg) {
@@ -2327,11 +2352,22 @@ function matchCareers() {
     // ─── Step 2: 能力匹配 30% ───
     let skillScore = 0, skillWeight = 0;
     Object.entries(career.skills).forEach(([sk, req]) => {
-      const uv = Math.min(userSkills[sk]||0, 5);
-      skillScore += Math.min(uv/req, 1) * 100 * req;
+      // 只计算真正被测到的维度。没测过的维度不计入分母——
+      // 否则「没问过」会被当成「能力为 0」，冤枉压低岗位得分。
+      if (!measuredDims[sk]) return;
+      const uv = userSkills[sk] || 0;                 // 1-5
+      // 绝对水平（0-100），而非「用户分/要求分」。
+      // 后者会让要求低的岗位白拿高分（摄影记者要求 3 分，答 4 分即满分）。
+      const level = (uv - 1) / 4 * 100;
+      // 达不到门槛按差距扣分；超过门槛不再加分，避免"要求越低越占便宜"
+      const meet = uv >= req ? 1 : 0.5 + 0.5 * (uv / req);
+      skillScore += level * meet * req;
       skillWeight += req;
     });
     const abilityScore = skillWeight > 0 ? skillScore/skillWeight : 0;
+    // 该岗位的技能要求一个都没被测到，则能力分无意义，取中性值
+    const abilityMeasured = skillWeight > 0;
+    const abilityFinal = abilityMeasured ? abilityScore : 50;
 
     // ─── Step 3: 职场期望 30% ───
     // 3a. Environment fit (60%)
@@ -2397,8 +2433,14 @@ function matchCareers() {
 
     const step4Score = realityScore * 0.30 + marketScore * 0.50 + (50 + adjustScore) * 0.20;
 
-    // ─── Final: 专业背景10% + 能力35% + 期望35% + 市场20% ───
-    const overall = step1Score * 0.10 + abilityScore * 0.35 + envExpectScore * 0.35 + step4Score * 0.20;
+    // ─── Final ───
+    // 权重集中在此处，便于后续调整（AI 综合分接入后需重新分配）。
+    const interestScore = interestScoreOf(career, selectedDirection);
+    const overall = step1Score   * SCORE_W.major
+                  + interestScore * SCORE_W.interest
+                  + abilityFinal * SCORE_W.ability
+                  + envExpectScore * SCORE_W.env
+                  + step4Score  * SCORE_W.market;
     const finalScore = Math.round(Math.min(100, Math.max(0, overall)));
 
     // ─── Insights ───
@@ -2416,7 +2458,7 @@ function matchCareers() {
     if (!highlights.length) highlights.push("综合基础扎实");
     if (career.note) gaps.push(career.note);
 
-    return {...career, score:finalScore, step1Score:Math.round(step1Score), abilityScore:Math.round(abilityScore), envExpectScore:Math.round(envExpectScore), step4Score:Math.round(step4Score), marketScore:Math.round(marketScore), salaryScore:Math.round(salaryScore), trendScore:Math.round(trendScore), demandScore:Math.round(demandScore), envDiffs, highlights, gaps};
+    return {...career, score:finalScore, step1Score:Math.round(step1Score), abilityScore:Math.round(abilityFinal), envExpectScore:Math.round(envExpectScore), step4Score:Math.round(step4Score), marketScore:Math.round(marketScore), salaryScore:Math.round(salaryScore), trendScore:Math.round(trendScore), demandScore:Math.round(demandScore), envDiffs, highlights, gaps};
   }).filter(r => r.score >= 60).sort((a,b) => b.score - a.score);
 }
 
@@ -3166,6 +3208,9 @@ function togglePlanItem(phase, index) {
 var selectedDirection = null;
 var directionAnswers = {};
 var directionAnswerIndices = {};
+// 哪些能力维度是真正被测到的（AI 访谈或情景题）。
+// 未测到的维度不能按 0 分参与匹配，否则岗位会因"没问过"而被冤枉扣分。
+var measuredDims = {};
 
 var DIRECTION_DATA = {
   "技术研发": { icon:"💻", desc:"软件开发、编程、系统架构", skills:["编程开发","算法与AI","逻辑分析"] },
@@ -3609,11 +3654,15 @@ function computeQuizFallback() {
     }
   });
   var result = {};
+  // 记录真正被题目测到的维度。未被测到的填中性值 2，但不计入 measuredDims，
+  // 匹配时不能拿"没测过"当作"能力为 0"。
+  measuredDims = {};
   allSkills.forEach(function(s){
     var arr = scores[s];
     if (arr.length === 0) { result[s] = 2; return; }
     var sum = 0; arr.forEach(function(v){ sum += v; });
     result[s] = Math.round(sum / arr.length);
+    measuredDims[s] = true;
   });
   return result;
 }
@@ -3674,6 +3723,8 @@ function displayAnalysisResult(result) {
     return '<div class="sp-item"><span class="sp-icon">'+(SKILL_ICONS[sk]||'📌')+'</span><div class="sp-info"><div class="sp-name">'+nameOfSkill(sk)+'</div><div class="sp-track"><div class="sp-fill" style="width:'+pct+'%"></div></div></div><span class="sp-score '+cls+'">'+sc+'</span></div>';
   }).join('');
   userData.skillScores = scores;
+  // AI 给出评分的维度都算"已测到"
+  Object.keys(scores).forEach(function(k){ if (scores[k] != null) measuredDims[k] = true; });
   userData.aiInterviewSummary = result.summary || '';
   userData.interviewMessages = interviewMessages;
 }
