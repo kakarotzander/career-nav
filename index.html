@@ -1158,7 +1158,7 @@
         <div class="algo-card print-hide">
           <div class="algo-title">🧮 四维匹配算法</div>
           <div class="algo-layers">
-            <span>专业匹配 <strong>10%</strong></span><span>能力匹配 <strong>35%</strong></span><span>职场期望 <strong>35%</strong></span><span>市场环境 <strong>20%</strong></span>
+            <span>专业匹配 <strong>15%</strong></span><span>兴趣方向 <strong>10%</strong></span><span>能力匹配 <strong>25%</strong></span><span>工作环境 <strong>25%</strong></span><span>经济压力 <strong>15%</strong></span><span>市场前景 <strong>10%</strong></span>
           </div>
         </div>
         <div id="achieveArea" class="achieve-area hidden">
@@ -2301,14 +2301,15 @@ function expandIndustryPrefs(prefs) {
 }
 
 // ─── 评分权重（合计 1.0）───
-// 当前为过渡结构：兴趣方向已接入，AI 综合分尚未实现，
-// 待 AI 综合分上线后需重新分配这五项与 AI 的占比。
+// 六项独立得分。AI 综合分接入后，七项需重新分配（见 ai 字段占位）。
 const SCORE_W = {
-  major:    0.10,   // 学历 + 专业对口
-  interest: 0.10,   // 兴趣方向匹配
-  ability:  0.30,   // 专业知识（能力测评）
-  env:      0.30,   // 工作环境偏好
-  market:   0.20,   // 现实条件 + 市场行情 + 经济压力
+  major:    0.15,   // ① 学历 + 专业对口
+  interest: 0.10,   // ② 兴趣方向匹配
+  ability:  0.25,   // ③ 专业知识（能力测评）
+  economy:  0.15,   // ④ 经济压力（家庭经济 × 薪资 × 学历规划）
+  workEnv:  0.25,   // ⑤ 工作环境（10 维环境 + 行业偏好）
+  market:   0.10,   // ⑥ 市场前景（趋势 + 需求 + 排斥条件）
+  ai:       0.00,   // ⑦ AI 综合分（待实现）
 };
 
 // ─── 兴趣方向匹配 ───
@@ -2346,7 +2347,7 @@ function matchCareers() {
   const prefIndustryFull = expandIndustryPrefs(prefIndustry);
 
   return CAREERS.map(career => {
-    // ─── Step 1: 专业匹配 10% ───
+    // ─── 得分项 ①：学历 + 专业对口 ───
     const userMajor = userData.major || '';
     let step1Score = 25; // default
     if (career.majors.some(m => userMajor.includes(m) || m.includes(userMajor))) step1Score = 100;
@@ -2373,8 +2374,9 @@ function matchCareers() {
     const abilityMeasured = skillWeight > 0;
     const abilityFinal = abilityMeasured ? abilityScore : 50;
 
-    // ─── Step 3: 职场期望 30% ───
-    // 3a. Environment fit (60%)
+    // ═══ 得分项 ⑤：工作环境匹配 ═══
+    // 用户在第 5 步选的 10 个维度与岗位环境属性的契合度。
+    // 行业偏好并入此项（同属"想去什么样的地方"），环境占 70%、行业占 30%。
     let envScore = 0, envWeight = 0;
     Object.entries(career.env).forEach(([dim, cv]) => {
       const uv = userEnv[dim]||2;
@@ -2382,21 +2384,51 @@ function matchCareers() {
       envWeight += 1;
     });
     envScore = envWeight > 0 ? envScore/envWeight : 50;
-    // 3b. Industry preference (40%)
-    // 命中偏好得 100；未命中 40（低于中性值 50，但不至于把其他行业压死）
-    let indScore = 50;
+    let indScore = 60;   // 未填偏好时取中性偏正
     if (prefIndustryFull.size > 0) indScore = prefIndustryFull.has(career.industry) ? 100 : 40;
-    const envExpectScore = envScore * 0.60 + indScore * 0.40;
+    const workEnvScore = envScore * 0.70 + indScore * 0.30;
 
-    // ─── Step 4: 现实条件 30% ───
-    // 4a. Reality penalty (30%)
+    // ═══ 得分项 ④：经济压力 ═══
+    // 独立计算：家庭经济需求 × 岗位薪资水平 × 薪资期望 × 学历规划。
+    // 此前混在 step4Score 里，权重被压缩到不足 1 分，等于没起作用。
+    let economyScore = 50;          // 中性基准
+    const _famNeed = userData.familyNeed || 0;
+    const _salaryMin = parseInt((career.salary||'').match(/(\d+)K/)?.[1] || '0');
+    const _salaryMax = parseInt((career.salary||'').match(/-(\d+)K/)?.[1] || '0') || _salaryMin;
+    const _salaryMid = (_salaryMin + _salaryMax) / 2;
+    const _degCore = getDegreeCore(userData.degree || '');
+
+    if (_famNeed === 2) {           // 压力较大，需要尽快经济独立
+      economyScore = _salaryMin >= 15 ? 100 : _salaryMin >= 8 ? 70 : _salaryMin >= 5 ? 40 : 20;
+    } else if (_famNeed === 1) {    // 有一定压力，薪资是重要因素
+      economyScore = _salaryMin >= 10 ? 100 : _salaryMin >= 6 ? 75 : _salaryMin >= 4 ? 50 : 30;
+    } else {                        // 无紧迫经济压力，可按兴趣选择
+      economyScore = 70;            // 求职自由度本身即正向，但不因高薪额外加分
+    }
+    // 薪资期望：明确要高薪时，高薪岗位额外匹配
+    if (userData.salaryExpect >= 3) {
+      economyScore = Math.round(economyScore * 0.7 + Math.min(100, _salaryMid / 30 * 100) * 0.3);
+    }
+    // 学历规划与岗位学历门槛的匹配
+    if (userData.degreePlan == 2 && career.edu.includes('硕士')) economyScore = Math.min(100, economyScore + 10);
+    else if (userData.degreePlan == 3 && career.edu.includes('博士')) economyScore = Math.min(100, economyScore + 10);
+    else if (userData.degreePlan == 0 && !career.edu.includes('硕士')) economyScore = Math.min(100, economyScore + 5);
+    // 学历层次不满足岗位要求
+    if (_degCore && !career.edu.includes(_degCore)) economyScore = Math.max(0, economyScore - 15);
+    // 非全日制学历在特定行业的门槛
+    if (!isFullTime(userData.degree) && FULLTIME_PENALTY_INDUSTRIES.includes(career.industry)) {
+      economyScore = Math.max(0, economyScore - 20);
+    }
+
+    // ═══ 得分项 ⑥：市场前景 ═══
+    // 6a. 用户明确排斥的工作条件（出差、高压、频繁社交等）
     let realityScore = 100;
     const rejected = userData.rejectedReality || [];
     if (rejected.length > 0) {
       const matchedFlags = rejected.filter(r => (career.realityFlags||[]).includes(r));
       realityScore = Math.max(0, 100 - matchedFlags.length * 15);
     }
-    // 4b. Market score (50%)
+    // 6b. Market score
     const salMatch = career.salary.match(/(\d+)K\s*[-~]\s*(\d+)K/);
     let salaryScore = 50;
     if (salMatch) {
@@ -2415,36 +2447,21 @@ function matchCareers() {
     else if ((career.demand||'').includes('饱和')||(career.demand||'').includes('激烈')) demandScore = 40;
     const marketScore = salaryScore * 0.30 + trendScore * 0.35 + demandScore * 0.35;
 
-    // 4c. Adjustment (20%)
-    let adjustScore = 0;
-    const famNeed = userData.familyNeed || 0;
-    const salaryMin = parseInt((career.salary||'').match(/(\d+)K/)?.[1] || '0');
-    if (famNeed === 2 && salaryMin < 8) adjustScore -= 5;
-    else if (famNeed === 1 && salaryMin < 6) adjustScore -= 5;
-    else if (famNeed === 2 && salaryMin >= 15) adjustScore += 5;
-    else if (famNeed === 1 && salaryMin >= 10) adjustScore += 3;
-    // New factors
-    const userDegCore = getDegreeCore(userData.degree || '');
-    if (userData.degreePlan == 2 && career.edu.includes('硕士')) adjustScore += 5;
-    else if (userData.degreePlan == 3 && career.edu.includes('博士')) adjustScore += 5;
-    else if ((userData.degreePlan == 0 || userData.degreePlan == 1) && career.edu.includes(userDegCore)) adjustScore += 3;
-    // 学历层次降分：用户核心学历不在岗位要求中
-    if (userDegCore && !career.edu.includes(userDegCore)) adjustScore -= 8;
-    // 非全日制降分：特定行业倾向全日制学历
-    if (!isFullTime(userData.degree) && FULLTIME_PENALTY_INDUSTRIES.includes(career.industry)) adjustScore -= 10;
-    if (userData.salaryExpect >= 3 && (salaryMin >= 15)) adjustScore += 5;
-    if (userData.stabilityNeed <= 1 && (career.realityFlags||[]).includes('highPressure')) adjustScore -= 5;
+    // 6c. 稳定性偏好：追求稳定但岗位高压则降分
+    let stabilityPenalty = 0;
+    if (userData.stabilityNeed <= 1 && (career.realityFlags||[]).includes('highPressure')) stabilityPenalty = 12;
 
-    const step4Score = realityScore * 0.30 + marketScore * 0.50 + (50 + adjustScore) * 0.20;
+    const marketFinal = realityScore * 0.40 + marketScore * 0.60 - stabilityPenalty;
 
     // ─── Final ───
-    // 权重集中在此处，便于后续调整（AI 综合分接入后需重新分配）。
+    // 六项加权。权重集中在 SCORE_W，便于调整。
     const interestScore = interestScoreOf(career, selectedDirection);
-    const overall = step1Score   * SCORE_W.major
+    const overall = step1Score    * SCORE_W.major
                   + interestScore * SCORE_W.interest
-                  + abilityFinal * SCORE_W.ability
-                  + envExpectScore * SCORE_W.env
-                  + step4Score  * SCORE_W.market;
+                  + abilityFinal  * SCORE_W.ability
+                  + economyScore  * SCORE_W.economy
+                  + workEnvScore  * SCORE_W.workEnv
+                  + marketFinal   * SCORE_W.market;
     const finalScore = Math.round(Math.min(100, Math.max(0, overall)));
 
     // ─── Insights ───
@@ -2462,8 +2479,20 @@ function matchCareers() {
     if (!highlights.length) highlights.push("综合基础扎实");
     if (career.note) gaps.push(career.note);
 
-    return {...career, score:finalScore, step1Score:Math.round(step1Score), abilityScore:Math.round(abilityFinal), envExpectScore:Math.round(envExpectScore), step4Score:Math.round(step4Score), marketScore:Math.round(marketScore), salaryScore:Math.round(salaryScore), trendScore:Math.round(trendScore), demandScore:Math.round(demandScore), envDiffs, highlights, gaps};
-  }).filter(r => r.score >= 60).sort((a,b) => b.score - a.score);
+    return {...career, score:finalScore, step1Score:Math.round(step1Score), abilityScore:Math.round(abilityFinal), envExpectScore:Math.round(workEnvScore), step4Score:Math.round(marketFinal), economyScore:Math.round(economyScore), interestScore:Math.round(interestScore), marketScore:Math.round(marketScore), salaryScore:Math.round(salaryScore), trendScore:Math.round(trendScore), demandScore:Math.round(demandScore), envDiffs, highlights, gaps};
+  }).sort((a,b) => b.score - a.score);
+}
+
+// 结果集的筛选阈值。多数情况取 60 分，但当用户画像较为矛盾
+// （如非全日制学历 + 急需高薪 + 选了低起薪方向）时可能无一达标，
+// 此时逐级下调阈值，避免结果页空白。
+function pickResults(all) {
+  const TIERS = [60, 50, 40];
+  for (const t of TIERS) {
+    const hit = all.filter(r => r.score >= t);
+    if (hit.length >= 5) return { list: hit, threshold: t };
+  }
+  return { list: all.slice(0, 10), threshold: null };
 }
 
 const ENV_NAMES = {companyCulture:"公司氛围", managementStyle:"管理风格", overtime:"加班文化", careerGrowth:"发展速度", workLife:"工作生活", stability:"稳定vs挑战", teamSize:"团队规模", industryFocus:"行业领域", workLocation:"工作地点", problemSolving:"解决问题"};
@@ -2532,10 +2561,12 @@ function applyFilters() {
     const scoreCls = r.score >= 80 ? 'high' : r.score >= 60 ? 'med' : 'low';
     const rankBadge = idx === 0 ? '🏆 最推荐' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx+1}`;
     const barData = [
-      {label:'专业匹配 10%', val:r.step1Score||0, cls:'bg-purple'},
-      {label:'能力匹配 35%', val:r.abilityScore, cls:'bg-green'},
-      {label:'职场期望 35%', val:r.envExpectScore||0, cls:'bg-blue'},
-      {label:'市场环境 20%', val:r.step4Score||0, cls:'bg-gold'}
+      {label:'专业匹配 15%', val:r.step1Score||0, cls:'bg-purple'},
+      {label:'兴趣方向 10%', val:r.interestScore||0, cls:'bg-pink'},
+      {label:'能力匹配 25%', val:r.abilityScore, cls:'bg-green'},
+      {label:'工作环境 25%', val:r.envExpectScore||0, cls:'bg-blue'},
+      {label:'经济压力 15%', val:r.economyScore||0, cls:'bg-purple'},
+      {label:'市场前景 10%', val:r.step4Score||0, cls:'bg-gold'}
     ];
 
     // 快速标签
@@ -3579,8 +3610,11 @@ function performAnalysis() {
 
 function loadAndShowResults() {
   document.getElementById('resultContent').style.display = 'block';
-  showResults(matchCareers());
-  trackEvent('flow_completed', {totalMs: Date.now() - (window.__flowStart || Date.now())});
+  const picked = pickResults(matchCareers());
+  showResults(picked.list);
+  // 阈值被下调说明用户画像与岗位库匹配度整体偏低，记录下来便于分析
+  trackEvent('flow_completed', {totalMs: Date.now() - (window.__flowStart || Date.now()),
+                                threshold: picked.threshold, shown: picked.list.length});
   document.getElementById('btnRestartChat6').classList.remove('hidden');
   setTimeout(function() {
     document.getElementById('resultContent').scrollIntoView({behavior:'smooth',block:'start'});
