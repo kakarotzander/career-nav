@@ -1025,6 +1025,26 @@
           </select>
         </div>
         <div>
+          <label style="font-weight:500;font-size:14px;display:block;margin-bottom:8px;">💵 可接受的最低起薪</label>
+          <select id="minSalary" style="font-size:13px;width:100%;">
+            <option value="0">没有硬性要求，看发展空间</option>
+            <option value="4">4K 以上即可</option>
+            <option value="6">6K 以上</option>
+            <option value="8">8K 以上</option>
+            <option value="10">10K 以上</option>
+            <option value="15">15K 以上</option>
+          </select>
+          <div style="font-size:12px;color:var(--gray-400);margin-top:6px;">低于此数的岗位会被降权</div>
+        </div>
+        <div>
+          <label style="font-weight:500;font-size:14px;display:block;margin-bottom:8px;">👨👩👧 是否需要补贴家用</label>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;">
+            <label class="e-opt" style="display:flex;align-items:center;gap:4px;padding:6px 14px;border:2px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;transition:var(--transition);"><input type="radio" name="supportFamily" value="0"> <span>不需要，自给自足即可</span></label>
+            <label class="e-opt" style="display:flex;align-items:center;gap:4px;padding:6px 14px;border:2px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;transition:var(--transition);"><input type="radio" name="supportFamily" value="1"> <span>需要，每月要给家里一部分</span></label>
+            <label class="e-opt" style="display:flex;align-items:center;gap:4px;padding:6px 14px;border:2px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;transition:var(--transition);"><input type="radio" name="supportFamily" value="2"> <span>需要，且是家庭主要收入来源</span></label>
+          </div>
+        </div>
+        <div>
           <label style="font-weight:500;font-size:14px;display:block;margin-bottom:8px;">🎓 学业规划</label>
           <div style="display:flex;flex-wrap:wrap;gap:8px;">
             <label class="e-opt" style="display:flex;align-items:center;gap:4px;padding:6px 14px;border:2px solid var(--gray-200);border-radius:8px;cursor:pointer;font-size:13px;transition:var(--transition);"><input type="radio" name="degreePlan" value="0"> <span>本科就业</span></label>
@@ -2112,7 +2132,11 @@ function goStep(n) {
       alert('请选择你的学业规划');
       return;
     }
-    // 家庭经济情况是 select，首项 value="0" 为「无紧迫经济压力」，属有效选项，无需校验
+    if (!document.querySelector('input[name="supportFamily"]:checked')) {
+      alert('请选择是否需要补贴家用');
+      return;
+    }
+    // 家庭经济情况与最低起薪是 select，首项为有效选项，无需校验
   }
   if (n === 6) {
     const missing = EXPECTATIONS.filter(e =>
@@ -2249,6 +2273,9 @@ function collectStep5Data() {
   const salaryExpect = document.querySelector('input[name="salaryExpect"]:checked');
   userData.degreePlan = degreePlan ? parseInt(degreePlan.value) : 0;
   userData.salaryExpect = salaryExpect ? parseInt(salaryExpect.value) : 0;
+  userData.minSalary = parseInt(document.getElementById('minSalary').value) || 0;
+  const support = document.querySelector('input[name="supportFamily"]:checked');
+  userData.supportFamily = support ? parseInt(support.value) : 0;
 }
 
 // ─── SKILL PROFILE ───
@@ -2301,16 +2328,47 @@ function expandIndustryPrefs(prefs) {
 }
 
 // ─── 评分权重（合计 1.0）───
-// 六项独立得分。AI 综合分接入后，七项需重新分配（见 ai 字段占位）。
+// 七项独立得分。调整比例只需改这里，其余代码自动跟随。
 const SCORE_W = {
   major:    0.15,   // ① 学历 + 专业对口
-  interest: 0.10,   // ② 兴趣方向匹配
-  ability:  0.25,   // ③ 专业知识（能力测评）
-  economy:  0.15,   // ④ 经济压力（家庭经济 × 薪资 × 学历规划）
-  workEnv:  0.25,   // ⑤ 工作环境（10 维环境 + 行业偏好）
-  market:   0.10,   // ⑥ 市场前景（趋势 + 需求 + 排斥条件）
-  ai:       0.00,   // ⑦ AI 综合分（待实现）
+  interest: 0.08,   // ② 兴趣方向（前 3 排序加权）
+  ability:  0.20,   // ③ 专业知识（能力测评）
+  economy:  0.05,   // ④ 经济压力（家庭经济 × 薪资 × 起薪底线）
+  workEnv:  0.12,   // ⑤ 工作环境（10 维环境 + 行业偏好）
+  ai:       0.40,   // ⑥ AI 综合分（方向级适配度）
 };
+
+// ─── AI 综合分 ───
+// AI 在深度访谈后输出各方向的适配度（0-100）。岗位按其所属方向取分。
+// AI 未成功输出时（走兜底链路）返回 null，由调用方按中性值处理，
+// 避免因 AI 失败而把用户的 40% 权重直接清零。
+var aiDirectionScores = null;   // { "技术研发": 85, "数据分析": 72, ... }
+
+// 方向 → 岗位行业的对应关系，用于把方向适配分套用到具体岗位
+var DIRECTION_INDUSTRIES = {
+  "技术研发": ["互联网/IT"],
+  "数据分析": ["互联网/IT", "科研/学术", "咨询"],
+  "设计创意": ["设计/创意", "文化/娱乐", "传媒/内容"],
+  "商业运营": ["管理/服务", "咨询", "传媒/市场"],
+  "内容创作": ["传媒/内容", "传媒/市场", "文化/娱乐"],
+  "金融财务": ["金融"],
+  "教育咨询": ["教育", "文化/教育"],
+  "工程实践": ["制造/工程", "新能源/环保", "交通运输"],
+};
+
+function aiScoreOf(career) {
+  if (!aiDirectionScores) return 50;          // AI 未产出，取中性值
+  // 找到覆盖该岗位行业的、AI 给出评分的方向，取最高分
+  var best = null;
+  Object.keys(aiDirectionScores).forEach(function(dir) {
+    var inds = DIRECTION_INDUSTRIES[dir] || [];
+    if (inds.indexOf(career.industry) >= 0) {
+      var s = aiDirectionScores[dir];
+      if (best === null || s > best) best = s;
+    }
+  });
+  return best === null ? 45 : best;           // 无对应方向，略低于中性
+}
 
 // ─── 兴趣方向匹配 ───
 // 用户在 Step 2 选的兴趣方向此前只用于出题和拼 AI 上下文，不参与打分。
@@ -2405,6 +2463,26 @@ function matchCareers() {
     } else {                        // 无紧迫经济压力，可按兴趣选择
       economyScore = 70;            // 求职自由度本身即正向，但不因高薪额外加分
     }
+
+    // 可接受的最低起薪：岗位起薪低于用户的底线，按差距扣分
+    const _minWanted = userData.minSalary || 0;
+    if (_minWanted > 0) {
+      if (_salaryMin >= _minWanted) {
+        economyScore = Math.min(100, economyScore + 10);   // 达标，小幅加分
+      } else {
+        const gap = (_minWanted - _salaryMin) / _minWanted;  // 差距比例
+        economyScore = Math.max(0, economyScore - Math.round(gap * 60));
+      }
+    }
+
+    // 是否需要补贴家用：需要则更依赖薪资，对低薪岗位更敏感
+    const _support = userData.supportFamily || 0;
+    if (_support === 2) {           // 家庭主要收入来源
+      economyScore = Math.round(economyScore * 0.6 + Math.min(100, _salaryMid / 20 * 100) * 0.4);
+    } else if (_support === 1) {    // 每月需给家里一部分
+      economyScore = Math.round(economyScore * 0.75 + Math.min(100, _salaryMid / 25 * 100) * 0.25);
+    }
+
     // 薪资期望：明确要高薪时，高薪岗位额外匹配
     if (userData.salaryExpect >= 3) {
       economyScore = Math.round(economyScore * 0.7 + Math.min(100, _salaryMid / 30 * 100) * 0.3);
@@ -2451,17 +2529,20 @@ function matchCareers() {
     let stabilityPenalty = 0;
     if (userData.stabilityNeed <= 1 && (career.realityFlags||[]).includes('highPressure')) stabilityPenalty = 12;
 
-    const marketFinal = realityScore * 0.40 + marketScore * 0.60 - stabilityPenalty;
+    // 市场前景不再单独计分：行业趋势、人才需求与排斥条件改由 AI 综合判断
+    // （见 SCORE_W.ai）。此处保留计算，供结果页展示市场信息与 AI 兜底使用。
+    const marketFinal = Math.max(0, realityScore * 0.40 + marketScore * 0.60 - stabilityPenalty);
 
     // ─── Final ───
     // 六项加权。权重集中在 SCORE_W，便于调整。
     const interestScore = interestScoreOf(career, selectedDirection);
+    const aiScore = aiScoreOf(career);
     const overall = step1Score    * SCORE_W.major
                   + interestScore * SCORE_W.interest
                   + abilityFinal  * SCORE_W.ability
                   + economyScore  * SCORE_W.economy
                   + workEnvScore  * SCORE_W.workEnv
-                  + marketFinal   * SCORE_W.market;
+                  + aiScore       * SCORE_W.ai;
     const finalScore = Math.round(Math.min(100, Math.max(0, overall)));
 
     // ─── Insights ───
@@ -2479,7 +2560,7 @@ function matchCareers() {
     if (!highlights.length) highlights.push("综合基础扎实");
     if (career.note) gaps.push(career.note);
 
-    return {...career, score:finalScore, step1Score:Math.round(step1Score), abilityScore:Math.round(abilityFinal), envExpectScore:Math.round(workEnvScore), step4Score:Math.round(marketFinal), economyScore:Math.round(economyScore), interestScore:Math.round(interestScore), marketScore:Math.round(marketScore), salaryScore:Math.round(salaryScore), trendScore:Math.round(trendScore), demandScore:Math.round(demandScore), envDiffs, highlights, gaps};
+    return {...career, score:finalScore, step1Score:Math.round(step1Score), abilityScore:Math.round(abilityFinal), envExpectScore:Math.round(workEnvScore), step4Score:Math.round(marketFinal), economyScore:Math.round(economyScore), interestScore:Math.round(interestScore), aiScore:Math.round(aiScore), marketScore:Math.round(marketScore), salaryScore:Math.round(salaryScore), trendScore:Math.round(trendScore), demandScore:Math.round(demandScore), envDiffs, highlights, gaps};
   }).sort((a,b) => b.score - a.score);
 }
 
@@ -2566,7 +2647,7 @@ function applyFilters() {
       {label:'能力匹配 25%', val:r.abilityScore, cls:'bg-green'},
       {label:'工作环境 25%', val:r.envExpectScore||0, cls:'bg-blue'},
       {label:'经济压力 15%', val:r.economyScore||0, cls:'bg-purple'},
-      {label:'市场前景 10%', val:r.step4Score||0, cls:'bg-gold'}
+      {label:'AI 综合 40%', val:r.aiScore||0, cls:'bg-gold'}
     ];
 
     // 快速标签
@@ -2575,8 +2656,8 @@ function applyFilters() {
     else if (r.abilityScore < 50) quickBadges.push({text:'⚠️ 能力需提升', cls:'warn'});
     if (r.envExpectScore >= 80) quickBadges.push({text:'✅ 期望吻合', cls:'good'});
     else if (r.envExpectScore < 50) quickBadges.push({text:'⚠️ 期望偏差', cls:'warn'});
-    if (r.step4Score >= 80) quickBadges.push({text:'💰 现实条件好', cls:'good'});
-    else if (r.step4Score < 40) quickBadges.push({text:'📉 现实条件差', cls:'warn'});
+    if (r.aiScore >= 80) quickBadges.push({text:'🤖 AI 高度适配', cls:'good'});
+    else if (r.aiScore < 40) quickBadges.push({text:'🤖 AI 适配度低', cls:'warn'});
 
     const card = document.createElement('div');
     card.className = `result-card ${rank}`;
