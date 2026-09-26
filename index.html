@@ -250,6 +250,13 @@
   .btn-accent:hover { box-shadow: 0 4px 12px rgba(5,150,105,.3); }
   .btn-outline { background: transparent; color: var(--gray-600); border: 1.5px solid var(--gray-200); }
   .btn-outline:hover { background: var(--gray-50); border-color: var(--gray-300); }
+  .direction-card { position: relative; }
+  .direction-card .dc-rank:empty { display: none; }
+  .direction-card .dc-rank {
+    position: absolute; top: 8px; right: 8px; width: 22px; height: 22px;
+    border-radius: 50%; background: var(--primary); color: #fff;
+    font-size: 12px; font-weight: 600; line-height: 22px; text-align: center;
+  }
   .btn-interest { padding: 14px 32px; font-size: 15px; font-weight: 600; border-radius: 12px; border: 2px solid var(--gray-200); background: white; cursor: pointer; transition: var(--transition); }
   .btn-interest:hover { border-color: var(--primary); background: var(--primary-bg); }
   .btn-interest.selected { border-color: var(--primary); background: var(--primary); color: white; }
@@ -972,8 +979,10 @@
       <!-- Direction picker -->
       <div id="directionPickerStep2" class="hidden">
         <hr style="border:none;border-top:1px solid var(--gray-100);margin:20px 0;">
-        <p style="font-size:14px;font-weight:600;color:var(--gray-700);margin-bottom:4px;">选择你最感兴趣的方向</p>
-        <p style="font-size:12px;color:var(--gray-400);margin-bottom:12px;">选择一个方向后进入情景测评环节</p>
+        <p style="font-size:14px;font-weight:600;color:var(--gray-700);margin-bottom:4px;">按兴趣排序选择 3 个方向</p>
+        <p style="font-size:12px;color:var(--gray-400);margin-bottom:12px;">
+          依次点击你最感兴趣的方向，第 1 个为首选。已选 <span id="dirPickCount">0</span>/3
+        </p>
         <div id="directionGrid" class="direction-grid"></div>
       </div>
 
@@ -2111,6 +2120,7 @@ function goStep(n) {
   if (n === 2) {
     if (!validateStep1()) return;
     selectedDirection = null;
+    selectedDirections = [];
     userData.majorInterest = null;
     renderDirectionPicker();
   }
@@ -2200,34 +2210,6 @@ function checkStep2Ready() {
   document.getElementById('btnStep2Next').disabled = !(userData.majorInterest && selectedDirection);
 }
 
-function onDirectionSelect(dir) {
-  selectedDirection = dir;
-  document.querySelectorAll('.direction-card').forEach(function(c){ c.classList.remove('selected'); });
-  var cards = document.querySelectorAll('.direction-card');
-  var dirKeys = Object.keys(DIRECTION_DATA);
-  var idx = dirKeys.indexOf(dir);
-  if (idx >= 0 && cards[idx]) cards[idx].classList.add('selected');
-  checkStep2Ready();
-};
-
-// ─── STEP 3: 情景测评 ───
-function renderStep3Questions(dir) {
-  var qs = DIRECTION_QUESTIONS[dir] || [];
-  var container = document.getElementById('dirQuestionItems');
-  if (!container) return;
-  directionAnswers = {};
-  directionAnswerIndices = {};
-  var status = document.getElementById('step3Status');
-  if (status) status.textContent = '请回答 ' + dir + ' 方向的 5 道情景题';
-  container.innerHTML = qs.map(function(q, qi){
-    var optsHtml = q.opts.map(function(o, oi){
-      return '<label onclick="onStep3Answer('+qi+','+oi+')"><input type="radio" name="dq_'+qi+'" value="'+oi+'"><span>'+o.t+'</span></label>';
-    }).join('');
-    return '<div class="dir-question-item" id="dirQ_'+qi+'"><div class="dq-title">'+(qi+1)+'. '+q.q+'</div><div class="dq-opts">'+optsHtml+'</div></div>';
-  }).join('');
-  document.getElementById('btnStep3Next').disabled = true;
-  updateStep3Progress();
-}
 
 function onStep3Answer(qi, oi) {
   var qs = DIRECTION_QUESTIONS[selectedDirection];
@@ -2535,7 +2517,7 @@ function matchCareers() {
 
     // ─── Final ───
     // 六项加权。权重集中在 SCORE_W，便于调整。
-    const interestScore = interestScoreOf(career, selectedDirection);
+    const interestScore = interestWeightOf(career);
     const aiScore = aiScoreOf(career);
     const overall = step1Score    * SCORE_W.major
                   + interestScore * SCORE_W.interest
@@ -3321,7 +3303,8 @@ function togglePlanItem(phase, index) {
 // ═══════════════════════════════════════════════
 //  兴趣方向 + 情景题库
 // ═══════════════════════════════════════════════
-var selectedDirection = null;
+var selectedDirection = null;      // 情景题按此方向出题（= 兴趣排序的第 1 个）
+var selectedDirections = [];       // 用户按兴趣排序选中的方向，[0] 为首选
 var directionAnswers = {};
 var directionAnswerIndices = {};
 // 哪些能力维度是真正被测到的（AI 访谈或情景题）。
@@ -3561,10 +3544,62 @@ var DIRECTION_QUESTIONS = {
 function renderDirectionPicker() {
   var grid = document.getElementById('directionGrid');
   if (!grid) return;
+  selectedDirections = [];   // 按点击顺序保存，[0] 为首选
   grid.innerHTML = Object.entries(DIRECTION_DATA).map(function(e){
     var k=e[0], v=e[1];
-    return '<div class="direction-card" onclick="onDirectionSelect(\''+k+'\')"><div class="dc-icon">'+v.icon+'</div><div class="dc-name">'+k+'</div><div class="dc-desc">'+v.desc+'</div></div>';
+    return '<div class="direction-card" data-dir="'+k+'" onclick="onDirectionSelect(\''+k+'\')">'
+         + '<div class="dc-rank"></div>'
+         + '<div class="dc-icon">'+v.icon+'</div><div class="dc-name">'+k+'</div>'
+         + '<div class="dc-desc">'+v.desc+'</div></div>';
   }).join('');
+  updateDirectionUI();
+}
+
+// 点选排序：点一次加入，再点取消；最多 3 个，顺序即优先级
+function onDirectionSelect(dir) {
+  var i = selectedDirections.indexOf(dir);
+  if (i >= 0) {
+    selectedDirections.splice(i, 1);
+  } else {
+    if (selectedDirections.length >= 3) {
+      alert('最多选择 3 个方向。再次点击已选方向可取消。');
+      return;
+    }
+    selectedDirections.push(dir);
+  }
+  // 情景题按首选方向出题
+  selectedDirection = selectedDirections[0] || null;
+  updateDirectionUI();
+  checkStep2Ready();
+}
+
+function updateDirectionUI() {
+  var cards = document.querySelectorAll('.direction-card');
+  cards.forEach(function(c) {
+    var idx = selectedDirections.indexOf(c.dataset.dir);
+    c.classList.toggle('selected', idx >= 0);
+    var rank = c.querySelector('.dc-rank');
+    if (rank) rank.textContent = idx >= 0 ? (idx + 1) : '';
+  });
+  var cnt = document.getElementById('dirPickCount');
+  if (cnt) cnt.textContent = selectedDirections.length;
+}
+
+// 兴趣分：按用户排序加权。首选权重最高，第 2、3 递减，未选为 0。
+// 岗位若同时匹配多个已选方向，取其中最高的那个权重。
+var DIRECTION_WEIGHT = [1.0, 0.7, 0.45];
+function interestWeightOf(career) {
+  if (!selectedDirections || !selectedDirections.length) return 0;
+  var best = 0;
+  selectedDirections.forEach(function(dir, i) {
+    var raw = interestScoreOf(career, dir);      // 0-100
+    var w = DIRECTION_WEIGHT[i] != null ? DIRECTION_WEIGHT[i] : 0.3;
+    // 以中性值 50 为基准，按权重向 0 或 100 拉伸：
+    // 首选方向的偏好被完整表达，次选方向的影响递减。
+    var adjusted = 50 + (raw - 50) * w;
+    if (adjusted > best) best = adjusted;
+  });
+  return Math.round(best);
 }
 var API_PROXY_URL = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
   ? '/api/chat'
@@ -3591,7 +3626,7 @@ function startInterview() {
   context += '我对当前专业的态度：' + (userData.majorInterest === 'interested' ? '感兴趣' : userData.majorInterest === 'not_interested' ? '不感兴趣' : '不确定') + '。\n';
 
   if (selectedDirection) {
-    context += '我感兴趣的方向是：' + selectedDirection + '。\n';
+    context += '我感兴趣的方向（按优先级排序）：' + selectedDirections.join(' > ') + '。\n';
     context += '我的情景题选择：';
     var qs = DIRECTION_QUESTIONS[selectedDirection] || [];
     qs.forEach(function(q){
