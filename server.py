@@ -6,6 +6,8 @@ import os
 import socketserver
 
 PORT = 3006
+# 静态文件始终从本脚本所在目录提供，避免依赖启动时的工作目录
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
 DEEPSEEK_URL = "https://api.deepseek.com/v1/chat/completions"
 API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
 API_SECRET = os.environ.get("API_SECRET", "")

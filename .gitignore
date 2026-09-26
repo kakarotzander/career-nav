@@ -6,3 +6,12 @@ supabase/.temp/
 
 # 本地开发配置
 .claude/settings.local.json
+
+# 依赖目录（本项目无构建步骤，不应出现）
+node_modules/
+
+# 编辑器/系统杂项
+.DS_Store
+Thumbs.db
+*.bak
+*.bak2

@@ -1,0 +1,52 @@
+name: Supabase 保活
+
+# Supabase 免费版项目连续 7 天无活动会被自动暂停，
+# 暂停后 Edge Function 域名失效（后台显示 Undefined/functions/v1/chat），
+# 线上 AI 访谈会全线不可用。此工作流定期调用一次函数保持项目活跃。
+
+on:
+  schedule:
+    # 每 3 天一次，UTC 09:17（北京时间 17:17）。留出充足余量，避免逼近 7 天阈值。
+    # 分钟数刻意避开 0，减少 GitHub Actions 高峰排队导致的延迟。
+    - cron: '17 9 */3 * *'
+  workflow_dispatch: {}   # 支持手动触发，便于随时验证
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 调用 Edge Function 保持项目活跃
+        run: |
+          set -uo pipefail
+
+          URL="https://lhaikwphpwfotqagwqat.supabase.co/functions/v1/chat"
+
+          # 刻意使用错误的 x-api-key：
+          # 函数在鉴权阶段就会返回 401，不会走到调用 DeepSeek 的代码，
+          # 因此本次保活零额度消耗，也无需把真实密钥存进 GitHub。
+          echo "正在保活：$URL"
+          HTTP_CODE=$(curl -sS -o /tmp/resp.txt -w '%{http_code}' \
+            --max-time 30 --retry 2 --retry-delay 5 \
+            -X POST "$URL" \
+            -H 'Content-Type: application/json' \
+            -H 'x-api-key: keepalive-probe' \
+            -d '{"messages":[]}' 2>/tmp/curl_err.txt) || {
+              echo "::error::请求失败，无法连接。项目可能已被暂停或域名不可达。"
+              echo "--- curl 错误 ---"
+              cat /tmp/curl_err.txt
+              exit 1
+            }
+
+          echo "HTTP 状态码：$HTTP_CODE"
+          echo "响应内容：$(cat /tmp/resp.txt)"
+
+          # 收到 401 说明完整链路正常：DNS 解析成功 → Supabase 可达 →
+          # 项目未暂停 → 函数已部署并在执行 → 鉴权生效。
+          if [ "$HTTP_CODE" = "401" ]; then
+            echo "✅ 保活成功：函数已执行，鉴权正常，DeepSeek 额度未消耗。"
+            exit 0
+          fi
+
+          # 其它状态码说明函数能跑但行为异常，需要人工看。
+          echo "::warning::预期 401，实际收到 $HTTP_CODE。函数可达但行为异常，请检查 API_SECRET 配置。"
+          exit 1
