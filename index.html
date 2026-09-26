@@ -2338,6 +2338,42 @@ var DIRECTION_INDUSTRIES = {
   "工程实践": ["制造/工程", "新能源/环保", "交通运输"],
 };
 
+// AI 分析失败时的方向适配度推导。
+// 依据用户在 Step2 的排序（第 1 名 85 分，第 2 名 70，第 3 名 55，其余 40）
+// 与情景题作答覆盖到的方向，给出有区分度的估计值。
+function deriveDirectionFitFromQuiz() {
+  var fit = {};
+  var ALL = Object.keys(DIRECTION_DATA);
+  ALL.forEach(function(d) { fit[d] = 40; });            // 基准
+
+  (selectedDirections || []).forEach(function(d, i) {
+    fit[d] = [85, 70, 55][i] != null ? [85, 70, 55][i] : 50;
+  });
+
+  // 情景题作答能反映该方向的胜任度：把选项的技能映射与方向特征技能比对
+  if (directionAnswerIndices && Object.keys(directionAnswerIndices).length) {
+    var qs = DIRECTION_QUESTIONS[selectedDirection] || [];
+    var got = {};
+    qs.forEach(function(q, qi) {
+      var oi = directionAnswerIndices[qi];
+      var opt = oi !== undefined && q.opts ? q.opts[oi] : null;
+      if (!opt || !opt.s) return;
+      for (var k = 0; k < opt.s.length; k += 2) got[opt.s[k]] = opt.s[k + 1];
+    });
+    ALL.forEach(function(d) {
+      var tags = (DIRECTION_DATA[d] && DIRECTION_DATA[d].skills) || [];
+      var sum = 0, n = 0;
+      tags.forEach(function(t) { if (got[t] != null) { sum += got[t]; n++; } });
+      if (n) {
+        var avg = sum / n;                              // 1-5
+        var bonus = Math.round((avg - 3) * 10);         // 每高一级 +10
+        fit[d] = Math.max(20, Math.min(100, fit[d] + bonus));
+      }
+    });
+  }
+  return fit;
+}
+
 function aiScoreOf(career) {
   if (!aiDirectionScores) return 50;          // AI 未产出，取中性值
   // 找到覆盖该岗位行业的、AI 给出评分的方向，取最高分
@@ -3712,6 +3748,9 @@ function performAnalysis() {
     if (s) s.textContent = '✅ 分析完成，以下是匹配结果';
   }).catch(function(err) {
     var quizScores = computeQuizFallback();
+    // AI 未产出方向适配度时，用用户的兴趣排序推导，避免 40% 权重
+    // 全部落到中性值 50 而把整体分数压平。
+    aiDirectionScores = deriveDirectionFitFromQuiz();
     displayAnalysisResult({skillScores: quizScores, reasoning: '基于方向情景题评估', summary: '基于你的方向选择与情景题答案生成的初步能力画像'});
     analysisComplete = true;
     loadAndShowResults();
@@ -3773,11 +3812,36 @@ function callAnalysis() {
   var convoText = interviewMessages.map(function(m){
     return (m.role==='user'?'学生':'面试官')+': '+m.content;
   }).join('\n');
-  var prompt = '这是一段AI职业访谈的完整对话记录，请分析学生的能力。\n\n' +
-    '学生选择的兴趣方向：' + (selectedDirection || '未指定') + '\n' +
+  // 把用户在前五步提供的全部信息交给 AI，由其综合判断方向适配度
+  var ctx = '学生的完整背景：\n';
+  ctx += '- 学校与专业：' + (userData.school || '未填') + ' / ' + (userData.major || '未填') + '（' + (userData.degree || '') + '，' + (userData.year || '') + '）\n';
+  if (selectedDirections && selectedDirections.length) {
+    ctx += '- 兴趣方向（按优先级）：' + selectedDirections.join(' > ') + '\n';
+  }
+  if (directionAnswers && Object.keys(directionAnswers).length) {
+    ctx += '- 情景题作答：' + Object.keys(directionAnswers).map(function(k){ return k + '→' + directionAnswers[k]; }).join('；') + '\n';
+  }
+  var _salMap = {0:'够用就行',1:'中等即可',3:'高薪优先',4:'非常看重薪资'};
+  var _sel = document.querySelector('input[name="salaryExpect"]:checked');
+  ctx += '- 期望薪资：' + (_salMap[parseInt(_sel && _sel.value)] || '未填') + '\n';
+  ctx += '- 家庭经济：' + (userData.familyNeed === 2 ? '压力较大，需尽快经济独立' : userData.familyNeed === 1 ? '有一定压力' : '无紧迫压力') + '\n';
+  ctx += '- 可接受最低起薪：' + (userData.minSalary ? userData.minSalary + 'K' : '无硬性要求') + '\n';
+  ctx += '- 是否补贴家用：' + (userData.supportFamily === 2 ? '是，家庭主要收入来源' : userData.supportFamily === 1 ? '是，每月给家里一部分' : '否') + '\n';
+  var _degMap = {0:'本科就业',1:'边工作边学习',2:'读研深造',3:'博士/留学'};
+  ctx += '- 学业规划：' + (_degMap[userData.degreePlan] || '未填') + '\n';
+
+  var DIR_LIST = Object.keys(DIRECTION_DATA).join('、');
+
+  var prompt = '这是一段AI职业访谈的完整对话记录，请综合分析学生的能力与适配方向。\n\n' +
+    ctx + '\n' +
     '对话记录：\n' + convoText +
-    '\n\n请严格按照以下JSON格式输出分析结果，不要输出任何其他内容（不要打招呼、不要点评、不要前缀后缀、不要标记代码块）：\n' +
-    '{"skillScores":{"编程开发":3,"数据分析":3,"算法与AI":3,"设计创意":3,"写作内容":3,"英语能力":3,"沟通表达":3,"项目管理":3,"市场营销":3,"财务金融":3,"运营管理":3,"工程技术":3,"数学统计":3,"产品策划":3,"领导力":3,"逻辑分析":3},"suggestedCareers":["职业1","职业2","职业3"],"reasoning":"评分理由","summary":"一句话总结"}';
+    '\n\n请严格按照以下JSON格式输出，不要输出任何其他内容（不要打招呼、不要点评、不要前缀后缀、不要标记代码块）：\n' +
+    '{"skillScores":{"编程开发":3,"数据分析":3,"算法与AI":3,"设计创意":3,"写作内容":3,"英语能力":3,"沟通表达":3,"项目管理":3,"市场营销":3,"财务金融":3,"运营管理":3,"工程技术":3,"数学统计":3,"产品策划":3,"领导力":3,"逻辑分析":3},' +
+    '"directionFit":{"技术研发":85,"数据分析":72,"设计创意":45,"商业运营":60,"内容创作":40,"金融财务":30,"教育咨询":50,"工程实践":65},' +
+    '"suggestedCareers":["职业1","职业2","职业3"],"reasoning":"评分理由","summary":"一句话总结"}\n\n' +
+    'directionFit 说明：对以下 8 个方向各给出 0-100 的适配度评分，必须全部给出：' + DIR_LIST + '。' +
+    '评分依据应综合学生的专业背景、兴趣排序、情景题作答、经济约束、学业规划与访谈中表现出的能力特质，' +
+    '而不是只参考技能评分。分数必须拉开差距（不要都打 60-80 分），最高分与最低分相差应在 30 分以上。';
   return fetch(API_PROXY_URL, {
     method: "POST",
     headers: {'Content-Type': 'application/json', 'x-api-key': API_SECRET},
@@ -3884,6 +3948,21 @@ function displayAnalysisResult(result) {
   userData.skillScores = scores;
   // AI 给出评分的维度都算"已测到"
   Object.keys(scores).forEach(function(k){ if (scores[k] != null) measuredDims[k] = true; });
+
+  // 方向适配度：AI 综合判断的结果，占最终得分的主要权重。
+  // 只接受合法值（0-100 的数字），缺失的方向不写入，由 aiScoreOf 兜底。
+  if (result.directionFit && typeof result.directionFit === 'object') {
+    var fit = {};
+    Object.keys(result.directionFit).forEach(function(k) {
+      var v = Number(result.directionFit[k]);
+      if (isFinite(v) && v >= 0 && v <= 100) fit[k] = Math.round(v);
+    });
+    if (Object.keys(fit).length) {
+      aiDirectionScores = fit;
+      userData.aiDirectionFit = fit;
+    }
+  }
+
   userData.aiInterviewSummary = result.summary || '';
   userData.interviewMessages = interviewMessages;
 }
