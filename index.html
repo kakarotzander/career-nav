@@ -1072,7 +1072,7 @@
         </div>
         <div class="form-group">
           <label for="prefIndustry">行业偏好（可多选，按住 Ctrl）</label>
-          <select id="prefIndustry" multiple style="height:120px;font-size:13px;">
+          <select id="prefIndustry" multiple style="height:160px;font-size:13px;">
             <option value="互联网/IT">互联网/IT</option>
             <option value="金融">金融/投资</option>
             <option value="咨询">咨询/研究</option>
@@ -1083,6 +1083,17 @@
             <option value="设计">设计/创意</option>
             <option value="政府">政府/公共事业</option>
             <option value="新能源">新能源/环保</option>
+            <option value="法律">法律</option>
+            <option value="科研/学术">科研/学术</option>
+            <option value="房地产">房地产</option>
+            <option value="交通运输">交通运输</option>
+            <option value="农业/林业">农业/林业</option>
+            <option value="体育/休闲">体育/休闲</option>
+            <option value="文化/娱乐">文化/娱乐</option>
+            <option value="餐饮/酒店">餐饮/酒店</option>
+            <option value="旅游/休闲">旅游/休闲</option>
+            <option value="管理/服务">管理/服务</option>
+            <option value="语言/服务">语言/服务</option>
           </select>
         </div>
       </div>
@@ -2245,6 +2256,41 @@ function computeSkillScores(answers) {
 const MARKET_TREND = {爆发增长:100,高速增长:90,稳定增长:75,增长趋稳:65,平稳:50,饱和竞争:35,下行压力:20,"向自动化转型":40,"周期波动（头部集中）":45,"分化加剧（人口减少挑战）":35,"调整期（集采政策影响）":40,"转型期（智能制造升级）":45,"竞争持续加剧":35,"增长中（云原生驱动）":70,"增长中（芯片国产化驱动）":75,"增长中（全球化重构）":65,"增长中（双碳政策驱动）":80,"高速增长（政策驱动）":90,"稳定增长（监管趋严）":70,"稳定增长（精英赛道）":75,"稳定增长（内容价值提升）":70,"大厂需求增长":75,"快速增长（远程经济驱动）":80,"增长中（农业现代化驱动）":75,"稳定增长（科研投入加大）":65,"赛道成熟化竞争加剧":35,"公务员需求稳定竞争激烈":55,"转型期（新媒体冲击）":35,"稳定（体制内保障）":55,"媒体融合推动需求":70,"老龄化驱动需求增长":75,"健康意识提升带动":80,"消费升级驱动":70,"旅游业复苏带动":70,"物流行业稳定增长":70,"公共服务需求稳定":55,"内容产业持续增长":75,"环保政策驱动":70,"安全人才需求稳定":55,"智库需求增长":65};
 const MARKET_DEMAND = {顶尖人才极度稀缺:100,高学历人才稀缺:90,复合型人才紧缺:85,持续旺盛:80,优质PM稀缺:75,人才缺口巨大:80,芯片设计人才极度稀缺:100,供需基本平衡:55,入门竞争激烈:40,竞争加剧:45,基础岗位竞争激烈:35,量大但淘汰率高:40,向测试开发方向发展:50,"入门门槛低竞争激烈":40,"红利消退，存量竞争":35,"优质内容人才稀缺":75,"中高级设计师紧缺":75,"综合型设计师紧缺":75,"智能制造人才紧缺":80,"热门岗位几百比一":50,"硕博学历门槛":60,"红圈所竞争激烈":45,"优秀教师依旧稀缺":65,"合规人才需求上升":60,"自由职业市场扩大":70,"农业现代化人才紧缺":75,"科研岗位竞争激烈但需求稳定":55,"GIS与遥感人才需求上升":75,"头部效应明显竞争白热化":35,"稳定但竞争激烈":45,"公共服务需求稳定":55};
 
+// ─── 行业偏好映射 ───
+// Step 5 的偏好选项用短名（"医疗"），岗位数据用全名（"医疗/健康"）。
+// 两者必须经此映射对齐，否则 includes() 永远为 false，
+// 用户选了某行业反而把该行业岗位全部降权。
+const INDUSTRY_ALIAS = {
+  "医疗":   ["医疗/健康"],
+  "制造":   ["制造/工程"],
+  "传媒":   ["传媒/内容", "传媒/市场"],
+  "设计":   ["设计/创意"],
+  "政府":   ["政府/公共事业"],
+  "新能源": ["新能源/环保"],
+  "互联网/IT": ["互联网/IT"],
+  "金融":   ["金融"],
+  "咨询":   ["咨询"],
+  "教育":   ["教育", "文化/教育"],
+  "法律":   ["法律"],
+  "房地产": ["房地产"],
+  "交通运输": ["交通运输"],
+  "农业/林业": ["农业/林业"],
+  "体育/休闲": ["体育/休闲"],
+  "餐饮/酒店": ["餐饮/酒店"],
+  "旅游/休闲": ["旅游/休闲"],
+  "文化/娱乐": ["文化/娱乐"],
+  "科研/学术": ["科研/学术"],
+  "管理/服务": ["管理/服务"],
+  "语言/服务": ["语言/服务"],
+};
+
+// 把用户选中的偏好短名展开成岗位库中的全名集合
+function expandIndustryPrefs(prefs) {
+  const out = new Set();
+  prefs.forEach(p => (INDUSTRY_ALIAS[p] || [p]).forEach(full => out.add(full)));
+  return out;
+}
+
 // ─── 学历辅助函数 ───
 const FULLTIME_PENALTY_INDUSTRIES = ["医疗/健康","教育","政府/公共事业","科研/学术","法律"];
 function getDegreeCore(deg) {
@@ -2262,6 +2308,8 @@ function matchCareers() {
   const userEnv = {};
   document.querySelectorAll('#expectGrid input[type="radio"]:checked').forEach(el => { userEnv[el.name.replace('exp_','')] = parseInt(el.value); });
   const prefIndustry = Array.from(document.getElementById('prefIndustry').selectedOptions).map(o => o.value);
+  // 展开成岗位库中的全名，否则短名（"医疗"）永远匹配不上全名（"医疗/健康"）
+  const prefIndustryFull = expandIndustryPrefs(prefIndustry);
 
   return CAREERS.map(career => {
     // ─── Step 1: 专业匹配 10% ───
@@ -2290,8 +2338,9 @@ function matchCareers() {
     });
     envScore = envWeight > 0 ? envScore/envWeight : 50;
     // 3b. Industry preference (40%)
+    // 命中偏好得 100；未命中 40（低于中性值 50，但不至于把其他行业压死）
     let indScore = 50;
-    if (prefIndustry.length > 0) indScore = prefIndustry.includes(career.industry) ? 100 : 25;
+    if (prefIndustryFull.size > 0) indScore = prefIndustryFull.has(career.industry) ? 100 : 40;
     const envExpectScore = envScore * 0.60 + indScore * 0.40;
 
     // ─── Step 4: 现实条件 30% ───
