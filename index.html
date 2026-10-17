@@ -2443,10 +2443,20 @@ function matchCareers() {
   return CAREERS.map(career => {
     // ─── 得分项 ①：学历 + 专业对口 ───
     const userMajor = userData.major || '';
-    let step1Score = 25; // default
-    if (career.majors.some(m => userMajor.includes(m) || m.includes(userMajor))) step1Score = 100;
-    else if ((career.related||[]).some(m => userMajor.includes(m) || m.includes(userMajor))) step1Score = 75;
-    else if (career.edu.includes(getDegreeCore(userData.degree || ''))) step1Score = 50;
+    const userDegCore = getDegreeCore(userData.degree || '');
+    // 学历门槛优先判定：岗位的 edu 不含用户当前学历，就是硬门槛不满足。
+    // 不能因为专业对口就给满分——否则本科生会拿到「硕士/博士」岗位的专业满分。
+    // 另外，岗位 note 里显式写了「博士起步 / 硕博学历」、edu 却仍列了本科的
+    // （全库 7 处，如量子计算工程师、芯片设计工程师），以作者写的 note 为准。
+    const noteNeedsPostgrad = /博士起步|硕博|硕士起步|硕士以上/.test(career.note || '');
+    const eduGate = career.edu.includes(userDegCore)
+                 && !(noteNeedsPostgrad && (userDegCore === '本科' || userDegCore === '专科'));
+    const majorHit = career.majors.some(m => userMajor.includes(m) || m.includes(userMajor));
+    const relatedHit = (career.related||[]).some(m => userMajor.includes(m) || m.includes(userMajor));
+    let step1Score = eduGate ? 25 : 15;          // 专业不对口
+    if (majorHit)          step1Score = eduGate ? 100 : 35;
+    else if (relatedHit)   step1Score = eduGate ? 75  : 30;
+    else if (eduGate)      step1Score = 50;
 
     // ─── Step 2: 能力匹配 30% ───
     let skillScore = 0, skillWeight = 0;
@@ -2565,8 +2575,10 @@ function matchCareers() {
     let stabilityPenalty = 0;
     if (userData.stabilityNeed <= 1 && (career.realityFlags||[]).includes('highPressure')) stabilityPenalty = 12;
 
-    // 市场前景不再单独计分：行业趋势、人才需求与排斥条件改由 AI 综合判断
-    // （见 SCORE_W.ai）。此处保留计算，供结果页展示市场信息与 AI 兜底使用。
+    // 市场前景不单独计分：行业趋势、人才需求与排斥条件由 AI 综合判断（见 SCORE_W.ai）。
+    // 计算保留，供结果页展示市场信息与 AI 兜底使用。
+    // 注意：把它加回总分会抬高「概念热」岗位（趋势/需求字段对这类岗位偏乐观），
+    // 且对前 30 名的区分度几乎没有改善——要动之前先把这两项都测一遍。
     const marketFinal = Math.max(0, realityScore * 0.40 + marketScore * 0.60 - stabilityPenalty);
 
     // ─── Final ───
