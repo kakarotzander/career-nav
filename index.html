@@ -914,7 +914,7 @@
       <div class="form-row">
         <div class="form-group">
           <label for="degree">学历层次</label>
-          <select id="degree" onchange="toggleDegreeCustom()">
+          <select id="degree">
             <option value="">请选择</option>
             <option value="全日制专科">全日制专科</option>
             <option value="非全日制专科">非全日制专科</option>
@@ -2210,6 +2210,24 @@ function checkStep2Ready() {
   document.getElementById('btnStep2Next').disabled = !(userData.majorInterest && selectedDirection);
 }
 
+// ─── STEP 3: 情景测评 ───
+function renderStep3Questions(dir) {
+  var qs = DIRECTION_QUESTIONS[dir] || [];
+  var container = document.getElementById('dirQuestionItems');
+  if (!container) return;
+  directionAnswers = {};
+  directionAnswerIndices = {};
+  var status = document.getElementById('step3Status');
+  if (status) status.textContent = '请回答 ' + dir + ' 方向的 5 道情景题';
+  container.innerHTML = qs.map(function(q, qi){
+    var optsHtml = q.opts.map(function(o, oi){
+      return '<label onclick="onStep3Answer('+qi+','+oi+')"><input type="radio" name="dq_'+qi+'" value="'+oi+'"><span>'+o.t+'</span></label>';
+    }).join('');
+    return '<div class="dir-question-item" id="dirQ_'+qi+'"><div class="dq-title">'+(qi+1)+'. '+q.q+'</div><div class="dq-opts">'+optsHtml+'</div></div>';
+  }).join('');
+  document.getElementById('btnStep3Next').disabled = true;
+  updateStep3Progress();
+}
 
 function onStep3Answer(qi, oi) {
   var qs = DIRECTION_QUESTIONS[selectedDirection];
@@ -3693,13 +3711,23 @@ function startInterview() {
   if (envPrefs.length) context += '工作环境偏好：' + envPrefs.join(', ') + '。\n';
 
   document.getElementById('chatLoading').classList.remove('hidden');
-  callDeepSeek([{role:'user', content:'你好，我是一名大学生，想请你帮我做职业能力访谈。以下是关于我的完整背景信息，请基于此进行有针对性的提问和交流：\n\n' + context}], 'interview').then(function(reply) {
-    addBotMessage(reply);
-    interviewMessages.push({role:'assistant', content:reply});
-    enableChatInput();
-  }).catch(function(err) {
-    addBotMessage('抱歉，AI服务暂时不可用（'+err.message+'）。请稍后重试');
-  }).finally(function() {
+  var opening = '你好，我是一名大学生，想请你帮我做职业能力访谈。以下是关于我的完整背景信息，请基于此进行有针对性的提问和交流：\n\n' + context;
+  // DeepSeek 高峰期会返回 503，重试一次通常即可成功；仍失败则放开输入框，避免用户卡死在这一步。
+  function openInterview(attempt) {
+    return callDeepSeek([{role:'user', content: opening}], 'interview').then(function(reply) {
+      addBotMessage(reply);
+      interviewMessages.push({role:'assistant', content:reply});
+      enableChatInput();
+    }).catch(function(err) {
+      if (attempt < 1) {
+        addBotMessage('AI 服务繁忙，正在重试…');
+        return openInterview(attempt + 1);
+      }
+      addBotMessage('抱歉，AI 服务暂时不可用（' + String(err.message).slice(0, 60) + '）。你可以直接输入内容，我会继续这次访谈。');
+      enableChatInput();
+    });
+  }
+  openInterview(0).finally(function() {
     document.getElementById('chatLoading').classList.add('hidden');
   });
 }
